@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DocumentServerClient,
   type ClientOptions,
+  type CommandRequest,
+  type CommandResponse,
   type ConvertRequest,
   type ConvertResponse,
   type RequestOptions,
@@ -471,6 +473,199 @@ describe("convert", () => {
   });
 });
 
+describe("command", () => {
+  const info: CommandRequest = { c: "info", key: "Khirz6zTPdfd7" };
+
+  it("posts the command to /command", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://docs.example.com/command?shardkey=Khirz6zTPdfd7");
+    expect(calls[0]?.init?.method).toBe("POST");
+  });
+
+  it("sends the command as a JSON body", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command({
+      c: "meta",
+      key: "Khirz6zTPdfd7",
+      meta: { title: "Contract.docx" },
+    });
+
+    expect(bodyOf(calls[0])).toEqual({
+      c: "meta",
+      key: "Khirz6zTPdfd7",
+      meta: { title: "Contract.docx" },
+    });
+  });
+
+  it("asks for JSON rather than the default XML", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+
+    expect(headerOf(calls[0], "accept")).toBe("application/json");
+    expect(headerOf(calls[0], "content-type")).toBe("application/json");
+  });
+
+  it("sends the configured headers too", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).command(info);
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends no authorization header when no token is given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("sends the token in an authorization header", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+      info,
+      "jwt.header.token",
+    );
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
+  });
+
+  it("follows a configured header name and prefix", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
+      fetch,
+    }).command(info, "jwt.header.token");
+
+    expect(headerOf(calls[0], "x-docs-token")).toBe("jwt.header.token");
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("leaves the body signature to the caller", async () => {
+    const { fetch, calls } = spyFetch();
+    const request: CommandRequest = { ...info, token: "jwt.body.token" };
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+      request,
+      "jwt.header.token",
+    );
+
+    expect(bodyOf(calls[0])).toMatchObject({ token: "jwt.body.token" });
+  });
+
+  it("does not modify the command it was given", async () => {
+    const { fetch } = spyFetch();
+    const request: CommandRequest = { ...info };
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+      request,
+      "jwt.header.token",
+    );
+
+    expect(request).toEqual(info);
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).command(info);
+
+    expect(calls[0]?.url).toBe("https://example.com/office/command?shardkey=Khirz6zTPdfd7");
+  });
+
+  it("pins the command to a shard with the document key", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command({
+      ...info,
+      key: "a b&c",
+    });
+
+    expect(calls[0]?.url).toBe("https://docs.example.com/command?shardkey=a%20b%26c");
+  });
+
+  it.each<CommandRequest>([{ c: "getForgottenList" }, { c: "license" }, { c: "version" }])(
+    "sends no shardkey for a command without a key: %o",
+    async (request) => {
+      const { fetch, calls } = spyFetch();
+
+      await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+        request,
+      );
+
+      expect(calls[0]?.url).toBe("https://docs.example.com/command");
+    },
+  );
+
+  it("passes an abort signal", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+
+    expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("aborts once the timeout is reached", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.command(info)).rejects.toMatchObject({ name: "TimeoutError" });
+  });
+
+  it("returns the response untouched", async () => {
+    const body = { error: 0, key: "Khirz6zTPdfd7", users: ["6d5a81d0", "78e1e841"] };
+    const { fetch } = spyFetch(() => Response.json(body));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).command(info);
+
+    expect(response.status).toBe(200);
+    await expect(response.json() as Promise<CommandResponse>).resolves.toEqual(body);
+  });
+
+  it("hands back a command error instead of throwing", async () => {
+    // The service answers 200 even when the command failed, so only the body tells.
+    const { fetch } = spyFetch(() => Response.json({ error: 6 }));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).command(info);
+
+    expect(response.ok).toBe(true);
+    await expect(response.json() as Promise<CommandResponse>).resolves.toEqual({ error: 6 });
+  });
+
+  it("falls back to the global fetch", async () => {
+    const { fetch, calls } = spyFetch();
+    vi.stubGlobal("fetch", fetch);
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).command(info);
+
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe("request options", () => {
   const docx: ConvertRequest = {
     filetype: "docx",
@@ -519,6 +714,22 @@ describe("request options", () => {
       headers: { "x-tenant": "acme" },
       fetch,
     }).convert(docx, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
+
+    expect(headerOf(calls[0], "content-type")).toBe("application/json");
+    expect(headerOf(calls[0], "accept")).toBe("application/json");
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+    expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
+  });
+
+  it("keeps the headers command sets of its own", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).command({ c: "version" }, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
     expect(headerOf(calls[0], "accept")).toBe("application/json");

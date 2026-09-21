@@ -5,7 +5,8 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors.
 Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, Deno, Bun,
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
-Early stage: the client currently covers the health check and the conversion API.
+Early stage: the client currently covers the health check, the conversion API and the
+command service.
 
 ## Installation
 
@@ -133,6 +134,71 @@ payloads. Sent always; versions before Docs 8.1 ignore it.
 
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 
+## Commands
+
+`command()` posts to `/command`, the [command service][command-service], which manages a
+document the editors already have open — and the files they left behind. The command is
+picked by its `c` field, and each one takes its own parameters:
+
+```ts
+const response = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
+const result = (await response.json()) as CommandResponse;
+
+if (result.error !== 0) {
+  throw new Error(`command failed with code ${result.error}`);
+}
+
+result.users; // ["6d5a81d0", "78e1e841"]
+```
+
+| Command            | Parameters          | Answers                      | Does                                               |
+| ------------------ | ------------------- | ---------------------------- | -------------------------------------------------- |
+| `deleteForgotten`  | `key`               | `key`                        | Removes a forgotten document.                      |
+| `drop`             | `key`, `users`      | `key`                        | Disconnects users from co-editing.                 |
+| `forcesave`        | `key`, `userdata`   | `key`                        | Saves the document without closing it.             |
+| `getForgotten`     | `key`               | `key`, `url`                 | Asks where a forgotten document can be downloaded. |
+| `getForgottenList` | —                   | `keys`                       | Lists the forgotten documents.                     |
+| `info`             | `key`, `userdata`   | `key`, `users`               | Asks who has the document open.                    |
+| `license`          | —                   | `license`, `quota`, `server` | Asks for the license and the quota spent.          |
+| `meta`             | `key`, `meta.title` | `key`                        | Renames the document in every editor.              |
+| `version`          | —                   | `version`                    | Asks for the version of the document server.       |
+
+`CommandRequest` is a union discriminated on `c`, so a command is checked against its own
+parameters — `{ c: "version", key }` does not compile, and `{ c: "meta", key }` without
+`meta` does not either:
+
+```ts
+await client.command({ c: "meta", key, meta: { title: "Contract.docx" } });
+await client.command({ c: "drop", key, users: ["6d5a81d0"] });
+await client.command({ c: "forcesave", key, userdata: "before-download" });
+```
+
+`drop` without `users` disconnects everyone; versions before Docs 8.3 need the list.
+
+The response is a single `CommandResponse` shape, since nothing in the body says which
+command it answers — only `error` is always there, the rest depends on the command. And
+`error` is always there even on success, where it is `0`, so unlike the conversion API the
+check is `result.error !== 0` rather than a test for the field being present. The codes run
+from `0` to `6` — `4` nothing had changed before `forcesave`, `6` invalid token, and so on;
+they are listed on `CommandErrorCode`.
+
+`forcesave` returning `error: 0` only means the save was started: the file itself arrives at
+your callback handler, with `forcesavetype` and the `userdata` you passed in.
+
+A token is sent exactly as it is for a conversion — in the body as `token`, signing the body
+itself, or in a header as the second argument, signing the body wrapped as `{ payload: … }`:
+
+```ts
+await client.command({ ...request, token: jwt.sign(request, secret) });
+await client.command(request, jwt.sign({ payload: request }, secret));
+```
+
+The `shardkey` query parameter is added for the commands that carry a `key`, and left out
+for `getForgottenList`, `license` and `version`, which are about the server rather than one
+document.
+
+[command-service]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/
+
 ## Options
 
 | Option                | Default            | Description                                             |
@@ -186,7 +252,7 @@ the reason is in `error.cause` — on Node an `AggregateError` carrying `code`, 
 ### authorizationHeader and authorizationPrefix
 
 Both mirror the document server's own `token.outbox.header` and `token.outbox.prefix`
-settings, and are read only when `convert()` is given a token. The prefix is joined to the
+settings, and are read only when `convert()` or `command()` is given a token. The prefix is joined to the
 token as it stands, so the trailing space belongs to the default value and an empty string
 leaves the token bare:
 
@@ -224,8 +290,8 @@ agent — is still picked up.
 
 ## Per-request options
 
-Both `healthcheck()` and `convert()` take a last, optional argument that overrides the
-client settings for that one call:
+`healthcheck()`, `convert()` and `command()` all take a last, optional argument that
+overrides the client settings for that one call:
 
 ```ts
 await client.convert(request, token, {
@@ -247,7 +313,7 @@ that runs out of time with a `"TimeoutError"`. Passing a signal therefore does n
 the timeout — pass a larger `timeoutMs` for a conversion expected to be slow.
 
 The headers are applied last, over the configured ones and over the `content-type`,
-`accept` and authorization headers `convert()` sets itself. Since the match ignores case,
+`accept` and authorization headers `convert()` and `command()` set themselves. Since the match ignores case,
 `{ "X-Tenant": "globex" }` replaces a configured `x-tenant` rather than adding a second
 copy of it.
 
@@ -259,6 +325,7 @@ src/
   client/index.ts     DocumentServerClient
   client/options.ts   ClientOptions and RequestOptions
   client/convert.ts   conversion request and response
+  client/command.ts   command request and response
 test/
   client.test.ts
 ```

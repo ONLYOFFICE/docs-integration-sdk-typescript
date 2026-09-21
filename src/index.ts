@@ -1,6 +1,26 @@
 export { DocumentServerClient } from "./client/index.js";
 export type { ClientOptions, RequestOptions } from "./client/options.js";
 export type {
+  CommandErrorCode,
+  CommandRequest,
+  CommandResponse,
+  CommandType,
+  DeleteForgottenCommand,
+  DocumentMeta,
+  DropCommand,
+  ForcesaveCommand,
+  GetForgottenCommand,
+  GetForgottenListCommand,
+  InfoCommand,
+  License,
+  LicenseCommand,
+  LicenseQuota,
+  LicenseQuotaUser,
+  LicenseServer,
+  MetaCommand,
+  VersionCommand,
+} from "./client/command.js";
+export type {
   ConversionErrorCode,
   ConvertRequest,
   ConvertResponse,

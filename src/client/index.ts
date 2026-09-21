@@ -1,3 +1,4 @@
+import type { CommandRequest } from "./command.js";
 import type { ConvertRequest } from "./convert.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
 
@@ -113,6 +114,20 @@ export class DocumentServerClient {
     return await this.#request(
       "/converter",
       { method: "POST", query: { shardkey: request.key }, json: request, token },
+      options,
+    );
+  }
+
+  async command(
+    request: CommandRequest,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<Response> {
+    const query = "key" in request ? { shardkey: request.key } : undefined;
+
+    return await this.#request(
+      "/command",
+      { method: "POST", query, json: request, token },
       options,
     );
   }
