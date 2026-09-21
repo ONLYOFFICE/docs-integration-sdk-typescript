@@ -1,5 +1,5 @@
 export { DocumentServerClient } from "./client/index.js";
-export type { ClientOptions } from "./client/options.js";
+export type { ClientOptions, RequestOptions } from "./client/options.js";
 export type {
   ConversionErrorCode,
   ConvertRequest,

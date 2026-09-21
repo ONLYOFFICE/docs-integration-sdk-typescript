@@ -4,6 +4,7 @@ import {
   type ClientOptions,
   type ConvertRequest,
   type ConvertResponse,
+  type RequestOptions,
 } from "../src/index.js";
 
 interface RecordedCall {
@@ -143,7 +144,7 @@ describe("options", () => {
     expect(client.options.baseUrl).toBe("https://docs.example.com");
     expect(client.options.timeoutMs).toBe(5000);
     expect(calls[0]?.url).toBe("https://docs.example.com/healthcheck");
-    expect(calls[0]?.init?.headers).toEqual({ "x-tenant": "acme" });
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
 });
 
@@ -175,7 +176,7 @@ describe("healthcheck", () => {
       fetch,
     }).healthcheck();
 
-    expect(calls[0]?.init?.headers).toEqual({ "x-tenant": "acme" });
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
 
   it("passes an abort signal", async () => {
@@ -457,5 +458,125 @@ describe("convert", () => {
     await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).convert(docx);
 
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("request options", () => {
+  const docx: ConvertRequest = {
+    filetype: "docx",
+    key: "Khirz6zTPdfd7",
+    outputtype: "pdf",
+    url: "https://example.com/document.docx",
+  };
+
+  it("exposes the request options type to consumers", () => {
+    // Compile-time guard: typecheck fails if RequestOptions stops being exported.
+    const options: RequestOptions = { timeoutMs: 1234 };
+
+    expect(options.timeoutMs).toBe(1234);
+  });
+
+  it("adds its headers to the configured ones on healthcheck", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).healthcheck({ headers: { "x-request-id": "r-1" } });
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+    expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
+  });
+
+  it("replaces a configured header whatever case it was written in", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).healthcheck({ headers: { "X-Tenant": "globex" } });
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("globex");
+  });
+
+  it("keeps the headers convert sets of its own", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).convert(docx, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
+
+    expect(headerOf(calls[0], "content-type")).toBe("application/json");
+    expect(headerOf(calls[0], "accept")).toBe("application/json");
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+    expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
+  });
+
+  it("lets a request header override the authorization convert built", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+      docx,
+      "jwt.header.token",
+      { headers: { authorization: "Bearer override" } },
+    );
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer override");
+  });
+
+  it("takes its timeout over the configured one", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 60_000,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.healthcheck({ timeoutMs: 20 })).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
+  });
+
+  it("aborts on the signal it was given", async () => {
+    const controller = new AbortController();
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: hangingFetch,
+    });
+
+    const response = client.convert(docx, undefined, { signal: controller.signal });
+
+    controller.abort(new Error("cancelled by the caller"));
+
+    await expect(response).rejects.toThrow("cancelled by the caller");
+  });
+
+  it("hands fetch an aborted signal when the caller's has already fired", async () => {
+    const { fetch, calls } = spyFetch();
+    const reason = new Error("cancelled before the call");
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck({
+      signal: AbortSignal.abort(reason),
+    });
+
+    expect(calls[0]?.init?.signal?.aborted).toBe(true);
+    expect(calls[0]?.init?.signal?.reason).toBe(reason);
+  });
+
+  it("still honours the timeout while a signal is watched", async () => {
+    const controller = new AbortController();
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.healthcheck({ signal: controller.signal })).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
   });
 });

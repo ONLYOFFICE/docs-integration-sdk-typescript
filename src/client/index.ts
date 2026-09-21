@@ -1,5 +1,5 @@
 import type { ConvertRequest } from "./convert.js";
-import type { ClientOptions } from "./options.js";
+import type { ClientOptions, RequestOptions } from "./options.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_AUTHORIZATION_HEADER = "Authorization";
@@ -28,6 +28,26 @@ function normalizeBaseUrl(baseUrl: string): string {
   return url.href.replace(/\/+$/, "");
 }
 
+function mergeHeaders(
+  base: Headers | Readonly<Record<string, string>>,
+  overrides?: Readonly<Record<string, string>>,
+): Headers {
+  const headers = new Headers(base);
+
+  for (const [name, value] of Object.entries(overrides ?? {})) {
+    headers.set(name, value);
+  }
+
+  return headers;
+}
+
+/** Aborts on the caller's signal, on the deadline, or on whichever comes first. */
+function buildSignal(timeoutMs: number, options?: RequestOptions): AbortSignal {
+  const timeout = AbortSignal.timeout(options?.timeoutMs ?? timeoutMs);
+
+  return options?.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+}
+
 export class DocumentServerClient {
   readonly options: Readonly<Required<ClientOptions>>;
 
@@ -42,15 +62,19 @@ export class DocumentServerClient {
     });
   }
 
-  async healthcheck(): Promise<Response> {
+  async healthcheck(options?: RequestOptions): Promise<Response> {
     return await this.options.fetch(buildUrl(this.options.baseUrl, "/healthcheck"), {
       method: "GET",
-      headers: this.options.headers,
-      signal: AbortSignal.timeout(this.options.timeoutMs),
+      headers: mergeHeaders(this.options.headers, options?.headers),
+      signal: buildSignal(this.options.timeoutMs, options),
     });
   }
 
-  async convert(request: ConvertRequest, token?: string): Promise<Response> {
+  async convert(
+    request: ConvertRequest,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<Response> {
     const headers = new Headers(this.options.headers);
 
     headers.set("content-type", "application/json");
@@ -64,9 +88,9 @@ export class DocumentServerClient {
 
     return await this.options.fetch(buildUrl(this.options.baseUrl, `/converter${query}`), {
       method: "POST",
-      headers,
+      headers: mergeHeaders(headers, options?.headers),
       body: JSON.stringify(request),
-      signal: AbortSignal.timeout(this.options.timeoutMs),
+      signal: buildSignal(this.options.timeoutMs, options),
     });
   }
 }

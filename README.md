@@ -222,13 +222,42 @@ When the option is omitted, the global `fetch` is looked up on each call rather 
 captured at construction, so a `fetch` patched later — by msw or an instrumentation
 agent — is still picked up.
 
+## Per-request options
+
+Both `healthcheck()` and `convert()` take a last, optional argument that overrides the
+client settings for that one call:
+
+```ts
+await client.convert(request, token, {
+  signal: controller.signal,
+  timeoutMs: 120_000,
+  headers: { "x-request-id": requestId },
+});
+```
+
+| Option      | Description                                                                  |
+| ----------- | ---------------------------------------------------------------------------- |
+| `signal`    | Cancels the call. The deadline still applies alongside it.                   |
+| `timeoutMs` | Deadline for this call, in place of the configured one.                      |
+| `headers`   | Headers laid over the configured ones. Names are matched case-insensitively. |
+
+`signal` is joined with the deadline through `AbortSignal.any()`, so whichever fires first
+aborts the request: a cancelled call rejects with the reason the signal carries, a call
+that runs out of time with a `"TimeoutError"`. Passing a signal therefore does not disarm
+the timeout — pass a larger `timeoutMs` for a conversion expected to be slow.
+
+The headers are applied last, over the configured ones and over the `content-type`,
+`accept` and authorization headers `convert()` sets itself. Since the match ignores case,
+`{ "X-Tenant": "globex" }` replaces a configured `x-tenant` rather than adding a second
+copy of it.
+
 ## Project layout
 
 ```
 src/
   index.ts            public exports
   client/index.ts     DocumentServerClient
-  client/options.ts   ClientOptions
+  client/options.ts   ClientOptions and RequestOptions
   client/convert.ts   conversion request and response
 test/
   client.test.ts
