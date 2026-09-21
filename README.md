@@ -109,35 +109,48 @@ version of the same file needs a new key.
 
 ### Signing and cluster routing
 
-When the document server is configured with a secret, sign the body as a JWT and pass it
-back in the same body as `token` — the SDK ships no JWT implementation, so use the library
-you already have:
+When the document server is configured with a secret, the request has to carry a JWT — and
+it takes one in either of two places, signed over two different payloads. In the body,
+`token` signs the body itself; in a header, the signature covers the body wrapped as
+`{ payload: … }`. The SDK ships no JWT implementation, so use the library you already have:
 
 ```ts
+// In the body, as a field of the request.
 await client.convert({ ...request, token: jwt.sign(request, secret) });
+
+// In a header, as the second argument.
+await client.convert(request, jwt.sign({ payload: request }, secret));
 ```
+
+Sending both is fine as long as each was signed over its own payload — handing the same
+token to both places fails with `-8`. Omit the second argument and no header is sent at
+all, which is what a server without a secret wants.
 
 On a document server cluster the request is pinned to one node by a `shardkey` query
 parameter carrying the document key, which keeps every call about one document on the
-same node. Being a query parameter rather than a body field, it stays out of the signed
-payload. Sent always; versions before Docs 8.1 ignore it.
+same node. Being a query parameter rather than a body field, it stays out of both signed
+payloads. Sent always; versions before Docs 8.1 ignore it.
 
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 
 ## Options
 
-| Option      | Default            | Description                                             |
-| ----------- | ------------------ | ------------------------------------------------------- |
-| `baseUrl`   | —                  | Base URL of the document server. Required.              |
-| `timeoutMs` | `30000`            | Request timeout.                                        |
-| `headers`   | `{}`               | Headers sent with every request.                        |
-| `fetch`     | `globalThis.fetch` | Custom `fetch`: proxy, mTLS, retries, logging, mocking. |
+| Option                | Default            | Description                                             |
+| --------------------- | ------------------ | ------------------------------------------------------- |
+| `baseUrl`             | —                  | Base URL of the document server. Required.              |
+| `timeoutMs`           | `30000`            | Request timeout.                                        |
+| `headers`             | `{}`               | Headers sent with every request.                        |
+| `authorizationHeader` | `"Authorization"`  | Header a conversion token is sent in.                   |
+| `authorizationPrefix` | `"Bearer "`        | Put before the token in that header.                    |
+| `fetch`               | `globalThis.fetch` | Custom `fetch`: proxy, mTLS, retries, logging, mocking. |
 
 `client.options` holds the effective settings — validated, with defaults applied, and
 frozen. It is a copy, so changing the object you passed in has no effect afterwards:
 
 ```ts
-client.options; // { baseUrl: "https://docs.example.com", timeoutMs: 5000, headers: {…}, fetch: ƒ }
+client.options;
+// { baseUrl: "https://docs.example.com", timeoutMs: 5000, headers: {…},
+//   authorizationHeader: "Authorization", authorizationPrefix: "Bearer ", fetch: ƒ }
 ```
 
 ### baseUrl
@@ -169,6 +182,26 @@ A request that runs out of time rejects with a `DOMException` whose `name` is
 `"TimeoutError"`. A server that cannot be reached rejects with `TypeError: fetch failed`;
 the reason is in `error.cause` — on Node an `AggregateError` carrying `code`, such as
 `"ECONNREFUSED"`.
+
+### authorizationHeader and authorizationPrefix
+
+Both mirror the document server's own `token.outbox.header` and `token.outbox.prefix`
+settings, and are read only when `convert()` is given a token. The prefix is joined to the
+token as it stands, so the trailing space belongs to the default value and an empty string
+leaves the token bare:
+
+```ts
+const client = new DocumentServerClient({
+  baseUrl: "https://docs.example.com",
+  authorizationHeader: "X-Docs-Token",
+  authorizationPrefix: "",
+});
+
+await client.convert(request, token); // X-Docs-Token: <token>
+```
+
+A same-named header among the configured `headers` is left alone until a token is passed,
+and is then overridden rather than merged with.
 
 ### fetch
 

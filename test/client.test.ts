@@ -64,6 +64,8 @@ describe("options", () => {
 
     expect(options.timeoutMs).toBe(30_000);
     expect(options.headers).toEqual({});
+    expect(options.authorizationHeader).toBe("Authorization");
+    expect(options.authorizationPrefix).toBe("Bearer ");
     expect(typeof options.fetch).toBe("function");
   });
 
@@ -73,11 +75,15 @@ describe("options", () => {
       baseUrl: "https://docs.example.com",
       timeoutMs: 1234,
       headers: { "x-tenant": "acme" },
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
       fetch,
     });
 
     expect(options.timeoutMs).toBe(1234);
     expect(options.headers).toEqual({ "x-tenant": "acme" });
+    expect(options.authorizationHeader).toBe("X-Docs-Token");
+    expect(options.authorizationPrefix).toBe("");
     expect(options.fetch).toBe(fetch);
   });
 
@@ -304,6 +310,76 @@ describe("convert", () => {
     }).convert(docx);
 
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
+  });
+
+  it("sends no authorization header when no token is given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(docx);
+
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("sends the token in an authorization header", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+      docx,
+      "jwt.header.token",
+    );
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
+  });
+
+  it("follows a configured header name and prefix", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
+      fetch,
+    }).convert(docx, "jwt.header.token");
+
+    expect(headerOf(calls[0], "x-docs-token")).toBe("jwt.header.token");
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("overrides a configured authorization header instead of merging with it", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { Authorization: "Bearer stale" },
+      fetch,
+    }).convert(docx, "jwt.header.token");
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
+  });
+
+  it("leaves the body signature to the caller", async () => {
+    // The two tokens sign different payloads, so the header one never lands in the body.
+    const { fetch, calls } = spyFetch();
+    const request: ConvertRequest = { ...docx, token: "jwt.body.token" };
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+      request,
+      "jwt.header.token",
+    );
+
+    expect(bodyOf(calls[0])).toMatchObject({ token: "jwt.body.token" });
+  });
+
+  it("does not modify the request it was given", async () => {
+    const { fetch } = spyFetch();
+    const request: ConvertRequest = { ...docx };
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+      request,
+      "jwt.header.token",
+    );
+
+    expect(request).toEqual(docx);
   });
 
   it("keeps the path prefix of the base URL", async () => {
