@@ -179,6 +179,16 @@ describe("healthcheck", () => {
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
 
+  it("sends no body and no JSON headers", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck();
+
+    expect(calls[0]?.init?.body).toBeUndefined();
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+    expect(headerOf(calls[0], "accept")).toBeNull();
+  });
+
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 

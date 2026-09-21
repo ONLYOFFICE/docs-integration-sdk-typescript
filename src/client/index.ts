@@ -5,8 +5,26 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_AUTHORIZATION_HEADER = "Authorization";
 const DEFAULT_AUTHORIZATION_PREFIX = "Bearer ";
 
-function buildUrl(baseUrl: string, path: string): string {
-  return baseUrl + "/" + path.replace(/^\/+/, "");
+interface RequestSpec {
+  method: "GET" | "POST";
+  query?: Readonly<Record<string, string>>;
+  json?: unknown;
+  token?: string;
+}
+
+function buildUrl(baseUrl: string, path: string, query?: Readonly<Record<string, string>>): string {
+  const url = baseUrl + "/" + path.replace(/^\/+/, "");
+  const entries = Object.entries(query ?? {});
+
+  if (entries.length === 0) {
+    return url;
+  }
+
+  const search = entries
+    .map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
+    .join("&");
+
+  return `${url}?${search}`;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -41,7 +59,6 @@ function mergeHeaders(
   return headers;
 }
 
-/** Aborts on the caller's signal, on the deadline, or on whichever comes first. */
 function buildSignal(timeoutMs: number, options?: RequestOptions): AbortSignal {
   const timeout = AbortSignal.timeout(options?.timeoutMs ?? timeoutMs);
 
@@ -62,12 +79,30 @@ export class DocumentServerClient {
     });
   }
 
-  async healthcheck(options?: RequestOptions): Promise<Response> {
-    return await this.options.fetch(buildUrl(this.options.baseUrl, "/healthcheck"), {
-      method: "GET",
-      headers: mergeHeaders(this.options.headers, options?.headers),
+  async #request(path: string, spec: RequestSpec, options?: RequestOptions): Promise<Response> {
+    const headers = new Headers(this.options.headers);
+
+    if (spec.json !== undefined) {
+      headers.set("content-type", "application/json");
+      headers.set("accept", "application/json");
+    }
+
+    if (spec.token !== undefined) {
+      const { authorizationHeader, authorizationPrefix } = this.options;
+
+      headers.set(authorizationHeader, `${authorizationPrefix}${spec.token}`);
+    }
+
+    return await this.options.fetch(buildUrl(this.options.baseUrl, path, spec.query), {
+      method: spec.method,
+      headers: mergeHeaders(headers, options?.headers),
+      body: spec.json === undefined ? undefined : JSON.stringify(spec.json),
       signal: buildSignal(this.options.timeoutMs, options),
     });
+  }
+
+  async healthcheck(options?: RequestOptions): Promise<Response> {
+    return await this.#request("/healthcheck", { method: "GET" }, options);
   }
 
   async convert(
@@ -75,22 +110,10 @@ export class DocumentServerClient {
     token?: string,
     options?: RequestOptions,
   ): Promise<Response> {
-    const headers = new Headers(this.options.headers);
-
-    headers.set("content-type", "application/json");
-    headers.set("accept", "application/json");
-
-    if (token !== undefined) {
-      headers.set(this.options.authorizationHeader, `${this.options.authorizationPrefix}${token}`);
-    }
-
-    const query = `?shardkey=${encodeURIComponent(request.key)}`;
-
-    return await this.options.fetch(buildUrl(this.options.baseUrl, `/converter${query}`), {
-      method: "POST",
-      headers: mergeHeaders(headers, options?.headers),
-      body: JSON.stringify(request),
-      signal: buildSignal(this.options.timeoutMs, options),
-    });
+    return await this.#request(
+      "/converter",
+      { method: "POST", query: { shardkey: request.key }, json: request, token },
+      options,
+    );
   }
 }
