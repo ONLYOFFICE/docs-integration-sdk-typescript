@@ -5,7 +5,7 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors.
 Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, Deno, Bun,
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
-Early stage: the client currently covers the document server health check.
+Early stage: the client currently covers the health check and the conversion API.
 
 ## Installation
 
@@ -28,8 +28,101 @@ const response = await client.healthcheck();
 const healthy = response.ok && (await response.text()).trim() === "true";
 ```
 
-`healthcheck()` returns the raw `Response`, so the caller decides what a failure means.
+Every method returns the raw `Response`, so the caller decides what a failure means.
 Check `response.ok` and read the body — an unread body keeps the connection open.
+
+## Conversion
+
+`convert()` posts to `/converter`, the [conversion API][conversion-api] of the document
+server, which downloads the source document from `url` and converts it:
+
+```ts
+const response = await client.convert({
+  filetype: "docx",
+  key: "Khirz6zTPdfd7",
+  outputtype: "pdf",
+  title: "Contract.docx",
+  url: "https://example.com/contract.docx",
+});
+
+const result = (await response.json()) as ConvertResponse;
+
+if (result.error !== undefined) {
+  throw new Error(`conversion failed with code ${result.error}`);
+}
+
+result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
+```
+
+The service answers `200 OK` whether the conversion succeeded or failed, so `response.ok`
+proves nothing: the body either carries `fileUrl` and `endConvert`, or an `error` code
+from `-1` to `-10` — `-5` incorrect password, `-8` invalid token, and so on. The codes are
+listed on `ConversionErrorCode`.
+
+The request accepts every parameter the API documents — `thumbnail` for an image output,
+`spreadsheetLayout` for a spreadsheet printed to PDF, `pdf.form` for a fillable form,
+`watermark`, `documentLayout`, `documentRenderer`, `password`, `region`, `delimiter` and
+`codePage` — each typed and documented on `ConvertRequest`:
+
+```ts
+await client.convert({
+  filetype: "xlsx",
+  key: "Khirz6zTPdfd7",
+  outputtype: "pdf",
+  url: "https://example.com/report.xlsx",
+  region: "de-DE",
+  spreadsheetLayout: {
+    orientation: "landscape",
+    fitToWidth: 1,
+    gridLines: true,
+    margins: { left: "10mm", right: "10mm", top: "10mm", bottom: "10mm" },
+  },
+});
+```
+
+`Accept: application/json` is sent for you; without it the service replies in XML. A
+`content-type` among the configured `headers` is overridden rather than merged with, so a
+stray value cannot corrupt the request.
+
+### Synchronous and asynchronous conversion
+
+By default the document server holds the connection open until the file is ready. A large
+document can outlast `timeoutMs` — and the reverse proxy in front of the server has a
+deadline of its own. `async: true` returns immediately with `endConvert: false` and a
+`percent`; repeat the very same request, unchanged, until `endConvert` turns `true`:
+
+```ts
+const request: ConvertRequest = { async: true, filetype: "docx", key, outputtype: "pdf", url };
+
+for (;;) {
+  const result = (await (await client.convert(request)).json()) as ConvertResponse;
+
+  if (result.error !== undefined) throw new Error(`conversion failed: ${result.error}`);
+  if (result.endConvert) break;
+
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+```
+
+The `key` identifies the source document: reusing it returns the cached result, so a new
+version of the same file needs a new key.
+
+### Signing and cluster routing
+
+When the document server is configured with a secret, sign the body as a JWT and pass it
+back in the same body as `token` — the SDK ships no JWT implementation, so use the library
+you already have:
+
+```ts
+await client.convert({ ...request, token: jwt.sign(request, secret) });
+```
+
+On a document server cluster the request is pinned to one node by a `shardkey` query
+parameter carrying the document key, which keeps every call about one document on the
+same node. Being a query parameter rather than a body field, it stays out of the signed
+payload. Sent always; versions before Docs 8.1 ignore it.
+
+[conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 
 ## Options
 
@@ -100,9 +193,10 @@ agent — is still picked up.
 
 ```
 src/
-  index.ts          public exports
-  client/index.ts   DocumentServerClient
-  client/types.ts   ClientOptions
+  index.ts            public exports
+  client/index.ts     DocumentServerClient
+  client/options.ts   ClientOptions
+  client/convert.ts   conversion request and response
 test/
   client.test.ts
 ```

@@ -1,4 +1,5 @@
-import type { ClientOptions } from "./types.js";
+import type { ConvertRequest } from "./convert.js";
+import type { ClientOptions } from "./options.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -41,6 +42,22 @@ export class DocumentServerClient {
     return await this.options.fetch(buildUrl(this.options.baseUrl, "/healthcheck"), {
       method: "GET",
       headers: this.options.headers,
+      signal: AbortSignal.timeout(this.options.timeoutMs),
+    });
+  }
+
+  async convert(request: ConvertRequest): Promise<Response> {
+    const headers = new Headers(this.options.headers);
+
+    headers.set("content-type", "application/json");
+    headers.set("accept", "application/json");
+
+    const query = `?shardkey=${encodeURIComponent(request.key)}`;
+
+    return await this.options.fetch(buildUrl(this.options.baseUrl, `/converter${query}`), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
       signal: AbortSignal.timeout(this.options.timeoutMs),
     });
   }
