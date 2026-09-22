@@ -26,12 +26,15 @@ const client = new DocumentServerClient({
   headers: { "x-request-source": "my-app" },
 });
 
-const response = await client.healthcheck();
-const healthy = response.ok && (await response.text()).trim() === "true";
+const healthy = await client.healthcheck();
 ```
 
-Every method returns the raw `Response`, so the caller decides what a failure means.
-Check `response.ok` and read the body — an unread body keeps the connection open.
+Every method parses the answer into the type its endpoint promises, and rejects when the
+document server reports a failure — in the status, or, the way the conversion, command and
+builder services do, in a body it answered `200 OK` with. See [Errors](#errors).
+
+The untouched `Response` is one property away, on [`client.raw`](#the-raw-client), for a
+caller who would rather decide what a failure means.
 
 ## Server configuration
 
@@ -40,7 +43,7 @@ it expects a JWT in, the paths of its endpoints, the largest file it accepts and
 languages its editor is translated into.
 
 ```ts
-const config = (await (await client.getConfig()).json()) as ConfigResponse;
+const config = await client.getConfig();
 
 config.authorization; // { header: "Authorization", prefix: "Bearer " }
 config.urls.api; // /web-apps/apps/api/documents/api.js
@@ -50,8 +53,9 @@ config.langs; // ["ar", "az", …, "zh-TW"]
 
 `authorization` is what `authorizationHeader` and `authorizationPrefix` have to be set to:
 a server configured with a header name of its own rejects a token sent under the default
-one. This endpoint describes the server rather than a document, so it takes no token, and
-it carries no error code of its own — check `response.ok` before reading the body.
+one. This endpoint describes the server rather than a document, so it takes no token, and it
+carries no error code of its own: only a status outside the 2xx range makes it fail, and
+that rejects with a `DocumentServerHttpError`.
 
 ## Formats
 
@@ -59,7 +63,7 @@ it carries no error code of its own — check `response.ok` before reading the b
 one may be opened for, and what it converts to:
 
 ```ts
-const formats = (await (await client.getFormats()).json()) as Format[];
+const formats = await client.getFormats();
 const docx = formats.find((format) => format.name === "docx");
 
 docx?.type; // word
@@ -84,7 +88,7 @@ named as an `outputtype` for that source format.
 server, which downloads the source document from `url` and converts it:
 
 ```ts
-const response = await client.convert({
+const result = await client.convert({
   filetype: "docx",
   key: "Khirz6zTPdfd7",
   outputtype: "pdf",
@@ -92,18 +96,13 @@ const response = await client.convert({
   url: "https://example.com/contract.docx",
 });
 
-const result = (await response.json()) as ConvertResponse;
-
-if (result.error !== undefined) {
-  throw new Error(`conversion failed with code ${result.error}`);
-}
-
 result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
 ```
 
-The service answers `200 OK` whether the conversion succeeded or failed, so `response.ok`
+The service answers `200 OK` whether the conversion succeeded or failed, so the status
 proves nothing: the body either carries `fileUrl` and `endConvert`, or an `error` code
-from `-1` to `-10` — `-5` incorrect password, `-8` invalid token, and so on. The codes are
+from `-1` to `-10` — `-5` incorrect password, `-8` invalid token, and so on. A body
+carrying a code rejects with a `ConversionError`, which holds it as `code`; the codes are
 listed on `ConversionErrorCode`.
 
 The request accepts every parameter the API documents — `thumbnail` for an image output,
@@ -142,9 +141,8 @@ deadline of its own. `async: true` returns immediately with `endConvert: false` 
 const request: ConvertRequest = { async: true, filetype: "docx", key, outputtype: "pdf", url };
 
 for (;;) {
-  const result = (await (await client.convert(request)).json()) as ConvertResponse;
+  const result = await client.convert(request);
 
-  if (result.error !== undefined) throw new Error(`conversion failed: ${result.error}`);
   if (result.endConvert) break;
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -187,12 +185,7 @@ document the editors already have open — and the files they left behind. The c
 picked by its `c` field, and each one takes its own parameters:
 
 ```ts
-const response = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
-const result = (await response.json()) as CommandResponse;
-
-if (result.error !== 0) {
-  throw new Error(`command failed with code ${result.error}`);
-}
+const result = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
 
 result.users; // ["6d5a81d0", "78e1e841"]
 ```
@@ -223,10 +216,19 @@ await client.command({ c: "forcesave", key, userdata: "before-download" });
 
 The response is a single `CommandResponse` shape, since nothing in the body says which
 command it answers — only `error` is always there, the rest depends on the command. And
-`error` is always there even on success, where it is `0`, so unlike the conversion API the
-check is `result.error !== 0` rather than a test for the field being present. The codes run
-from `0` to `6` — `4` nothing had changed before `forcesave`, `6` invalid token, and so on;
-they are listed on `CommandErrorCode`.
+`error` is always there even on success, where it is `0`. The codes run from `0` to `6`;
+they are listed on `CommandErrorCode`, and a non-zero one rejects with a `CommandError`.
+
+`4` is the exception: it says nothing had changed since the last save, which is an outcome
+of `forcesave` rather than a failure, so it comes back on the result instead of throwing.
+
+```ts
+const result = await client.command({ c: "forcesave", key });
+
+if (result.error === 4) {
+  // The document had no unsaved changes.
+}
+```
 
 `forcesave` returning `error: 0` only means the save was started: the file itself arrives at
 your callback handler, with `forcesavetype` and the `userdata` you passed in.
@@ -291,6 +293,77 @@ await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
 response and is then called off, so reading the body is not racing a deadline. A `signal`
 of your own remains the way to cancel a download in progress. See
 [timeoutMs](#timeoutms).
+
+## Errors
+
+A call rejects when the answer never came, when it is not the one the endpoint promises,
+or when the document server reports a failure of its own:
+
+| Error                      | Thrown when                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `DocumentServerHttpError`  | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
+| `DocumentServerParseError` | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
+| `ConversionError`          | `/converter` answered `200 OK` with an `error` code. Carries it as `code`.                             |
+| `CommandError`             | `/command` answered with a non-zero `error`. Carries it as `code`.                                     |
+| `BuilderError`             | `/docbuilder` answered `200 OK` with an `error` code. Carries it as `code`.                            |
+
+All five extend `DocumentServerError`, which carries the `response` they were read from.
+Its body has already been consumed by the time the error is built, which is why a
+truncated copy of it is on the error itself.
+
+```ts
+try {
+  await client.convert(request);
+} catch (error) {
+  if (error instanceof ConversionError && error.code === -5) {
+    return askForThePassword();
+  }
+
+  if (error instanceof DocumentServerHttpError && error.status >= 500) {
+    return retryLater();
+  }
+
+  throw error;
+}
+```
+
+`DocumentServerParseError` is the one worth expecting even from a healthy integration: a
+reverse proxy that answers `200 OK` with a page of its own would otherwise surface as a
+bare `SyntaxError` from `JSON.parse`, with nothing to say where it came from.
+
+Network failures and timeouts are left exactly as `fetch` raises them — a `TypeError` with
+the reason in `error.cause`, or a `DOMException` whose `name` is `"TimeoutError"`. Wrapping
+those would only hide the `cause`. See [timeoutMs](#timeoutms).
+
+Retries, polling and backoff are yours to decide on: the SDK sends one request per call.
+
+Two outcomes deliberately do not throw. `healthcheck()` answers `false` for a failing
+status rather than rejecting, since a server that is down is the answer it was asked for,
+and `error: 4` from `forcesave` comes back on the result, since nothing to save is an
+outcome rather than a failure.
+
+## The raw client
+
+`client.raw` holds the same seven endpoints, each answering with the untouched `Response`
+and none of them throwing on what the document server says:
+
+```ts
+const response = await client.raw.convert(request);
+
+response.ok;
+response.headers.get("x-request-id");
+
+const result = (await response.json()) as ConvertResponse;
+```
+
+It is the same instance the typed client sends its own requests through — the options, the
+headers, the deadline and the `fetch` are the ones you configured — so the two may be
+mixed freely. Reach for it when a status or a header matters to you, when a body has to be
+read some other way, or when an error is a value in your codebase rather than an
+exception. `client.options` and `client.raw.options` are the same frozen object.
+
+`getFile()` is the one method that behaves identically on both: a file is a stream, so the
+`Response` comes back unread either way.
 
 ## Options
 
@@ -439,7 +512,9 @@ copy of it.
 ```
 src/
   index.ts            public exports
-  client/index.ts     DocumentServerClient
+  client/index.ts     DocumentServerClient, the typed layer
+  client/raw.ts       DocumentServerRawClient, the transport
+  client/errors.ts    DocumentServerError and the rest
   client/options.ts   ClientOptions and RequestOptions
   client/meta.ts      server configuration and formats
   client/convert.ts   conversion request and response
@@ -465,12 +540,7 @@ npm run build       # tsup -> dist (ESM + CJS + .d.ts)
 a `.js` script from `url` and runs it against the Office JavaScript API to generate files:
 
 ```ts
-const response = await client.docbuilder({ url: "https://example.com/contract.js" });
-const result = (await response.json()) as BuilderResponse;
-
-if (result.error !== undefined) {
-  throw new Error(`build failed with code ${result.error}`);
-}
+const result = await client.docbuilder({ url: "https://example.com/contract.js" });
 
 result.urls; // { "output.docx": "https://docs.example.com/…/output.docx" }
 ```
@@ -479,7 +549,7 @@ The script decides what is produced: each `builder.SaveFile()` in it adds an ent
 `urls`, keyed by the file name it was saved under, so one build can return a document and
 a spreadsheet at once. As with a conversion, the service answers `200 OK` either way — the
 body carries `urls` or an `error` code, one of `-1`, `-2`, `-3`, `-4`, `-6` and `-8`,
-listed on `BuilderErrorCode`.
+listed on `BuilderErrorCode` and thrown as a `BuilderError`.
 
 Values for the script travel in `argument`, where it reads them back through its `Argument`
 global:
@@ -499,20 +569,16 @@ long-running script can outlast `timeoutMs`, so `async: true` returns at once wi
 key — and nothing else — until `end` turns `true`:
 
 ```ts
-const started = (await (await client.docbuilder({ async: true, url })).json()) as BuilderResponse;
+const started = await client.docbuilder({ async: true, url });
 
-if (started.key === undefined) throw new Error(`build failed: ${started.error}`);
+if (started.key === undefined) throw new Error("the builder service minted no key");
 
 let result = started;
 
 while (!result.end) {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  const response = await client.docbuilder({ async: true, key: started.key });
-
-  result = (await response.json()) as BuilderResponse;
-
-  if (result.error !== undefined) throw new Error(`build failed: ${result.error}`);
+  result = await client.docbuilder({ async: true, key: started.key });
 }
 
 result.urls; // { "output.docx": "…" }

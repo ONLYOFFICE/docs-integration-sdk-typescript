@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  BuilderError,
+  CommandError,
+  ConversionError,
   DocumentServerClient,
+  DocumentServerError,
+  DocumentServerHttpError,
+  DocumentServerParseError,
   type BuilderRequest,
   type BuilderResponse,
   type ClientOptions,
@@ -147,7 +153,7 @@ describe("options", () => {
     passed.timeoutMs = 1;
     passed.headers["x-tenant"] = "evil";
 
-    await client.healthcheck();
+    await client.raw.healthcheck();
 
     expect(client.options.baseUrl).toBe("https://docs.example.com");
     expect(client.options.timeoutMs).toBe(5000);
@@ -156,11 +162,14 @@ describe("options", () => {
   });
 });
 
-describe("healthcheck", () => {
+describe("raw.healthcheck", () => {
   it("sends GET to /healthcheck", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck();
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.healthcheck();
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://docs.example.com/healthcheck");
@@ -170,7 +179,10 @@ describe("healthcheck", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).healthcheck();
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.healthcheck();
 
     expect(calls[0]?.url).toBe("https://example.com/office/healthcheck");
   });
@@ -182,7 +194,7 @@ describe("healthcheck", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).healthcheck();
+    }).raw.healthcheck();
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -190,7 +202,10 @@ describe("healthcheck", () => {
   it("sends no body and no JSON headers", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck();
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.healthcheck();
 
     expect(calls[0]?.init?.body).toBeUndefined();
     expect(headerOf(calls[0], "content-type")).toBeNull();
@@ -200,7 +215,10 @@ describe("healthcheck", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck();
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.healthcheck();
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -211,7 +229,7 @@ describe("healthcheck", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).healthcheck();
+    }).raw.healthcheck();
 
     expect(response.status).toBe(200);
     await expect(response.text()).resolves.toBe("true");
@@ -223,7 +241,7 @@ describe("healthcheck", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).healthcheck();
+    }).raw.healthcheck();
 
     expect(response.ok).toBe(false);
     expect(response.status).toBe(503);
@@ -236,14 +254,14 @@ describe("healthcheck", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.healthcheck()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.healthcheck()).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("falls back to the global fetch", async () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).healthcheck();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.healthcheck();
 
     expect(calls).toHaveLength(1);
   });
@@ -253,13 +271,13 @@ describe("healthcheck", () => {
     const { fetch, calls } = spyFetch();
 
     vi.stubGlobal("fetch", fetch);
-    await client.healthcheck();
+    await client.raw.healthcheck();
 
     expect(calls).toHaveLength(1);
   });
 });
 
-describe("getConfig", () => {
+describe("raw.getConfig", () => {
   const config = {
     authorization: { header: "Authorization", prefix: "Bearer " },
     urls: {
@@ -275,7 +293,7 @@ describe("getConfig", () => {
   it("sends GET to /meta/config", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getConfig();
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://docs.example.com/meta/config");
@@ -285,7 +303,10 @@ describe("getConfig", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).getConfig();
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.getConfig();
 
     expect(calls[0]?.url).toBe("https://example.com/office/meta/config");
   });
@@ -297,7 +318,7 @@ describe("getConfig", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).getConfig();
+    }).raw.getConfig();
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -306,7 +327,7 @@ describe("getConfig", () => {
     // The endpoint describes the server rather than a document, so it takes no token.
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getConfig();
 
     expect(calls[0]?.init?.body).toBeUndefined();
     expect(headerOf(calls[0], "authorization")).toBeNull();
@@ -316,7 +337,7 @@ describe("getConfig", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getConfig();
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -328,7 +349,7 @@ describe("getConfig", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.getConfig()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.getConfig()).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("returns the response untouched", async () => {
@@ -337,7 +358,7 @@ describe("getConfig", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).getConfig();
+    }).raw.getConfig();
 
     expect(response.status).toBe(200);
     await expect(response.json() as Promise<ConfigResponse>).resolves.toEqual(config);
@@ -349,7 +370,7 @@ describe("getConfig", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).getConfig();
+    }).raw.getConfig();
 
     expect(response.ok).toBe(false);
     expect(response.status).toBe(404);
@@ -359,13 +380,13 @@ describe("getConfig", () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getConfig();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.getConfig();
 
     expect(calls).toHaveLength(1);
   });
 });
 
-describe("getFormats", () => {
+describe("raw.getFormats", () => {
   const formats = [
     {
       name: "docx",
@@ -381,7 +402,7 @@ describe("getFormats", () => {
   it("sends GET to /meta/formats", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getFormats();
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://docs.example.com/meta/formats");
@@ -391,7 +412,10 @@ describe("getFormats", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).getFormats();
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.getFormats();
 
     expect(calls[0]?.url).toBe("https://example.com/office/meta/formats");
   });
@@ -403,7 +427,7 @@ describe("getFormats", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).getFormats();
+    }).raw.getFormats();
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -411,7 +435,7 @@ describe("getFormats", () => {
   it("sends no body and no authorization header", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getFormats();
 
     expect(calls[0]?.init?.body).toBeUndefined();
     expect(headerOf(calls[0], "authorization")).toBeNull();
@@ -421,7 +445,7 @@ describe("getFormats", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.getFormats();
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -433,7 +457,7 @@ describe("getFormats", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.getFormats()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.getFormats()).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("returns the response untouched", async () => {
@@ -442,7 +466,7 @@ describe("getFormats", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).getFormats();
+    }).raw.getFormats();
 
     expect(response.status).toBe(200);
     await expect(response.json() as Promise<Format[]>).resolves.toEqual(formats);
@@ -454,7 +478,7 @@ describe("getFormats", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).getFormats();
+    }).raw.getFormats();
 
     expect(response.ok).toBe(false);
     expect(response.status).toBe(404);
@@ -464,13 +488,13 @@ describe("getFormats", () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getFormats();
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.getFormats();
 
     expect(calls).toHaveLength(1);
   });
 });
 
-describe("convert", () => {
+describe("raw.convert", () => {
   const docx: ConvertRequest = {
     filetype: "docx",
     key: "Khirz6zTPdfd7",
@@ -481,7 +505,9 @@ describe("convert", () => {
   it("posts the request to /converter", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
+      docx,
+    );
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://docs.example.com/converter?shardkey=Khirz6zTPdfd7");
@@ -491,7 +517,7 @@ describe("convert", () => {
   it("sends the request as a JSON body", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert({
       ...docx,
       async: true,
       pdf: { form: true },
@@ -512,7 +538,9 @@ describe("convert", () => {
   it("asks for JSON rather than the default XML", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
+      docx,
+    );
 
     expect(headerOf(calls[0], "accept")).toBe("application/json");
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
@@ -525,7 +553,7 @@ describe("convert", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).convert(docx);
+    }).raw.convert(docx);
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -537,7 +565,7 @@ describe("convert", () => {
       baseUrl: "https://docs.example.com",
       headers: { "Content-Type": "text/plain" },
       fetch,
-    }).convert(docx);
+    }).raw.convert(docx);
 
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
   });
@@ -545,7 +573,9 @@ describe("convert", () => {
   it("sends no authorization header when no token is given", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
+      docx,
+    );
 
     expect(headerOf(calls[0], "authorization")).toBeNull();
   });
@@ -553,7 +583,7 @@ describe("convert", () => {
   it("sends the token in an authorization header", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
       docx,
       "jwt.header.token",
     );
@@ -569,7 +599,7 @@ describe("convert", () => {
       authorizationHeader: "X-Docs-Token",
       authorizationPrefix: "",
       fetch,
-    }).convert(docx, "jwt.header.token");
+    }).raw.convert(docx, "jwt.header.token");
 
     expect(headerOf(calls[0], "x-docs-token")).toBe("jwt.header.token");
     expect(headerOf(calls[0], "authorization")).toBeNull();
@@ -582,7 +612,7 @@ describe("convert", () => {
       baseUrl: "https://docs.example.com",
       headers: { Authorization: "Bearer stale" },
       fetch,
-    }).convert(docx, "jwt.header.token");
+    }).raw.convert(docx, "jwt.header.token");
 
     expect(headerOf(calls[0], "authorization")).toBe("Bearer jwt.header.token");
   });
@@ -592,7 +622,7 @@ describe("convert", () => {
     const { fetch, calls } = spyFetch();
     const request: ConvertRequest = { ...docx, token: "jwt.body.token" };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
       request,
       "jwt.header.token",
     );
@@ -604,7 +634,7 @@ describe("convert", () => {
     const { fetch } = spyFetch();
     const request: ConvertRequest = { ...docx };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
       request,
       "jwt.header.token",
     );
@@ -615,7 +645,9 @@ describe("convert", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).raw.convert(
+      docx,
+    );
 
     expect(calls[0]?.url).toBe("https://example.com/office/converter?shardkey=Khirz6zTPdfd7");
   });
@@ -623,7 +655,7 @@ describe("convert", () => {
   it("pins the request to a shard with the document key", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert({
       ...docx,
       key: "a b&c",
     });
@@ -634,7 +666,9 @@ describe("convert", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
+      docx,
+    );
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -646,7 +680,7 @@ describe("convert", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.convert(docx)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.convert(docx)).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("returns the response untouched", async () => {
@@ -661,7 +695,7 @@ describe("convert", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).convert(docx);
+    }).raw.convert(docx);
 
     expect(response.status).toBe(200);
     await expect(response.json() as Promise<ConvertResponse>).resolves.toEqual(body);
@@ -674,7 +708,7 @@ describe("convert", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).convert(docx);
+    }).raw.convert(docx);
 
     expect(response.ok).toBe(true);
     await expect(response.json() as Promise<ConvertResponse>).resolves.toEqual({ error: -8 });
@@ -684,19 +718,21 @@ describe("convert", () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).convert(docx);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.convert(docx);
 
     expect(calls).toHaveLength(1);
   });
 });
 
-describe("command", () => {
+describe("raw.command", () => {
   const info: CommandRequest = { c: "info", key: "Khirz6zTPdfd7" };
 
   it("posts the command to /command", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
+      info,
+    );
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://docs.example.com/command?shardkey=Khirz6zTPdfd7");
@@ -706,7 +742,7 @@ describe("command", () => {
   it("sends the command as a JSON body", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command({
       c: "meta",
       key: "Khirz6zTPdfd7",
       meta: { title: "Contract.docx" },
@@ -722,7 +758,9 @@ describe("command", () => {
   it("asks for JSON rather than the default XML", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
+      info,
+    );
 
     expect(headerOf(calls[0], "accept")).toBe("application/json");
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
@@ -735,7 +773,7 @@ describe("command", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).command(info);
+    }).raw.command(info);
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -743,7 +781,9 @@ describe("command", () => {
   it("sends no authorization header when no token is given", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
+      info,
+    );
 
     expect(headerOf(calls[0], "authorization")).toBeNull();
   });
@@ -751,7 +791,7 @@ describe("command", () => {
   it("sends the token in an authorization header", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
       info,
       "jwt.header.token",
     );
@@ -767,7 +807,7 @@ describe("command", () => {
       authorizationHeader: "X-Docs-Token",
       authorizationPrefix: "",
       fetch,
-    }).command(info, "jwt.header.token");
+    }).raw.command(info, "jwt.header.token");
 
     expect(headerOf(calls[0], "x-docs-token")).toBe("jwt.header.token");
     expect(headerOf(calls[0], "authorization")).toBeNull();
@@ -777,7 +817,7 @@ describe("command", () => {
     const { fetch, calls } = spyFetch();
     const request: CommandRequest = { ...info, token: "jwt.body.token" };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
       request,
       "jwt.header.token",
     );
@@ -789,7 +829,7 @@ describe("command", () => {
     const { fetch } = spyFetch();
     const request: CommandRequest = { ...info };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
       request,
       "jwt.header.token",
     );
@@ -800,7 +840,9 @@ describe("command", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).raw.command(
+      info,
+    );
 
     expect(calls[0]?.url).toBe("https://example.com/office/command?shardkey=Khirz6zTPdfd7");
   });
@@ -808,7 +850,7 @@ describe("command", () => {
   it("pins the command to a shard with the document key", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command({
       ...info,
       key: "a b&c",
     });
@@ -821,7 +863,7 @@ describe("command", () => {
     async (request) => {
       const { fetch, calls } = spyFetch();
 
-      await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(
+      await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
         request,
       );
 
@@ -832,7 +874,9 @@ describe("command", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.command(
+      info,
+    );
 
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
@@ -844,7 +888,7 @@ describe("command", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.command(info)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.command(info)).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("returns the response untouched", async () => {
@@ -854,7 +898,7 @@ describe("command", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).command(info);
+    }).raw.command(info);
 
     expect(response.status).toBe(200);
     await expect(response.json() as Promise<CommandResponse>).resolves.toEqual(body);
@@ -867,7 +911,7 @@ describe("command", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).command(info);
+    }).raw.command(info);
 
     expect(response.ok).toBe(true);
     await expect(response.json() as Promise<CommandResponse>).resolves.toEqual({ error: 6 });
@@ -877,19 +921,19 @@ describe("command", () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).command(info);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.command(info);
 
     expect(calls).toHaveLength(1);
   });
 });
 
-describe("docbuilder", () => {
+describe("raw.docbuilder", () => {
   const script: BuilderRequest = { url: "https://example.com/script.js" };
 
   it("posts the request to /docbuilder", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       script,
     );
 
@@ -901,7 +945,7 @@ describe("docbuilder", () => {
   it("sends the request as a JSON body", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder({
       async: true,
       url: "https://example.com/script.js",
       argument: { title: "Contract", rows: [1, 2] },
@@ -917,7 +961,7 @@ describe("docbuilder", () => {
   it("asks for JSON rather than the default XML", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       script,
     );
 
@@ -932,7 +976,7 @@ describe("docbuilder", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).docbuilder(script);
+    }).raw.docbuilder(script);
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
   });
@@ -940,7 +984,7 @@ describe("docbuilder", () => {
   it("sends no authorization header when no token is given", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       script,
     );
 
@@ -950,7 +994,7 @@ describe("docbuilder", () => {
   it("sends the token in an authorization header", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       script,
       "jwt.header.token",
     );
@@ -966,7 +1010,7 @@ describe("docbuilder", () => {
       authorizationHeader: "X-Docs-Token",
       authorizationPrefix: "",
       fetch,
-    }).docbuilder(script, "jwt.header.token");
+    }).raw.docbuilder(script, "jwt.header.token");
 
     expect(headerOf(calls[0], "x-docs-token")).toBe("jwt.header.token");
     expect(headerOf(calls[0], "authorization")).toBeNull();
@@ -976,7 +1020,7 @@ describe("docbuilder", () => {
     const { fetch, calls } = spyFetch();
     const request: BuilderRequest = { ...script, token: "jwt.body.token" };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       request,
       "jwt.header.token",
     );
@@ -988,7 +1032,7 @@ describe("docbuilder", () => {
     const { fetch } = spyFetch();
     const request: BuilderRequest = { ...script };
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       request,
       "jwt.header.token",
     );
@@ -999,9 +1043,10 @@ describe("docbuilder", () => {
   it("keeps the path prefix of the base URL", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).docbuilder(
-      script,
-    );
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.docbuilder(script);
 
     expect(calls[0]?.url).toBe("https://example.com/office/docbuilder");
   });
@@ -1009,7 +1054,7 @@ describe("docbuilder", () => {
   it("pins a poll to a shard with the build key", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder({
       async: true,
       key: "a b&c",
     });
@@ -1020,7 +1065,7 @@ describe("docbuilder", () => {
   it("sends no shardkey before the service has minted a key", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder({
       async: true,
       url: "https://example.com/script.js",
     });
@@ -1031,7 +1076,7 @@ describe("docbuilder", () => {
   it("passes an abort signal", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).docbuilder(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.docbuilder(
       script,
     );
 
@@ -1045,7 +1090,7 @@ describe("docbuilder", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.docbuilder(script)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.docbuilder(script)).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
   it("returns the response untouched", async () => {
@@ -1059,7 +1104,7 @@ describe("docbuilder", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).docbuilder(script);
+    }).raw.docbuilder(script);
 
     expect(response.status).toBe(200);
     await expect(response.json() as Promise<BuilderResponse>).resolves.toEqual(body);
@@ -1072,7 +1117,7 @@ describe("docbuilder", () => {
     const response = await new DocumentServerClient({
       baseUrl: "https://docs.example.com",
       fetch,
-    }).docbuilder(script);
+    }).raw.docbuilder(script);
 
     expect(response.ok).toBe(true);
     await expect(response.json() as Promise<BuilderResponse>).resolves.toEqual({ error: -8 });
@@ -1082,7 +1127,7 @@ describe("docbuilder", () => {
     const { fetch, calls } = spyFetch();
     vi.stubGlobal("fetch", fetch);
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).docbuilder(script);
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.docbuilder(script);
 
     expect(calls).toHaveLength(1);
   });
@@ -1280,7 +1325,7 @@ describe("timeout validation", () => {
     const { fetch, calls } = spyFetch();
     const client = new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch });
 
-    await expect(client.healthcheck({ timeoutMs })).rejects.toThrow(TypeError);
+    await expect(client.raw.healthcheck({ timeoutMs })).rejects.toThrow(TypeError);
     await expect(
       client.getFile("/cache/files/output.pdf", undefined, { timeoutMs }),
     ).rejects.toThrow(TypeError);
@@ -1310,7 +1355,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).healthcheck({ headers: { "x-request-id": "r-1" } });
+    }).raw.healthcheck({ headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
     expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
@@ -1323,7 +1368,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).getConfig({ headers: { "x-request-id": "r-1" } });
+    }).raw.getConfig({ headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
     expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
@@ -1336,7 +1381,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).getFormats({ headers: { "x-request-id": "r-1" } });
+    }).raw.getFormats({ headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
     expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
@@ -1349,7 +1394,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).healthcheck({ headers: { "X-Tenant": "globex" } });
+    }).raw.healthcheck({ headers: { "X-Tenant": "globex" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("globex");
   });
@@ -1361,7 +1406,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).convert(docx, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
+    }).raw.convert(docx, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
     expect(headerOf(calls[0], "accept")).toBe("application/json");
@@ -1377,7 +1422,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).command({ c: "version" }, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
+    }).raw.command({ c: "version" }, "jwt.header.token", { headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "content-type")).toBe("application/json");
     expect(headerOf(calls[0], "accept")).toBe("application/json");
@@ -1393,7 +1438,7 @@ describe("request options", () => {
       baseUrl: "https://docs.example.com",
       headers: { "x-tenant": "acme" },
       fetch,
-    }).docbuilder({ url: "https://example.com/script.js" }, "jwt.header.token", {
+    }).raw.docbuilder({ url: "https://example.com/script.js" }, "jwt.header.token", {
       headers: { "x-request-id": "r-1" },
     });
 
@@ -1407,7 +1452,7 @@ describe("request options", () => {
   it("lets a request header override the authorization convert built", async () => {
     const { fetch, calls } = spyFetch();
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).convert(
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.convert(
       docx,
       "jwt.header.token",
       { headers: { authorization: "Bearer override" } },
@@ -1423,7 +1468,7 @@ describe("request options", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.healthcheck({ timeoutMs: 20 })).rejects.toMatchObject({
+    await expect(client.raw.healthcheck({ timeoutMs: 20 })).rejects.toMatchObject({
       name: "TimeoutError",
     });
   });
@@ -1435,7 +1480,7 @@ describe("request options", () => {
       fetch: hangingFetch,
     });
 
-    const response = client.convert(docx, undefined, { signal: controller.signal });
+    const response = client.raw.convert(docx, undefined, { signal: controller.signal });
 
     controller.abort(new Error("cancelled by the caller"));
 
@@ -1446,7 +1491,7 @@ describe("request options", () => {
     const { fetch, calls } = spyFetch();
     const reason = new Error("cancelled before the call");
 
-    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).healthcheck({
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).raw.healthcheck({
       signal: AbortSignal.abort(reason),
     });
 
@@ -1462,8 +1507,342 @@ describe("request options", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.healthcheck({ signal: controller.signal })).rejects.toMatchObject({
+    await expect(client.raw.healthcheck({ signal: controller.signal })).rejects.toMatchObject({
       name: "TimeoutError",
     });
+  });
+});
+
+describe("healthcheck", () => {
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("answers true when the server says so", async () => {
+    await expect(client(() => new Response("true")).healthcheck()).resolves.toBe(true);
+  });
+
+  it("ignores the whitespace around the answer", async () => {
+    await expect(client(() => new Response(" true\n")).healthcheck()).resolves.toBe(true);
+  });
+
+  it("answers false on anything else", async () => {
+    await expect(client(() => new Response("false")).healthcheck()).resolves.toBe(false);
+    await expect(client(() => new Response("<html>")).healthcheck()).resolves.toBe(false);
+  });
+
+  it("answers false rather than throwing on a failing status", async () => {
+    await expect(client(() => new Response("down", { status: 503 })).healthcheck()).resolves.toBe(
+      false,
+    );
+  });
+
+  it("still rejects when the request never completes", async () => {
+    const hung = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: hangingFetch,
+    });
+
+    await expect(hung.healthcheck()).rejects.toMatchObject({ name: "TimeoutError" });
+  });
+});
+
+describe("getConfig", () => {
+  const config: ConfigResponse = {
+    authorization: { header: "Authorization", prefix: "Bearer " },
+    urls: {
+      api: "/web-apps/apps/api/documents/api.js",
+      command: "/command",
+      converter: "/converter",
+      docbuilder: "/docbuilder",
+    },
+    limits: { maxFileSize: 104_857_600 },
+    langs: ["en", "pt-PT", "zh-TW"],
+  };
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses the body into the configuration", async () => {
+    const result = await client(() => Response.json(config)).getConfig();
+
+    expect(result).toEqual(config);
+    expect(result.authorization.header).toBe("Authorization");
+    expect(result.limits.maxFileSize).toBe(104_857_600);
+  });
+
+  it("throws on a failing status", async () => {
+    const failing = client(() => new Response("not found", { status: 404 }));
+
+    await expect(failing.getConfig()).rejects.toThrow(DocumentServerHttpError);
+    await expect(failing.getConfig()).rejects.toMatchObject({ status: 404, body: "not found" });
+  });
+
+  it("names the status and the body it was given", async () => {
+    const failing = client(() => new Response("gateway is down", { status: 502 }));
+
+    await expect(failing.getConfig()).rejects.toThrow(
+      "the document server answered 502: gateway is down",
+    );
+  });
+
+  it("truncates a long error body", async () => {
+    const failing = client(() => new Response("x".repeat(1000), { status: 500 }));
+
+    await expect(failing.getConfig()).rejects.toMatchObject({ body: `${"x".repeat(512)}…` });
+  });
+
+  it("throws on a body that is not JSON", async () => {
+    // A reverse proxy answering 200 with a page of its own is the case this guards.
+    const html = client(() => new Response("<html>hello</html>"));
+
+    await expect(html.getConfig()).rejects.toThrow(DocumentServerParseError);
+    await expect(html.getConfig()).rejects.toThrow("is not JSON: <html>hello</html>");
+  });
+
+  it("keeps the parse failure as the cause", async () => {
+    const html = client(() => new Response("<html>"));
+
+    await expect(html.getConfig()).rejects.toMatchObject({
+      cause: expect.any(SyntaxError) as unknown,
+    });
+  });
+
+  it("throws on JSON that is not an object", async () => {
+    await expect(client(() => Response.json([])).getConfig()).rejects.toThrow(
+      DocumentServerParseError,
+    );
+    await expect(client(() => Response.json(null)).getConfig()).rejects.toThrow(
+      "is not a JSON object: null",
+    );
+  });
+});
+
+describe("getFormats", () => {
+  const formats: Format[] = [
+    {
+      name: "docx",
+      type: "word",
+      actions: ["view", "edit"],
+      convert: ["pdf", "txt"],
+      mime: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    },
+  ];
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses the body into the list of formats", async () => {
+    const result = await client(() => Response.json(formats)).getFormats();
+
+    expect(result).toEqual(formats);
+    expect(result[0]?.type).toBe("word");
+  });
+
+  it("throws on JSON that is not an array", async () => {
+    await expect(client(() => Response.json({ formats })).getFormats()).rejects.toThrow(
+      "is not a JSON array",
+    );
+  });
+
+  it("throws on a failing status", async () => {
+    await expect(client(() => new Response("", { status: 404 })).getFormats()).rejects.toThrow(
+      DocumentServerHttpError,
+    );
+  });
+});
+
+describe("convert", () => {
+  const docx: ConvertRequest = {
+    filetype: "docx",
+    key: "Khirz6zTPdfd7",
+    outputtype: "pdf",
+    url: "https://example.com/document.docx",
+  };
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses a finished conversion", async () => {
+    const body: ConvertResponse = {
+      endConvert: true,
+      fileType: "pdf",
+      fileUrl: "https://docs.example.com/converted.pdf",
+      percent: 100,
+    };
+
+    await expect(client(() => Response.json(body)).convert(docx)).resolves.toEqual(body);
+  });
+
+  it("returns the progress of an unfinished conversion", async () => {
+    const body: ConvertResponse = { endConvert: false, percent: 20 };
+
+    await expect(client(() => Response.json(body)).convert(docx)).resolves.toEqual(body);
+  });
+
+  it("throws on an error code the service answered 200 with", async () => {
+    const failing = client(() => Response.json({ error: -5 }));
+
+    await expect(failing.convert(docx)).rejects.toThrow(ConversionError);
+    await expect(failing.convert(docx)).rejects.toMatchObject({ code: -5 });
+    await expect(failing.convert(docx)).rejects.toThrow(
+      "conversion failed with code -5: incorrect password",
+    );
+  });
+
+  it("puts the error under the common base class", async () => {
+    await expect(client(() => Response.json({ error: -8 })).convert(docx)).rejects.toThrow(
+      DocumentServerError,
+    );
+  });
+
+  it("carries the response the error was read from", async () => {
+    const failing = client(() => Response.json({ error: -2 }));
+    const error = await failing.convert(docx).then(
+      () => undefined,
+      (reason: unknown) => reason as ConversionError,
+    );
+
+    expect(error?.response.status).toBe(200);
+  });
+
+  it("names a code it does not know", async () => {
+    await expect(client(() => Response.json({ error: -42 })).convert(docx)).rejects.toThrow(
+      "conversion failed with code -42: unrecognized error code",
+    );
+  });
+
+  it("throws on a failing status", async () => {
+    await expect(
+      client(() => new Response("bad request", { status: 400 })).convert(docx),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+});
+
+describe("command", () => {
+  const info: CommandRequest = { c: "info", key: "Khirz6zTPdfd7" };
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses a successful command", async () => {
+    const body: CommandResponse = { error: 0, key: "Khirz6zTPdfd7", users: ["6d5a81d0"] };
+
+    await expect(client(() => Response.json(body)).command(info)).resolves.toEqual(body);
+  });
+
+  it("throws on a non-zero error code", async () => {
+    const failing = client(() => Response.json({ error: 6 }));
+
+    await expect(failing.command(info)).rejects.toThrow(CommandError);
+    await expect(failing.command(info)).rejects.toMatchObject({ code: 6 });
+    await expect(failing.command(info)).rejects.toThrow(
+      "command failed with code 6: invalid token",
+    );
+  });
+
+  it("hands back code 4 rather than throwing", async () => {
+    const body: CommandResponse = { error: 4, key: "Khirz6zTPdfd7" };
+    const nothing = client(() => Response.json(body));
+
+    await expect(nothing.command({ c: "forcesave", key: "Khirz6zTPdfd7" })).resolves.toEqual(body);
+  });
+
+  it("throws on a failing status", async () => {
+    await expect(client(() => new Response("", { status: 500 })).command(info)).rejects.toThrow(
+      DocumentServerHttpError,
+    );
+  });
+});
+
+describe("docbuilder", () => {
+  const script: BuilderRequest = { url: "https://example.com/script.js" };
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses a finished build", async () => {
+    const body: BuilderResponse = {
+      key: "af86C7e71Ca8",
+      end: true,
+      urls: { "output.docx": "https://docs.example.com/output.docx" },
+    };
+
+    await expect(client(() => Response.json(body)).docbuilder(script)).resolves.toEqual(body);
+  });
+
+  it("returns the key of a build that is still running", async () => {
+    const body: BuilderResponse = { key: "af86C7e71Ca8", end: false };
+
+    await expect(
+      client(() => Response.json(body)).docbuilder({ async: true, ...script }),
+    ).resolves.toEqual(body);
+  });
+
+  it("throws on an error code the service answered 200 with", async () => {
+    const failing = client(() => Response.json({ error: -4 }));
+
+    await expect(failing.docbuilder(script)).rejects.toThrow(BuilderError);
+    await expect(failing.docbuilder(script)).rejects.toMatchObject({ code: -4 });
+    await expect(failing.docbuilder(script)).rejects.toThrow(
+      "build failed with code -4: error while downloading the script or a file it opens",
+    );
+  });
+
+  it("throws on a failing status", async () => {
+    await expect(
+      client(() => new Response("", { status: 503 })).docbuilder(script),
+    ).rejects.toThrow(DocumentServerHttpError);
+  });
+});
+
+describe("the raw client underneath", () => {
+  it("shares the options with the typed one", () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+    });
+
+    expect(client.options).toBe(client.raw.options);
+    expect(client.options.baseUrl).toBe("https://docs.example.com");
+  });
+
+  it("answers with the untouched response", async () => {
+    const { fetch } = spyFetch(() => Response.json({ error: -8 }));
+    const client = new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch });
+
+    const response = await client.raw.convert({
+      filetype: "docx",
+      key: "Khirz6zTPdfd7",
+      outputtype: "pdf",
+      url: "https://example.com/document.docx",
+    });
+
+    expect(response.ok).toBe(true);
+    expect(response.bodyUsed).toBe(false);
   });
 });

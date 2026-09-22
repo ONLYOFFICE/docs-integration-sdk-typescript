@@ -1,4 +1,13 @@
 export { DocumentServerClient } from "./client/index.js";
+export { DocumentServerRawClient } from "./client/raw.js";
+export {
+  BuilderError,
+  CommandError,
+  ConversionError,
+  DocumentServerError,
+  DocumentServerHttpError,
+  DocumentServerParseError,
+} from "./client/errors.js";
 export type { ClientOptions, RequestOptions } from "./client/options.js";
 export type {
   BuilderArgument,
