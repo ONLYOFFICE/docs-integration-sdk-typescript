@@ -279,13 +279,18 @@ from where the integration runs. Only the path and the query of that URL mean an
 you; the host is the one you already configured.
 
 No token is taken: these locations are signed by the document server itself and carry
-their own expiry in the query, so no authorization header is sent. Everything else is an
-ordinary request — the configured `headers`, `timeoutMs` and `fetch` all apply, and the
-`Response` comes back unread, so a large file can be streamed rather than buffered:
+their own expiry in the query, so no authorization header is sent. The configured
+`headers` and `fetch` apply as they do everywhere else, and the `Response` comes back
+unread, so a large file can be streamed rather than buffered:
 
 ```ts
 await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
 ```
+
+`timeoutMs` is the one thing that behaves differently here: it bounds the wait for the
+response and is then called off, so reading the body is not racing a deadline. A `signal`
+of your own remains the way to cancel a download in progress. See
+[timeoutMs](#timeoutms).
 
 ## Options
 
@@ -336,6 +341,30 @@ A request that runs out of time rejects with a `DOMException` whose `name` is
 `"TimeoutError"`. A server that cannot be reached rejects with `TypeError: fetch failed`;
 the reason is in `error.cause` — on Node an `AggregateError` carrying `code`, such as
 `"ECONNREFUSED"`.
+
+The deadline covers the whole exchange, reading the response body included — an abort
+errors the body stream, not just the wait for the headers. That is what you want from the
+endpoints that answer with a small JSON body, and wrong for `getFile()`, whose body is a
+file of any size: a download slower than the deadline would fail halfway through, however
+healthy the server. So `getFile()` alone calls the deadline off once the response has
+arrived, and the body may then be read for as long as it takes.
+
+Nothing else changes for it: the deadline still governs the wait for the response, and a
+`signal` of your own stays armed throughout, which is how a download in progress is
+cancelled. A download that stalls mid-body is no longer cut short by the SDK, though —
+on Node undici ends it after 5 minutes of silence, and elsewhere a `signal` is the only
+way out.
+
+The value is validated in the constructor, the way `baseUrl` is, and has to be a whole
+number of milliseconds from `1` to `2147483647`, the largest delay a timer takes:
+
+```ts
+new DocumentServerClient({ baseUrl: "https://docs.example.com", timeoutMs: 1.5 });
+// TypeError: timeoutMs must be an integer from 1 to 2147483647, got: 1.5
+```
+
+A fractional value is the one worth guarding against: `(2.5 * 1000) / 3` looks harmless
+and used to fail every request with a `RangeError` from inside the timer.
 
 ### authorizationHeader and authorizationPrefix
 
@@ -389,11 +418,11 @@ await client.convert(request, token, {
 });
 ```
 
-| Option      | Description                                                                  |
-| ----------- | ---------------------------------------------------------------------------- |
-| `signal`    | Cancels the call. The deadline still applies alongside it.                   |
-| `timeoutMs` | Deadline for this call, in place of the configured one.                      |
-| `headers`   | Headers laid over the configured ones. Names are matched case-insensitively. |
+| Option      | Description                                                                     |
+| ----------- | ------------------------------------------------------------------------------- |
+| `signal`    | Cancels the call. The deadline still applies alongside it.                      |
+| `timeoutMs` | Deadline for this call, in place of the configured one. Validated the same way. |
+| `headers`   | Headers laid over the configured ones. Names are matched case-insensitively.    |
 
 `signal` is joined with the deadline through `AbortSignal.any()`, so whichever fires first
 aborts the request: a cancelled call rejects with the reason the signal carries, a call

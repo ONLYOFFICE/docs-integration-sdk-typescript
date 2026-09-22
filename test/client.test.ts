@@ -13,6 +13,8 @@ import {
   type RequestOptions,
 } from "../src/index.js";
 
+const MAX_TIMEOUT_MS = 2_147_483_647;
+
 interface RecordedCall {
   url: string;
   init: RequestInit | undefined;
@@ -1209,6 +1211,80 @@ describe("getFile", () => {
     await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getFile(path);
 
     expect(calls).toHaveLength(1);
+  });
+
+  it("calls the deadline off once the response has arrived", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch,
+    }).getFile(path);
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    expect(calls[0]?.init?.signal?.aborted).toBe(false);
+  });
+
+  it("leaves the caller signal armed once the deadline is off", async () => {
+    const { fetch, calls } = spyFetch();
+    const controller = new AbortController();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch,
+    }).getFile(path, undefined, { signal: controller.signal });
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(calls[0]?.init?.signal?.aborted).toBe(false);
+
+    controller.abort();
+    expect(calls[0]?.init?.signal?.aborted).toBe(true);
+  });
+});
+
+describe("timeout validation", () => {
+  const invalid: [string, number][] = [
+    ["zero", 0],
+    ["negative", -1],
+    ["fractional", 1.5],
+    ["not a number", Number.NaN],
+    ["infinite", Number.POSITIVE_INFINITY],
+    ["past the timer maximum", 2_147_483_648],
+  ];
+
+  it.each(invalid)("throws in the constructor on a %s timeout", (_name, timeoutMs) => {
+    expect(
+      () => new DocumentServerClient({ baseUrl: "https://docs.example.com", timeoutMs }),
+    ).toThrow(TypeError);
+  });
+
+  it("names the offending value", () => {
+    expect(
+      () => new DocumentServerClient({ baseUrl: "https://docs.example.com", timeoutMs: 1.5 }),
+    ).toThrow("timeoutMs must be an integer from 1 to 2147483647, got: 1.5");
+  });
+
+  it("accepts the bounds of the range", () => {
+    for (const timeoutMs of [1, MAX_TIMEOUT_MS]) {
+      expect(
+        new DocumentServerClient({ baseUrl: "https://docs.example.com", timeoutMs }).options
+          .timeoutMs,
+      ).toBe(timeoutMs);
+    }
+  });
+
+  it.each(invalid)("rejects a per-request %s timeout", async (_name, timeoutMs) => {
+    const { fetch, calls } = spyFetch();
+    const client = new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch });
+
+    await expect(client.healthcheck({ timeoutMs })).rejects.toThrow(TypeError);
+    await expect(
+      client.getFile("/cache/files/output.pdf", undefined, { timeoutMs }),
+    ).rejects.toThrow(TypeError);
+    expect(calls).toHaveLength(0);
   });
 });
 
