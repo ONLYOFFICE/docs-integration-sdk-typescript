@@ -1,3 +1,4 @@
+import type { BuilderRequest } from "./builder.js";
 import type { CommandRequest } from "./command.js";
 import type { ConvertRequest } from "./convert.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
@@ -127,6 +128,20 @@ export class DocumentServerClient {
 
     return await this.#request(
       "/command",
+      { method: "POST", query, json: request, token },
+      options,
+    );
+  }
+
+  async docbuilder(
+    request: BuilderRequest,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<Response> {
+    const query = request.key === undefined ? undefined : { shardkey: request.key };
+
+    return await this.#request(
+      "/docbuilder",
       { method: "POST", query, json: request, token },
       options,
     );

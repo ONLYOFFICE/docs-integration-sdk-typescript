@@ -1,6 +1,14 @@
 export { DocumentServerClient } from "./client/index.js";
 export type { ClientOptions, RequestOptions } from "./client/options.js";
 export type {
+  BuilderArgument,
+  BuilderErrorCode,
+  BuilderRequest,
+  BuilderResponse,
+  BuildRequest,
+  BuildResultRequest,
+} from "./client/builder.js";
+export type {
   CommandErrorCode,
   CommandRequest,
   CommandResponse,

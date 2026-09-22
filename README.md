@@ -5,8 +5,8 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors.
 Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, Deno, Bun,
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
-Early stage: the client currently covers the health check, the conversion API and the
-command service.
+Early stage: the client currently covers the health check, the conversion API, the command
+service and the document builder.
 
 ## Installation
 
@@ -339,3 +339,77 @@ npm run lint        # eslint
 npm run format      # prettier --write
 npm run build       # tsup -> dist (ESM + CJS + .d.ts)
 ```
+
+## Document builder
+
+`docbuilder()` posts to `/docbuilder`, the [document builder API][builder-api], which downloads
+a `.js` script from `url` and runs it against the Office JavaScript API to generate files:
+
+```ts
+const response = await client.docbuilder({ url: "https://example.com/contract.js" });
+const result = (await response.json()) as BuilderResponse;
+
+if (result.error !== undefined) {
+  throw new Error(`build failed with code ${result.error}`);
+}
+
+result.urls; // { "output.docx": "https://docs.example.com/…/output.docx" }
+```
+
+The script decides what is produced: each `builder.SaveFile()` in it adds an entry to
+`urls`, keyed by the file name it was saved under, so one build can return a document and
+a spreadsheet at once. As with a conversion, the service answers `200 OK` either way — the
+body carries `urls` or an `error` code, one of `-1`, `-2`, `-3`, `-4`, `-6` and `-8`,
+listed on `BuilderErrorCode`.
+
+Values for the script travel in `argument`, where it reads them back through its `Argument`
+global:
+
+```ts
+await client.docbuilder({
+  url: "https://example.com/contract.js",
+  argument: { customer: "Acme", total: 1499, items: ["License", "Support"] },
+});
+```
+
+### Synchronous and asynchronous builds
+
+By default the document server holds the connection open until the files are ready. A
+long-running script can outlast `timeoutMs`, so `async: true` returns at once with
+`end: false` and the `key` the service minted for the build; repeat the request with that
+key — and nothing else — until `end` turns `true`:
+
+```ts
+const started = (await (await client.docbuilder({ async: true, url })).json()) as BuilderResponse;
+
+if (started.key === undefined) throw new Error(`build failed: ${started.error}`);
+
+let result = started;
+
+while (!result.end) {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const response = await client.docbuilder({ async: true, key: started.key });
+
+  result = (await response.json()) as BuilderResponse;
+
+  if (result.error !== undefined) throw new Error(`build failed: ${result.error}`);
+}
+
+result.urls; // { "output.docx": "…" }
+```
+
+`BuilderRequest` is a union of the two: a request that starts a build needs `url`, and one
+that collects the result needs `key`, so neither can be sent empty. The `shardkey` query
+parameter carries the build key, which keeps every poll on the node running the build; the
+first request has no key yet and is sent without it.
+
+Signing works exactly as it does elsewhere — in the body as `token`, signing the body
+itself, or in a header as the second argument, signing the body wrapped as `{ payload: … }`:
+
+```ts
+await client.docbuilder({ ...request, token: jwt.sign(request, secret) });
+await client.docbuilder(request, jwt.sign({ payload: request }, secret));
+```
+
+[builder-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/
