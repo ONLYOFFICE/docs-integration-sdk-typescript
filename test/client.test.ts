@@ -1916,3 +1916,101 @@ describe("a zero error code", () => {
     ).resolves.toEqual(body);
   });
 });
+
+describe("recognizing an error", () => {
+  const response = new Response("", { status: 500 });
+
+  const errors = {
+    http: new DocumentServerHttpError(response, "down"),
+    parse: new DocumentServerParseError("not JSON", response, "<html>"),
+    conversion: new ConversionError(-5, response),
+    command: new CommandError(6, response),
+    builder: new BuilderError(-4, response),
+  };
+
+  it("keeps instanceof working", () => {
+    expect(errors.conversion).toBeInstanceOf(ConversionError);
+    expect(errors.conversion).toBeInstanceOf(DocumentServerError);
+    expect(errors.conversion).toBeInstanceOf(Error);
+  });
+
+  it("names the kind of failure it stands for", () => {
+    expect(Object.entries(errors).map(([kind, error]) => [kind, error.kind])).toEqual(
+      Object.keys(errors).map((kind) => [kind, kind]),
+    );
+  });
+
+  it("takes every error of the SDK", () => {
+    for (const error of Object.values(errors)) {
+      expect(DocumentServerError.is(error)).toBe(true);
+    }
+  });
+
+  it("tells one error of the SDK from another", () => {
+    expect(ConversionError.is(errors.conversion)).toBe(true);
+    expect(ConversionError.is(errors.command)).toBe(false);
+    expect(CommandError.is(errors.command)).toBe(true);
+    expect(BuilderError.is(errors.builder)).toBe(true);
+    expect(DocumentServerHttpError.is(errors.http)).toBe(true);
+    expect(DocumentServerParseError.is(errors.parse)).toBe(true);
+    expect(DocumentServerParseError.is(errors.http)).toBe(false);
+  });
+
+  it.each([
+    ["a plain error", new Error("nope")],
+    ["a type error", new TypeError("nope")],
+    ["an object", { kind: "conversion", code: -5 }],
+    ["null", null],
+    ["undefined", undefined],
+    ["a string", "conversion failed"],
+  ])("takes nothing else: %s", (_name, value) => {
+    expect(DocumentServerError.is(value)).toBe(false);
+    expect(ConversionError.is(value)).toBe(false);
+  });
+
+  it("takes an error thrown by a second copy of the package", () => {
+    // A dual bundle hands the app two copies of the class, and instanceof knows
+    // only the one it was compiled against.
+    const brand = Symbol.for("@onlyoffice/docs-integration-sdk.error");
+
+    class ForeignConversionError extends Error {
+      readonly kind = "conversion";
+      readonly code = -5;
+
+      get [brand](): true {
+        return true;
+      }
+    }
+
+    const foreign = new ForeignConversionError();
+
+    expect(foreign).not.toBeInstanceOf(ConversionError);
+    expect(DocumentServerError.is(foreign)).toBe(true);
+    expect(ConversionError.is(foreign)).toBe(true);
+    expect(CommandError.is(foreign)).toBe(false);
+  });
+
+  it("narrows to the error of that kind", () => {
+    const seen: string[] = [];
+
+    for (const error of Object.values<unknown>(errors)) {
+      if (!DocumentServerError.is(error)) continue;
+
+      switch (error.kind) {
+        case "http":
+          seen.push(`http ${String(error.status)}`);
+          break;
+        case "parse":
+          seen.push(`parse ${error.body}`);
+          break;
+        case "conversion":
+        case "command":
+        case "builder":
+          seen.push(`${error.kind} ${String(error.code)}`);
+          break;
+      }
+    }
+
+    expect(seen).toEqual(["http 500", "parse <html>", "conversion -5", "command 6", "builder -4"]);
+  });
+});

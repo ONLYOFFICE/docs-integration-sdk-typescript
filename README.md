@@ -303,31 +303,60 @@ of your own remains the way to cancel a download in progress. See
 A call rejects when the answer never came, when it is not the one the endpoint promises,
 or when the document server reports a failure of its own:
 
-| Error                      | Thrown when                                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `DocumentServerHttpError`  | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
-| `DocumentServerParseError` | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
-| `ConversionError`          | `/converter` answered `200 OK` with an `error` code. Carries it as `code`.                             |
-| `CommandError`             | `/command` answered with a non-zero `error`. Carries it as `code`.                                     |
-| `BuilderError`             | `/docbuilder` answered `200 OK` with an `error` code. Carries it as `code`.                            |
+| Error                      | `kind`         | Thrown when                                                                                            |
+| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `DocumentServerHttpError`  | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
+| `DocumentServerParseError` | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
+| `ConversionError`          | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.              |
+| `CommandError`             | `"command"`    | `/command` answered with an `error` that is neither `0` nor `4`. Carries it as `code`.                 |
+| `BuilderError`             | `"builder"`    | `/docbuilder` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.             |
 
 All five extend `DocumentServerError`, which carries the `response` they were read from.
 Its body has already been consumed by the time the error is built, which is why a
 truncated copy of it is on the error itself.
 
+Each class recognizes its own through a static `is()`, and `DocumentServerError.is()` takes
+any of the five:
+
 ```ts
 try {
   await client.convert(request);
 } catch (error) {
-  if (error instanceof ConversionError && error.code === -5) {
+  if (ConversionError.is(error) && error.code === -5) {
     return askForThePassword();
   }
 
-  if (error instanceof DocumentServerHttpError && error.status >= 500) {
+  if (DocumentServerHttpError.is(error) && error.status >= 500) {
     return retryLater();
   }
 
   throw error;
+}
+```
+
+`instanceof` works too, and is the shorter thing to write — but it compares prototypes, and
+a package that ships ESM and CJS side by side is loaded twice as soon as one part of an
+application imports it and another requires it. The two copies carry two distinct classes,
+so an error thrown by one fails `instanceof` against the other, in a way that shows up in
+somebody else's bundler rather than in your tests. `is()` asks for a mark the copies share
+instead, so use it wherever the error crosses a package boundary.
+
+`kind` is the same question answered as a value, which is what a `switch` or a log line
+wants. `DocumentServerError.is()` narrows to a union discriminated on it, so every branch
+gets the fields of its own error:
+
+```ts
+if (DocumentServerError.is(error)) {
+  switch (error.kind) {
+    case "http":
+      return report(error.status);
+    case "parse":
+      return report(error.body);
+    case "conversion":
+    case "command":
+    case "builder":
+      return report(error.code);
+  }
 }
 ```
 
@@ -341,7 +370,8 @@ those would only hide the `cause`. See [timeoutMs](#timeoutms).
 
 Retries, polling and backoff are yours to decide on: the SDK sends one request per call.
 
-Two outcomes deliberately do not throw. `healthcheck()` answers `false` for a failing
+Only the five above are thrown by the SDK itself, so nothing else that comes out of a call
+was invented here. Two outcomes deliberately do not throw. `healthcheck()` answers `false` for a failing
 status rather than rejecting, since a server that is down is the answer it was asked for,
 and `error: 4` from `forcesave` comes back on the result, since nothing to save is an
 outcome rather than a failure.

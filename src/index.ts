@@ -8,6 +8,7 @@ export {
   DocumentServerHttpError,
   DocumentServerParseError,
 } from "./client/errors.js";
+export type { AnyDocumentServerError, DocumentServerErrorKind } from "./client/errors.js";
 export type { ClientOptions, RequestOptions } from "./client/options.js";
 export type {
   BuilderArgument,
