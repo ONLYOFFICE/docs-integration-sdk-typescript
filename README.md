@@ -7,7 +7,8 @@ browsers and edge runtimes. Ships both ESM and CJS builds with bundled type defi
 
 Early stage: the client currently covers the health check, the server configuration and
 formats, the conversion API, the command service, the document builder and downloading
-the files the server hands back.
+the files the server hands back, and `DocumentServerJwt` signs the tokens they are sent
+with.
 
 ## Installation
 
@@ -38,8 +39,8 @@ caller who would rather decide what a failure means.
 
 ## API reference
 
-Every export — the two clients, the errors, and each request and response type — is
-listed in [docs/](docs/README.md), generated from the source with
+Every export — the two clients, the signer, the errors, and each request and response
+type — is listed in [docs/](docs/README.md), generated from the source with
 [TypeDoc](https://typedoc.org). This README is the guide; the reference is where a single
 field is looked up.
 
@@ -171,14 +172,16 @@ version of the same file needs a new key.
 When the document server is configured with a secret, the request has to carry a JWT — and
 it takes one in either of two places, signed over two different payloads. In the body,
 `token` signs the body itself; in a header, the signature covers the body wrapped as
-`{ payload: … }`. The SDK ships no JWT implementation, so use the library you already have:
+`{ payload: … }`. [`DocumentServerJwt`](#jwt) signs both:
 
 ```ts
+const jwt = new DocumentServerJwt({ secret });
+
 // In the body, as a field of the request.
-await client.convert({ ...request, token: jwt.sign(request, secret) });
+await client.convert({ ...request, token: await jwt.sign(request) });
 
 // In a header, as the second argument.
-await client.convert(request, jwt.sign({ payload: request }, secret));
+await client.convert(request, await jwt.sign({ payload: request }));
 ```
 
 Sending both is fine as long as each was signed over its own payload — handing the same
@@ -311,6 +314,52 @@ stream and gets written out as the file.
 response and is then called off, so reading the body is not racing a deadline. A `signal`
 of your own remains the way to cancel a download in progress. See
 [timeoutMs](#timeoutms).
+
+## JWT
+
+`DocumentServerJwt` signs the tokens the document server expects. It brings no dependency
+of its own: the HMAC comes from WebCrypto, which every runtime this SDK targets provides.
+
+```ts
+import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk";
+
+const jwt = new DocumentServerJwt({ secret });
+const token = await jwt.sign({ key: "Khirz6zTPdfd7", url: "https://example.com/contract.docx" });
+```
+
+`sign()` adds `iat` and `exp`, each unless the payload already carries it — a payload that
+names its own lifetime keeps it. The default is five minutes; `expiresInSec` changes it,
+on the signer or on the one call, and `null` leaves `exp` out so the token never expires:
+
+```ts
+const jwt = new DocumentServerJwt({ secret, expiresInSec: 60 });
+
+await jwt.sign(payload); // expires in a minute
+await jwt.sign(payload, { expiresInSec: 3600 }); // in an hour
+await jwt.sign(payload, { expiresInSec: null }); // never
+```
+
+`algorithm` picks among `HS256`, the default, and `HS384` and `HS512`, for a server
+configured to expect one of those instead.
+
+What goes into the payload is what the endpoint is signed over, and it differs between the
+body and the header — see [Signing and cluster routing](#signing-and-cluster-routing).
+
+### One signer, one secret
+
+The secret belongs to the signer rather than to the call, which is what lets the key be
+imported once and reused by every token after it. A document server configured with
+separate secrets for what it receives, what it sends and the editor session takes a signer
+for each, and the one to sign with is then picked by naming it:
+
+```ts
+const inbox = new DocumentServerJwt({ secret: inboxSecret });
+const outbox = new DocumentServerJwt({ secret: outboxSecret });
+
+await client.convert(request, await inbox.sign({ payload: request }));
+```
+
+A server that uses one secret everywhere — the common case — needs one signer.
 
 ## Errors
 
@@ -576,8 +625,10 @@ src/
   client/convert.ts   conversion request and response
   client/command.ts   command request and response
   client/builder.ts   document builder request and response
+  jwt/index.ts        DocumentServerJwt, the token signer
 test/
   client.test.ts
+  jwt.test.ts
 docs/
   README.md           generated API reference, by kind
 typedoc.json          how it is generated

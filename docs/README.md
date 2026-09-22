@@ -10,6 +10,7 @@
 | [DocumentServerClient](classes/DocumentServerClient.md)         | The document server endpoints, each parsing the answer into the type its endpoint promises and rejecting when the server reports a failure — in the status, or, the way the conversion, command and builder services do, in a body it answered `200 OK` with. |
 | [DocumentServerError](classes/DocumentServerError.md)           | Everything the document server answers with that the SDK turns into a rejection.                                                                                                                                                                              |
 | [DocumentServerHttpError](classes/DocumentServerHttpError.md)   | The document server answered with a status outside the 2xx range.                                                                                                                                                                                             |
+| [DocumentServerJwt](classes/DocumentServerJwt.md)               | Signs the tokens the document server expects, over the secret it is configured with.                                                                                                                                                                          |
 | [DocumentServerParseError](classes/DocumentServerParseError.md) | The body of a successful response was not the JSON the endpoint promises.                                                                                                                                                                                     |
 | [DocumentServerRawClient](classes/DocumentServerRawClient.md)   | The same endpoints as [DocumentServerClient](classes/DocumentServerClient.md), each answering with the untouched `Response` and none of them throwing on what the document server says.                                                                       |
 
@@ -38,6 +39,7 @@
 | [GetForgottenCommand](interfaces/GetForgottenCommand.md)         | Asks for the URL a forgotten document can be downloaded from.                |
 | [GetForgottenListCommand](interfaces/GetForgottenListCommand.md) | Lists the documents the editors left behind.                                 |
 | [InfoCommand](interfaces/InfoCommand.md)                         | Asks who has the document open.                                              |
+| [JwtOptions](interfaces/JwtOptions.md)                           | Settings of a signer, applied to every token it makes.                       |
 | [License](interfaces/License.md)                                 | Terms of the license the document server runs under.                         |
 | [LicenseCommand](interfaces/LicenseCommand.md)                   | Asks for the license and for the quota spent against it.                     |
 | [LicenseQuota](interfaces/LicenseQuota.md)                       | Users counted against the license since the document server was started.     |
@@ -48,6 +50,7 @@
 | [PageSize](interfaces/PageSize.md)                               | Size of a page, in CSS-like units such as `"210mm"`.                         |
 | [PdfOptions](interfaces/PdfOptions.md)                           | PDF output settings.                                                         |
 | [RequestOptions](interfaces/RequestOptions.md)                   | Overrides applied to a single request, on top of the client options.         |
+| [SignOptions](interfaces/SignOptions.md)                         | Overrides applied to a single token, on top of the signer options.           |
 | [SpreadsheetLayout](interfaces/SpreadsheetLayout.md)             | Layout used when a spreadsheet is converted to PDF or to an image.           |
 | [Thumbnail](interfaces/Thumbnail.md)                             | Settings for an image output format: BMP, GIF, JPG or PNG.                   |
 | [VersionCommand](interfaces/VersionCommand.md)                   | Asks for the version of the document server.                                 |
@@ -71,5 +74,6 @@
 | [DocumentServerErrorKind](types/DocumentServerErrorKind.md) | Which failure an error stands for, and the discriminant of the union below.                                         |
 | [FormatAction](types/FormatAction.md)                       | Something the editors can do with a format.                                                                         |
 | [FormatType](types/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
+| [JwtAlgorithm](types/JwtAlgorithm.md)                       | The HMAC algorithms the document server signs with.                                                                 |
 | [RgbColor](types/RgbColor.md)                               | Red, green and blue components, each 0–255.                                                                         |
 | [TextAssociation](types/TextAssociation.md)                 | How a PDF, XPS or OXPS page is split into text blocks while it is read.                                             |
