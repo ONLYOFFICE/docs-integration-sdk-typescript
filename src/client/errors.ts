@@ -69,6 +69,7 @@ export class DocumentServerError extends Error {
     this.response = response;
   }
 
+  /** @internal */
   get [BRAND](): true {
     return true;
   }

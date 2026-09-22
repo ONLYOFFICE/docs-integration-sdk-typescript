@@ -84,6 +84,11 @@ async function readArray(response: Response): Promise<unknown[]> {
   return value as unknown[];
 }
 
+/**
+ * The document server endpoints, each parsing the answer into the type its endpoint
+ * promises and rejecting when the server reports a failure — in the status, or, the way
+ * the conversion, command and builder services do, in a body it answered `200 OK` with.
+ */
 export class DocumentServerClient {
   /** The same endpoints, answering with the untouched `Response`. */
   readonly raw: DocumentServerRawClient;
@@ -92,6 +97,7 @@ export class DocumentServerClient {
     this.raw = new DocumentServerRawClient(options);
   }
 
+  /** The effective settings: validated, with the defaults applied, and frozen. */
   get options(): Readonly<Required<ClientOptions>> {
     return this.raw.options;
   }
@@ -109,18 +115,28 @@ export class DocumentServerClient {
     return (await response.text()).trim() === "true";
   }
 
+  /**
+   * How the document server describes itself: the header it expects a token in, the paths
+   * of its endpoints, the largest file it accepts and the languages of its editor.
+   */
   async getConfig(options?: RequestOptions): Promise<ConfigResponse> {
     const response = await this.raw.getConfig(options);
 
     return (await readRecord(response)) as unknown as ConfigResponse;
   }
 
+  /** Every file format the document server knows, and what it may be converted to. */
   async getFormats(options?: RequestOptions): Promise<Format[]> {
     const response = await this.raw.getFormats(options);
 
     return (await readArray(response)) as Format[];
   }
 
+  /**
+   * Converts the document the server downloads from `url`.
+   *
+   * @throws {@link ConversionError} when the service answers with an `error` code.
+   */
   async convert(
     request: ConvertRequest,
     token?: string,
@@ -137,6 +153,12 @@ export class DocumentServerClient {
     return body;
   }
 
+  /**
+   * Runs a command of the command service against a document the editors have open.
+   *
+   * @throws {@link CommandError} when the service answers with an `error` code other
+   * than `4`, which reports that nothing had changed rather than a failure.
+   */
   async command(
     request: CommandRequest,
     token?: string,
@@ -153,6 +175,11 @@ export class DocumentServerClient {
     return body as unknown as CommandResponse;
   }
 
+  /**
+   * Runs the builder script the server downloads from `url`.
+   *
+   * @throws {@link BuilderError} when the service answers with an `error` code.
+   */
   async docbuilder(
     request: BuilderRequest,
     token?: string,

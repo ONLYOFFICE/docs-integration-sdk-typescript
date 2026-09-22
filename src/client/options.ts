@@ -1,9 +1,19 @@
+/** Settings of a client, applied to every request it sends. */
 export interface ClientOptions {
+  /** Base URL of the document server, such as `"https://docs.example.com"`. Required. */
   baseUrl: string;
+  /** Deadline for a request, in whole milliseconds from `1` to `2147483647`. Default: `30000`. */
   timeoutMs?: number;
+  /** Headers sent with every request. */
   headers?: Record<string, string>;
+  /** Header a token is sent in. Default: `"Authorization"`. */
   authorizationHeader?: string;
+  /** Written before the token in that header. Default: `"Bearer "`. */
   authorizationPrefix?: string;
+  /**
+   * A `fetch` of your own: a proxy, mTLS, retries, logging, mocking. Default: the global
+   * `fetch`, looked up on each call rather than captured at construction.
+   */
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
 }
 

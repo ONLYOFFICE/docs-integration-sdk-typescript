@@ -106,7 +106,12 @@ function buildDeadline(timeoutMs: number, options?: RequestOptions): Deadline {
   };
 }
 
+/**
+ * The same endpoints as {@link DocumentServerClient}, each answering with the untouched
+ * `Response` and none of them throwing on what the document server says.
+ */
 export class DocumentServerRawClient {
+  /** The effective settings: validated, with the defaults applied, and frozen. */
   readonly options: Readonly<Required<ClientOptions>>;
 
   constructor(options: ClientOptions) {
@@ -148,18 +153,22 @@ export class DocumentServerRawClient {
     }
   }
 
+  /** Gets `/healthcheck`. */
   async healthcheck(options?: RequestOptions): Promise<Response> {
     return await this.#request("/healthcheck", { method: "GET" }, options);
   }
 
+  /** Gets `/meta/config`, where the document server describes itself. */
   async getConfig(options?: RequestOptions): Promise<Response> {
     return await this.#request("/meta/config", { method: "GET" }, options);
   }
 
+  /** Gets `/meta/formats`, the file formats the document server knows. */
   async getFormats(options?: RequestOptions): Promise<Response> {
     return await this.#request("/meta/formats", { method: "GET" }, options);
   }
 
+  /** Posts to `/converter`. */
   async convert(
     request: ConvertRequest,
     token?: string,
@@ -172,6 +181,7 @@ export class DocumentServerRawClient {
     );
   }
 
+  /** Posts to `/command`. */
   async command(
     request: CommandRequest,
     token?: string,
@@ -186,6 +196,7 @@ export class DocumentServerRawClient {
     );
   }
 
+  /** Posts to `/docbuilder`. */
   async docbuilder(
     request: BuilderRequest,
     token?: string,
@@ -200,6 +211,7 @@ export class DocumentServerRawClient {
     );
   }
 
+  /** Gets a file the document server keeps, by path and query rather than by URL. */
   async getFile(
     path: string,
     query?: Readonly<Record<string, string>>,

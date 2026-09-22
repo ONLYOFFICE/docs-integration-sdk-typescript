@@ -36,6 +36,20 @@ builder services do, in a body it answered `200 OK` with. See [Errors](#errors).
 The untouched `Response` is one property away, on [`client.raw`](#the-raw-client), for a
 caller who would rather decide what a failure means.
 
+## API reference
+
+Every export — the two clients, the errors, and each request and response type — is
+listed in [docs/](docs/README.md), generated from the source with
+[TypeDoc](https://typedoc.org). This README is the guide; the reference is where a single
+field is looked up.
+
+```sh
+npm run docs
+```
+
+The output is committed, so a change to the public API is reviewed along with the code
+that made it. Rerun the command after touching an exported type or a doc comment.
+
 ## Server configuration
 
 `getConfig()` gets `/meta/config`, where the document server describes itself: the header
@@ -564,6 +578,9 @@ src/
   client/builder.ts   document builder request and response
 test/
   client.test.ts
+docs/
+  README.md           generated API reference, by kind
+typedoc.json          how it is generated
 ```
 
 ## Development
@@ -574,6 +591,7 @@ npm test            # vitest
 npm run lint        # eslint
 npm run format      # prettier --write
 npm run build       # tsup -> dist (ESM + CJS + .d.ts)
+npm run docs        # typedoc -> docs (markdown API reference)
 ```
 
 ## Document builder

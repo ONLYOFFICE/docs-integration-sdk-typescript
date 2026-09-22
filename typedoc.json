@@ -1,0 +1,33 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "docs",
+  "router": "kind",
+  "readme": "none",
+  "excludeExternals": true,
+  "excludeInternal": true,
+  "externalPattern": ["**/node_modules/**"],
+  "disableSources": true,
+  "hidePageHeader": true,
+  "useCodeBlocks": true,
+  "expandObjects": true,
+  "indexFormat": "table",
+  "parametersFormat": "table",
+  "classPropertiesFormat": "table",
+  "interfacePropertiesFormat": "table",
+  "typeAliasPropertiesFormat": "table",
+  "typeDeclarationFormat": "table",
+  "tableColumnSettings": {
+    "hideInherited": true,
+    "hideOverrides": true,
+    "hideSources": true
+  },
+  "formatWithPrettier": true,
+  "sort": ["alphabetical"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}
