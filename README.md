@@ -5,8 +5,8 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors.
 Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, Deno, Bun,
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
-Early stage: the client currently covers the health check, the server configuration, the
-conversion API, the command service and the document builder.
+Early stage: the client currently covers the health check, the server configuration and
+formats, the conversion API, the command service and the document builder.
 
 ## Installation
 
@@ -51,6 +51,31 @@ config.langs; // ["ar", "az", …, "zh-TW"]
 a server configured with a header name of its own rejects a token sent under the default
 one. This endpoint describes the server rather than a document, so it takes no token, and
 it carries no error code of its own — check `response.ok` before reading the body.
+
+## Formats
+
+`getFormats()` gets `/meta/formats`, the list of file formats the server knows — what each
+one may be opened for, and what it converts to:
+
+```ts
+const formats = (await (await client.getFormats()).json()) as Format[];
+const docx = formats.find((format) => format.name === "docx");
+
+docx?.type; // word
+docx?.actions; // ["view", "edit", "review", "comment", "encrypt"]
+docx?.convert; // ["bmp", "docm", …, "txt"]
+docx?.mime; // ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]
+```
+
+`type` names the editor a format opens in, which is the `documentType` the editor config
+needs; `actions` says what that editor may do with it — `edit`, `fill`, `comment`,
+`review`, `auto-convert` for a legacy format converted on the way in, and so on. Formats
+that a conversion only ever produces, images and `pdfa` and `zip` among them, carry an
+empty `type` and no actions at all, so a lookup has to pass over them rather than take the
+first entry that matches an extension.
+
+`convert` is the other half of the conversion API: it holds the extensions that may be
+named as an `outputtype` for that source format.
 
 ## Conversion
 

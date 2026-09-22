@@ -51,4 +51,7 @@ export type {
   ConfigLimits,
   ConfigResponse,
   ConfigUrls,
+  Format,
+  FormatAction,
+  FormatType,
 } from "./client/meta.js";

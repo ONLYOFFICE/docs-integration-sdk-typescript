@@ -111,6 +111,10 @@ export class DocumentServerClient {
     return await this.#request("/meta/config", { method: "GET" }, options);
   }
 
+  async getFormats(options?: RequestOptions): Promise<Response> {
+    return await this.#request("/meta/formats", { method: "GET" }, options);
+  }
+
   async convert(
     request: ConvertRequest,
     token?: string,

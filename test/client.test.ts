@@ -5,6 +5,7 @@ import {
   type BuilderResponse,
   type ClientOptions,
   type ConfigResponse,
+  type Format,
   type CommandRequest,
   type CommandResponse,
   type ConvertRequest,
@@ -357,6 +358,111 @@ describe("getConfig", () => {
     vi.stubGlobal("fetch", fetch);
 
     await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getConfig();
+
+    expect(calls).toHaveLength(1);
+  });
+});
+
+describe("getFormats", () => {
+  const formats = [
+    {
+      name: "docx",
+      type: "word",
+      actions: ["view", "edit", "review", "comment", "encrypt"],
+      convert: ["bmp", "docm", "pdf", "txt"],
+      mime: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    },
+    // An output-only format carries no type and nothing the editors can do with it.
+    { name: "png", type: "", actions: [], convert: [], mime: ["image/png"] },
+  ];
+
+  it("sends GET to /meta/formats", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://docs.example.com/meta/formats");
+    expect(calls[0]?.init?.method).toBe("GET");
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).getFormats();
+
+    expect(calls[0]?.url).toBe("https://example.com/office/meta/formats");
+  });
+
+  it("sends the configured headers", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).getFormats();
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends no body and no authorization header", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+
+    expect(calls[0]?.init?.body).toBeUndefined();
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+  });
+
+  it("passes an abort signal", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFormats();
+
+    expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("aborts once the timeout is reached", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.getFormats()).rejects.toMatchObject({ name: "TimeoutError" });
+  });
+
+  it("returns the response untouched", async () => {
+    const { fetch } = spyFetch(() => Response.json(formats));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).getFormats();
+
+    expect(response.status).toBe(200);
+    await expect(response.json() as Promise<Format[]>).resolves.toEqual(formats);
+  });
+
+  it("hands back a failing response instead of throwing", async () => {
+    const { fetch } = spyFetch(() => new Response("", { status: 404 }));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).getFormats();
+
+    expect(response.ok).toBe(false);
+    expect(response.status).toBe(404);
+  });
+
+  it("falls back to the global fetch", async () => {
+    const { fetch, calls } = spyFetch();
+    vi.stubGlobal("fetch", fetch);
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getFormats();
 
     expect(calls).toHaveLength(1);
   });
@@ -1016,6 +1122,19 @@ describe("request options", () => {
       headers: { "x-tenant": "acme" },
       fetch,
     }).getConfig({ headers: { "x-request-id": "r-1" } });
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+    expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
+  });
+
+  it("adds its headers to the configured ones on getFormats", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).getFormats({ headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
     expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
