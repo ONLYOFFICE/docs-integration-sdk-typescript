@@ -107,6 +107,10 @@ export class DocumentServerClient {
     return await this.#request("/healthcheck", { method: "GET" }, options);
   }
 
+  async getConfig(options?: RequestOptions): Promise<Response> {
+    return await this.#request("/meta/config", { method: "GET" }, options);
+  }
+
   async convert(
     request: ConvertRequest,
     token?: string,

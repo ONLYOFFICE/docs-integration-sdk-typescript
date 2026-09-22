@@ -46,3 +46,9 @@ export type {
   WatermarkParagraph,
   WatermarkRun,
 } from "./client/convert.js";
+export type {
+  ConfigAuthorization,
+  ConfigLimits,
+  ConfigResponse,
+  ConfigUrls,
+} from "./client/meta.js";

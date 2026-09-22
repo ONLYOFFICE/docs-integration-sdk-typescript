@@ -4,6 +4,7 @@ import {
   type BuilderRequest,
   type BuilderResponse,
   type ClientOptions,
+  type ConfigResponse,
   type CommandRequest,
   type CommandResponse,
   type ConvertRequest,
@@ -250,6 +251,112 @@ describe("healthcheck", () => {
 
     vi.stubGlobal("fetch", fetch);
     await client.healthcheck();
+
+    expect(calls).toHaveLength(1);
+  });
+});
+
+describe("getConfig", () => {
+  const config = {
+    authorization: { header: "Authorization", prefix: "Bearer " },
+    urls: {
+      api: "/web-apps/apps/api/documents/api.js",
+      command: "/command",
+      converter: "/converter",
+      docbuilder: "/docbuilder",
+    },
+    limits: { maxFileSize: 104_857_600 },
+    langs: ["en", "pt-PT", "zh-TW"],
+  };
+
+  it("sends GET to /meta/config", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://docs.example.com/meta/config");
+    expect(calls[0]?.init?.method).toBe("GET");
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).getConfig();
+
+    expect(calls[0]?.url).toBe("https://example.com/office/meta/config");
+  });
+
+  it("sends the configured headers", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).getConfig();
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends no body and no authorization header", async () => {
+    // The endpoint describes the server rather than a document, so it takes no token.
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+
+    expect(calls[0]?.init?.body).toBeUndefined();
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+  });
+
+  it("passes an abort signal", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getConfig();
+
+    expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("aborts once the timeout is reached", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.getConfig()).rejects.toMatchObject({ name: "TimeoutError" });
+  });
+
+  it("returns the response untouched", async () => {
+    const { fetch } = spyFetch(() => Response.json(config));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).getConfig();
+
+    expect(response.status).toBe(200);
+    await expect(response.json() as Promise<ConfigResponse>).resolves.toEqual(config);
+  });
+
+  it("hands back a failing response instead of throwing", async () => {
+    const { fetch } = spyFetch(() => new Response("", { status: 404 }));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).getConfig();
+
+    expect(response.ok).toBe(false);
+    expect(response.status).toBe(404);
+  });
+
+  it("falls back to the global fetch", async () => {
+    const { fetch, calls } = spyFetch();
+    vi.stubGlobal("fetch", fetch);
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getConfig();
 
     expect(calls).toHaveLength(1);
   });
@@ -896,6 +1003,19 @@ describe("request options", () => {
       headers: { "x-tenant": "acme" },
       fetch,
     }).healthcheck({ headers: { "x-request-id": "r-1" } });
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+    expect(headerOf(calls[0], "x-request-id")).toBe("r-1");
+  });
+
+  it("adds its headers to the configured ones on getConfig", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).getConfig({ headers: { "x-request-id": "r-1" } });
 
     expect(headerOf(calls[0], "x-tenant")).toBe("acme");
     expect(headerOf(calls[0], "x-request-id")).toBe("r-1");

@@ -5,8 +5,8 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors.
 Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, Deno, Bun,
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
-Early stage: the client currently covers the health check, the conversion API, the command
-service and the document builder.
+Early stage: the client currently covers the health check, the server configuration, the
+conversion API, the command service and the document builder.
 
 ## Installation
 
@@ -31,6 +31,26 @@ const healthy = response.ok && (await response.text()).trim() === "true";
 
 Every method returns the raw `Response`, so the caller decides what a failure means.
 Check `response.ok` and read the body — an unread body keeps the connection open.
+
+## Server configuration
+
+`getConfig()` gets `/meta/config`, where the document server describes itself: the header
+it expects a JWT in, the paths of its endpoints, the largest file it accepts and the
+languages its editor is translated into.
+
+```ts
+const config = (await (await client.getConfig()).json()) as ConfigResponse;
+
+config.authorization; // { header: "Authorization", prefix: "Bearer " }
+config.urls.api; // /web-apps/apps/api/documents/api.js
+config.limits.maxFileSize; // 104857600
+config.langs; // ["ar", "az", …, "zh-TW"]
+```
+
+`authorization` is what `authorizationHeader` and `authorizationPrefix` have to be set to:
+a server configured with a header name of its own rejects a token sent under the default
+one. This endpoint describes the server rather than a document, so it takes no token, and
+it carries no error code of its own — check `response.ok` before reading the body.
 
 ## Conversion
 
