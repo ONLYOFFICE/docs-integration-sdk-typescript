@@ -1,5 +1,6 @@
 export { DocumentServerClient } from "./client/index.js";
 export { DocumentServerRawClient } from "./client/raw.js";
+export { DocumentServerFormats } from "./formats/index.js";
 export { DocumentServerJwt } from "./jwt/index.js";
 export { JwtError } from "./jwt/errors.js";
 export {

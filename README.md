@@ -97,6 +97,63 @@ first entry that matches an extension.
 `convert` is the other half of the conversion API: it holds the extensions that may be
 named as an `outputtype` for that source format.
 
+### Looking a format up
+
+Walking the list for every question gets old quickly, so `DocumentServerFormats` takes that
+answer once and indexes it by extension:
+
+```ts
+import { DocumentServerFormats } from "@onlyoffice/docs-integration-sdk";
+
+const formats = new DocumentServerFormats(await client.getFormats());
+
+formats.getDocumentType("report.docx"); // word
+formats.isEditable("docx"); // true
+formats.isFillable("pdf"); // true
+formats.isConvertibleTo("docx", "pdf"); // true
+formats.getConversions("xlsx"); // ["csv", "ods", "pdf", …]
+formats.getFormatsByMime("application/pdf"); // [{ name: "pdf", … }]
+```
+
+An extension is matched case-insensitively, with or without its dot, and a whole file name
+is read down to the part behind its last dot — so `"docx"`, `".DOCX"` and
+`"/files/Q3 Report.docx"` are one and the same lookup.
+
+| Method                               | Answers                                                                      |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| `getFormat(ext)`                     | The `Format`, or `undefined` for an extension the server does not know.      |
+| `hasFormat(ext)`                     | Whether the extension is known at all.                                       |
+| `getDocumentType(ext)`               | The editor it opens in, which is the `documentType` the editor config takes. |
+| `getActions(ext)`                    | What the editors may do with it.                                             |
+| `can(ext, action)`                   | Whether they may do that one.                                                |
+| `isOpenable(ext)`                    | Whether an editor opens it at all, in whatever mode.                         |
+| `isViewable(ext)`                    | `view`.                                                                      |
+| `isEditable(ext)`                    | `edit`.                                                                      |
+| `isLossyEditable(ext)`               | `lossy-edit`, editing that loses what the format cannot carry.               |
+| `isFillable(ext)`                    | `fill`, a form filled in rather than edited.                                 |
+| `isCommentable(ext)`                 | `comment`.                                                                   |
+| `isReviewable(ext)`                  | `review`.                                                                    |
+| `isAutoConvertable(ext)`             | `auto-convert`, converted on the way in the way the legacy `doc` is.         |
+| `isEncryptable(ext)`                 | `encrypt`.                                                                   |
+| `getConversions(ext)`                | The extensions it converts to, as `outputtype` takes them.                   |
+| `isConvertibleTo(from, to)`          | Whether the conversion API turns one into the other.                         |
+| `getMimes(ext)`                      | The MIME types it is served under.                                           |
+| `getFormatsByMime(mime)`             | The formats served under a MIME type.                                        |
+| `getFormatsByType(type)`             | The formats one editor opens, or, for `""`, the output-only ones.            |
+| `getExtensions()`                    | Every extension the list covers, without the dots.                           |
+| `all`, `size`, `[Symbol.iterator]()` | The list itself, frozen, in the order the server gave it.                    |
+
+`getDocumentType()` answers `undefined` both for an extension the server does not know and
+for one no editor opens, so it is exactly the question the editor config asks. Where two
+entries carry the same extension, `getFormat()` keeps the one an editor opens rather than
+the first that matched.
+
+The list changes with the version of the document server and with its licence, so an
+instance stands for one answer of `/meta/formats` rather than for the server: get a fresh
+list to see a format the server has since learned. Nothing in the class sends a request,
+which makes it as good a fit for a list cached beside the application as for one just
+fetched.
+
 ## Conversion
 
 `convert()` posts to `/converter`, the [conversion API][conversion-api] of the document
@@ -663,10 +720,12 @@ src/
   client/convert.ts   conversion request and response
   client/command.ts   command request and response
   client/builder.ts   document builder request and response
+  formats/index.ts    DocumentServerFormats, the format lookup
   jwt/index.ts        DocumentServerJwt, the token signer
   jwt/errors.ts       JwtError and the kinds of refusal
 test/
   client.test.ts
+  formats.test.ts
   jwt.test.ts
 docs/
   README.md           generated API reference, by kind
