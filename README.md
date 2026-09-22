@@ -7,8 +7,9 @@ browsers and edge runtimes. Ships both ESM and CJS builds with bundled type defi
 
 Early stage: the client currently covers the health check, the server configuration and
 formats, the conversion API, the command service, the document builder and downloading
-the files the server hands back, and `DocumentServerJwt` signs the tokens they are sent
-with and checks the ones that come back.
+the files the server hands back, `DocumentServerConfig` builds the config an editor is
+opened with, and `DocumentServerJwt` signs the tokens they are sent with and checks the
+ones that come back.
 
 ## Installation
 
@@ -153,6 +154,123 @@ instance stands for one answer of `/meta/formats` rather than for the server: ge
 list to see a format the server has since learned. Nothing in the class sends a request,
 which makes it as good a fit for a list cached beside the application as for one just
 fetched.
+
+## Editor config
+
+`DocumentServerConfig` builds the [config][config-api] an editor is opened with — the
+object `DocsAPI.DocEditor` is constructed with in the browser — and validates and signs it
+here, where the secret is.
+
+Its fields are the ones the editor API documents, typed by
+[`@onlyoffice/doceditor-types`][doceditor-types], the definitions ONLYOFFICE publishes,
+which this package depends on. Their version tracks the version of the document server —
+`9.4.2` is Docs `9.4.0` — so the config follows the server your editors run rather than
+the release schedule of this SDK.
+
+```ts
+import {
+  buildDocumentKey,
+  DocumentServerConfig,
+  DocumentServerFormats,
+} from "@onlyoffice/docs-integration-sdk";
+
+const formats = new DocumentServerFormats(await client.getFormats());
+
+const config = DocumentServerConfig.forFile(
+  {
+    key: buildDocumentKey(file.id, file.modifiedAt),
+    title: "Report.docx",
+    url: "https://storage.example.com/report.docx",
+  },
+  formats,
+  {
+    editorConfig: {
+      callbackUrl: "https://app.example.com/callback",
+      lang: "de",
+      user: { id: "u-17", name: "Anna Schmidt" },
+    },
+  },
+);
+
+config.config.documentType; // word
+config.config.document.fileType; // docx
+```
+
+`forFile()` reads `fileType` off the name of the file and looks `documentType` up in the
+formats the server answered with, so neither can contradict the other or the file. The
+third argument is laid over what it derived, and its `document` is merged into the derived
+one rather than replacing it. A config assembled by hand goes through the constructor
+instead: `new DocumentServerConfig({ documentType, document, editorConfig })`.
+
+The effective config is on `config`, validated and frozen, and the instance serializes as
+that config, so `JSON.stringify(config)` is what goes into the page.
+
+### What it refuses
+
+Nearly every field of the editor config is optional in the types, while the document
+server is strict about a handful of them. A `TypeError` is thrown for:
+
+- a missing `document` or `documentType`, or a `documentType` no editor answers to;
+- a `key` that is empty, longer than 128 characters, or carries anything outside
+  `0-9`, `a-z`, `A-Z`, `-`, `.`, `_` and `=`;
+- a `document.url` or an `editorConfig.callbackUrl` that is not an absolute `http` or
+  `https` URL;
+- a `title` longer than the 128 characters the server allows;
+- the editor `events`, which are no part of a config that is serialized and signed.
+
+`fileType` is normalized rather than refused: `".DOCX"` and `"DOCX"` both become `"docx"`.
+
+### Signing
+
+`sign()` answers with a copy of the config carrying a `token` over it, which is what the
+editor is handed once the document server has a secret. The token covers the whole config
+apart from itself, so a config that already carries one is signed anew rather than signed
+over its own token.
+
+```ts
+const jwt = new DocumentServerJwt({ secret: process.env["JWT_SECRET"] ?? "" });
+const signed = await config.sign(jwt);
+```
+
+### The events stay in the browser
+
+The config travels to the browser as JSON, and the `events` of the editor API are
+functions — they survive neither `JSON.stringify` nor a signature. The type the SDK takes,
+`SignableConfig`, is the editor config without them, and a config that carries them anyway
+is refused rather than quietly stripped. They are attached where the editor is built, on
+top of the config that came from here:
+
+```html
+<script>
+  const config = JSON.parse(document.getElementById("config").textContent);
+
+  config.events = { onAppReady, onDocumentStateChange, onError };
+
+  new DocsAPI.DocEditor("placeholder", config);
+</script>
+```
+
+The script that defines `DocsAPI` is the one `getConfig()` names in `urls.api`, served by
+the document server itself.
+
+### Document keys
+
+A key stands for one revision of a file, not for the file: the document server takes a
+document from its cache whenever it sees a key it already knows, so a document the editors
+saved has to be given a new one. `buildDocumentKey()` builds one out of the parts that
+identify a revision in your storage:
+
+```ts
+buildDocumentKey("files/report 1.docx", 1732000000); // files-report-1.docx_1732000000
+```
+
+The parts are joined with `_`, and every character the server does not accept becomes `-`.
+A key that would come out longer than the 128 characters the server allows is cut to fit
+and given a fingerprint of the whole, so two long keys that differ only in their tail stay
+apart.
+
+[config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
+[doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
 
 ## Conversion
 
@@ -720,11 +838,15 @@ src/
   client/convert.ts   conversion request and response
   client/command.ts   command request and response
   client/builder.ts   document builder request and response
+  config/index.ts     DocumentServerConfig, the editor config
+  config/key.ts       buildDocumentKey
+  config/types.ts     the editor config types, from @onlyoffice/doceditor-types
   formats/index.ts    DocumentServerFormats, the format lookup
   jwt/index.ts        DocumentServerJwt, the token signer
   jwt/errors.ts       JwtError and the kinds of refusal
 test/
   client.test.ts
+  config.test.ts
   formats.test.ts
   jwt.test.ts
 docs/

@@ -1,5 +1,7 @@
 export { DocumentServerClient } from "./client/index.js";
 export { DocumentServerRawClient } from "./client/raw.js";
+export { DocumentServerConfig } from "./config/index.js";
+export { buildDocumentKey } from "./config/key.js";
 export { DocumentServerFormats } from "./formats/index.js";
 export { DocumentServerJwt } from "./jwt/index.js";
 export { JwtError } from "./jwt/errors.js";
@@ -68,5 +70,15 @@ export type {
   FormatAction,
   FormatType,
 } from "./client/meta.js";
+export type { ConfigFile } from "./config/index.js";
+export type {
+  Config,
+  ConfigDocument,
+  ConfigEditor,
+  DocumentType,
+  FileType,
+  SignableConfig,
+  StrictConfig,
+} from "./config/types.js";
 export type { JwtAlgorithm, JwtOptions, SignOptions, VerifyOptions } from "./jwt/index.js";
 export type { JwtErrorKind } from "./jwt/errors.js";
