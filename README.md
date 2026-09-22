@@ -102,8 +102,8 @@ result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
 The service answers `200 OK` whether the conversion succeeded or failed, so the status
 proves nothing: the body either carries `fileUrl` and `endConvert`, or an `error` code
 from `-1` to `-10` — `-5` incorrect password, `-8` invalid token, and so on. A body
-carrying a code rejects with a `ConversionError`, which holds it as `code`; the codes are
-listed on `ConversionErrorCode`.
+carrying a code other than `0` rejects with a `ConversionError`, which holds it as `code`;
+the codes are listed on `ConversionErrorCode`.
 
 The request accepts every parameter the API documents — `thumbnail` for an image output,
 `spreadsheetLayout` for a spreadsheet printed to PDF, `pdf.form` for a fillable form,
@@ -289,6 +289,10 @@ unread, so a large file can be streamed rather than buffered:
 await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
 ```
 
+A status outside the 2xx range rejects with a `DocumentServerHttpError` before the body is
+handed over, so the page a reverse proxy answers a missing file with never reaches the
+stream and gets written out as the file.
+
 `timeoutMs` is the one thing that behaves differently here: it bounds the wait for the
 response and is then called off, so reading the body is not racing a deadline. A `signal`
 of your own remains the way to cancel a download in progress. See
@@ -362,8 +366,9 @@ mixed freely. Reach for it when a status or a header matters to you, when a body
 read some other way, or when an error is a value in your codebase rather than an
 exception. `client.options` and `client.raw.options` are the same frozen object.
 
-`getFile()` is the one method that behaves identically on both: a file is a stream, so the
-`Response` comes back unread either way.
+`getFile()` differs the least of the seven: a file is a stream, so on a 2xx the `Response`
+comes back unread from both. Only a failing status parts them — the typed one rejects, the
+raw one hands the response over.
 
 ## Options
 

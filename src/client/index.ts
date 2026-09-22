@@ -13,7 +13,7 @@ import type { ClientOptions, RequestOptions } from "./options.js";
 import { DocumentServerRawClient } from "./raw.js";
 
 const BODY_SNIPPET_LIMIT = 512;
-const COMMAND_OK: CommandErrorCode = 0;
+const NO_ERROR = 0;
 const COMMAND_NOTHING_CHANGED: CommandErrorCode = 4;
 
 function snippet(text: string): string {
@@ -130,7 +130,7 @@ export class DocumentServerClient {
     const body = await readRecord(response);
     const error = body["error"];
 
-    if (typeof error === "number") {
+    if (typeof error === "number" && error !== NO_ERROR) {
       throw new ConversionError(error as ConversionErrorCode, response);
     }
 
@@ -146,7 +146,7 @@ export class DocumentServerClient {
     const body = await readRecord(response);
     const error = body["error"];
 
-    if (typeof error === "number" && error !== COMMAND_OK && error !== COMMAND_NOTHING_CHANGED) {
+    if (typeof error === "number" && error !== NO_ERROR && error !== COMMAND_NOTHING_CHANGED) {
       throw new CommandError(error as CommandErrorCode, response);
     }
 
@@ -162,7 +162,7 @@ export class DocumentServerClient {
     const body = await readRecord(response);
     const error = body["error"];
 
-    if (typeof error === "number") {
+    if (typeof error === "number" && error !== NO_ERROR) {
       throw new BuilderError(error as BuilderErrorCode, response);
     }
 
@@ -175,6 +175,12 @@ export class DocumentServerClient {
     query?: Readonly<Record<string, string>>,
     options?: RequestOptions,
   ): Promise<Response> {
-    return await this.raw.getFile(path, query, options);
+    const response = await this.raw.getFile(path, query, options);
+
+    if (!response.ok) {
+      throw new DocumentServerHttpError(response, await readSnippet(response));
+    }
+
+    return response;
   }
 }

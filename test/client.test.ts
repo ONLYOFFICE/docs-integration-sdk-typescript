@@ -1846,3 +1846,73 @@ describe("the raw client underneath", () => {
     expect(response.bodyUsed).toBe(false);
   });
 });
+
+describe("getFile on a failing status", () => {
+  const path = "/cache/files/data/conv_key/output.pdf/output.pdf";
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("throws rather than handing back an error page as the file", async () => {
+    const missing = client(() => new Response("<html>404</html>", { status: 404 }));
+
+    await expect(missing.getFile(path)).rejects.toThrow(DocumentServerHttpError);
+    await expect(missing.getFile(path)).rejects.toMatchObject({
+      status: 404,
+      body: "<html>404</html>",
+    });
+  });
+
+  it("leaves the body of a successful response unread", async () => {
+    const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+    const response = await client(() => new Response(bytes)).getFile(path);
+
+    expect(response.bodyUsed).toBe(false);
+    await expect(response.arrayBuffer().then((b) => new Uint8Array(b))).resolves.toEqual(bytes);
+  });
+
+  it("hands the failing response back on the raw client", async () => {
+    const missing = client(() => new Response("", { status: 404 }));
+    const response = await missing.raw.getFile(path);
+
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("a zero error code", () => {
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  const docx: ConvertRequest = {
+    filetype: "docx",
+    key: "Khirz6zTPdfd7",
+    outputtype: "pdf",
+    url: "https://example.com/document.docx",
+  };
+
+  it("is no conversion failure", async () => {
+    const body = { error: 0, endConvert: true, fileUrl: "https://docs.example.com/out.pdf" };
+
+    await expect(client(() => Response.json(body)).convert(docx)).resolves.toEqual(body);
+  });
+
+  it("is no build failure", async () => {
+    const body = {
+      error: 0,
+      end: true,
+      urls: { "output.docx": "https://docs.example.com/o.docx" },
+    };
+
+    await expect(
+      client(() => Response.json(body)).docbuilder({ url: "https://example.com/script.js" }),
+    ).resolves.toEqual(body);
+  });
+});
