@@ -6,7 +6,8 @@ Built on the standard `fetch` — no HTTP dependencies, works in Node.js 20+, De
 browsers and edge runtimes. Ships both ESM and CJS builds with bundled type definitions.
 
 Early stage: the client currently covers the health check, the server configuration and
-formats, the conversion API, the command service and the document builder.
+formats, the conversion API, the command service, the document builder and downloading
+the files the server hands back.
 
 ## Installation
 
@@ -244,6 +245,48 @@ document.
 
 [command-service]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/
 
+## Downloading files
+
+`getFile()` gets a file the document server keeps: the result of a conversion, a forgotten
+document, the saved document and the changes a callback arrives with. It takes a path and
+a query rather than a URL, the way every other method does, and sends them to the
+configured `baseUrl`:
+
+```ts
+const file = await client.getFile("/cache/files/data/conv_key/output.pdf/output.pdf", {
+  md5: "Zm9vYmFy",
+  expires: "1735689600",
+  filename: "output.pdf",
+});
+
+const bytes = new Uint8Array(await file.arrayBuffer());
+```
+
+The document server hands these locations out as absolute URLs — `fileUrl` in a conversion
+response, `url` in a callback, `url` in the answer to `getForgotten` — so split one before
+passing it on:
+
+```ts
+const link = new URL(result.fileUrl);
+
+await client.getFile(link.pathname, Object.fromEntries(link.searchParams));
+```
+
+Splitting it rather than requesting it whole is what makes the URL usable at all when the
+document server sits behind a reverse proxy: it answers with its own internal host, and
+the default Docker setup returns `http://localhost/cache/files/…`, which is unreachable
+from where the integration runs. Only the path and the query of that URL mean anything to
+you; the host is the one you already configured.
+
+No token is taken: these locations are signed by the document server itself and carry
+their own expiry in the query, so no authorization header is sent. Everything else is an
+ordinary request — the configured `headers`, `timeoutMs` and `fetch` all apply, and the
+`Response` comes back unread, so a large file can be streamed rather than buffered:
+
+```ts
+await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+```
+
 ## Options
 
 | Option                | Default            | Description                                             |
@@ -335,8 +378,8 @@ agent — is still picked up.
 
 ## Per-request options
 
-`healthcheck()`, `convert()` and `command()` all take a last, optional argument that
-overrides the client settings for that one call:
+Every method takes a last, optional argument that overrides the client settings for that
+one call:
 
 ```ts
 await client.convert(request, token, {
@@ -369,8 +412,10 @@ src/
   index.ts            public exports
   client/index.ts     DocumentServerClient
   client/options.ts   ClientOptions and RequestOptions
+  client/meta.ts      server configuration and formats
   client/convert.ts   conversion request and response
   client/command.ts   command request and response
+  client/builder.ts   document builder request and response
 test/
   client.test.ts
 ```

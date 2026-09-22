@@ -154,4 +154,12 @@ export class DocumentServerClient {
       options,
     );
   }
+
+  async getFile(
+    path: string,
+    query?: Readonly<Record<string, string>>,
+    options?: RequestOptions,
+  ): Promise<Response> {
+    return await this.#request(path, { method: "GET", query }, options);
+  }
 }

@@ -1086,6 +1086,132 @@ describe("docbuilder", () => {
   });
 });
 
+describe("getFile", () => {
+  const path = "/cache/files/data/conv_key/output.pdf/output.pdf";
+
+  it("sends GET to the path it was given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(path);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe(`https://docs.example.com${path}`);
+    expect(calls[0]?.init?.method).toBe("GET");
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://example.com/office/", fetch }).getFile(path);
+
+    expect(calls[0]?.url).toBe(`https://example.com/office${path}`);
+  });
+
+  it("appends the query it was given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(path, {
+      md5: "Zm9vYmFy",
+      expires: "1735689600",
+      filename: "output.pdf",
+    });
+
+    expect(calls[0]?.url).toBe(
+      `https://docs.example.com${path}?md5=Zm9vYmFy&expires=1735689600&filename=output.pdf`,
+    );
+  });
+
+  it("escapes the query it was given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(path, {
+      filename: "report Q1&Q2.pdf",
+    });
+
+    expect(calls[0]?.url).toBe(`https://docs.example.com${path}?filename=report%20Q1%26Q2.pdf`);
+  });
+
+  it("sends no query string when it was given none", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(path);
+
+    expect(calls[0]?.url).not.toContain("?");
+  });
+
+  it("sends the configured headers", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "x-tenant": "acme" },
+      fetch,
+    }).getFile(path);
+
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends no body, no JSON headers and no authorization", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(path);
+
+    expect(calls[0]?.init?.body).toBeUndefined();
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+    expect(headerOf(calls[0], "accept")).toBeNull();
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("applies the per-request options", async () => {
+    const { fetch, calls } = spyFetch();
+    const controller = new AbortController();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(
+      path,
+      undefined,
+      { headers: { "x-request-id": "42" }, signal: controller.signal, timeoutMs: 120_000 },
+    );
+
+    expect(headerOf(calls[0], "x-request-id")).toBe("42");
+    expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("times out on a hung download", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.getFile(path)).rejects.toThrow("The operation was aborted due to timeout");
+  });
+
+  it("returns the response unread", async () => {
+    const body = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+    const { fetch } = spyFetch(
+      () => new Response(body, { headers: { "content-type": "application/pdf" } }),
+    );
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).getFile(path);
+
+    expect(response.bodyUsed).toBe(false);
+    expect(response.headers.get("content-type")).toBe("application/pdf");
+    await expect(response.arrayBuffer().then((b) => new Uint8Array(b))).resolves.toEqual(body);
+  });
+
+  it("falls back to the global fetch", async () => {
+    const { fetch, calls } = spyFetch();
+    vi.stubGlobal("fetch", fetch);
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).getFile(path);
+
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe("request options", () => {
   const docx: ConvertRequest = {
     filetype: "docx",
