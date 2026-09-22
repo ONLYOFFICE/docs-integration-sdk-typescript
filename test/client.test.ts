@@ -12,8 +12,11 @@ import {
   type ClientOptions,
   type ConfigResponse,
   type Format,
+  type BuilderErrorCode,
+  type CommandErrorCode,
   type CommandRequest,
   type CommandResponse,
+  type ConversionErrorCode,
   type ConvertRequest,
   type ConvertResponse,
   type RequestOptions,
@@ -2012,5 +2015,47 @@ describe("recognizing an error", () => {
     }
 
     expect(seen).toEqual(["http 500", "parse <html>", "conversion -5", "command 6", "builder -4"]);
+  });
+});
+
+describe("an error code", () => {
+  it("keeps the documented ones as literals", () => {
+    // Compile-time guard: a widened union would make the cases unreachable.
+    const name = (code: ConversionErrorCode): string => {
+      switch (code) {
+        case -5:
+          return "incorrect password";
+        case -8:
+          return "invalid token";
+        default:
+          return "something else";
+      }
+    };
+
+    expect([name(-5), name(-8), name(-42)]).toEqual([
+      "incorrect password",
+      "invalid token",
+      "something else",
+    ]);
+  });
+
+  it("takes one the service does not document", () => {
+    // Compile-time guard: a strict union would reject every one of these.
+    const conversion: ConversionErrorCode = -42;
+    const command: CommandErrorCode = 9;
+    const builder: BuilderErrorCode = -7;
+
+    expect([conversion, command, builder]).toEqual([-42, 9, -7]);
+  });
+
+  it("reaches the error it was read from", () => {
+    const { fetch } = spyFetch(() => Response.json({ error: 7 }));
+    const client = new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch });
+
+    return expect(client.command({ c: "version" })).rejects.toMatchObject({
+      code: 7,
+      kind: "command",
+      message: "command failed with code 7: unrecognized error code",
+    });
   });
 });

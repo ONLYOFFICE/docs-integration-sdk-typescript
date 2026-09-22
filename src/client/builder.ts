@@ -39,8 +39,11 @@ export type BuilderRequest = BuildRequest | BuildResultRequest;
  * - `-4` error while downloading the script or a file it opens
  * - `-6` error while accessing the generation result database
  * - `-8` invalid token
+ *
+ * A code the service does not document stays a number of its own rather than being forced
+ * into the union, so a `switch` over it is never exhaustive.
  */
-export type BuilderErrorCode = -1 | -2 | -3 | -4 | -6 | -8;
+export type BuilderErrorCode = -1 | -2 | -3 | -4 | -6 | -8 | (number & {});
 
 /**
  * Body of a response from the builder service.

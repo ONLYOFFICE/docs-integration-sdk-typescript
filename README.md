@@ -315,6 +315,13 @@ All five extend `DocumentServerError`, which carries the `response` they were re
 Its body has already been consumed by the time the error is built, which is why a
 truncated copy of it is on the error itself.
 
+`code` keeps the documented codes as literals, so `-5` is autocompleted and a `case -5:`
+narrows — but a code the service does not document stays a number rather than being forced
+into the union. A `switch` over it is therefore never exhaustive, which is the truth of the
+matter: a document server one version newer may answer with a code this SDK has never
+heard of, and it arrives as `code` with `unrecognized error code` in the message rather
+than as a type that promised it could not exist.
+
 Each class recognizes its own through a static `is()`, and `DocumentServerError.is()` takes
 any of the five:
 

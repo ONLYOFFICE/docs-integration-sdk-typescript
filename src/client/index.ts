@@ -1,6 +1,6 @@
-import type { BuilderErrorCode, BuilderRequest, BuilderResponse } from "./builder.js";
+import type { BuilderRequest, BuilderResponse } from "./builder.js";
 import type { CommandErrorCode, CommandRequest, CommandResponse } from "./command.js";
-import type { ConversionErrorCode, ConvertRequest, ConvertResponse } from "./convert.js";
+import type { ConvertRequest, ConvertResponse } from "./convert.js";
 import {
   BuilderError,
   CommandError,
@@ -131,7 +131,7 @@ export class DocumentServerClient {
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR) {
-      throw new ConversionError(error as ConversionErrorCode, response);
+      throw new ConversionError(error, response);
     }
 
     return body;
@@ -147,7 +147,7 @@ export class DocumentServerClient {
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR && error !== COMMAND_NOTHING_CHANGED) {
-      throw new CommandError(error as CommandErrorCode, response);
+      throw new CommandError(error, response);
     }
 
     return body as unknown as CommandResponse;
@@ -163,7 +163,7 @@ export class DocumentServerClient {
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR) {
-      throw new BuilderError(error as BuilderErrorCode, response);
+      throw new BuilderError(error, response);
     }
 
     return body;

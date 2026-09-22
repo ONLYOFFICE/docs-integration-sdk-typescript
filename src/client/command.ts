@@ -148,8 +148,11 @@ export interface LicenseQuota {
  * - `4` nothing had changed since the last save, so `forcesave` did nothing
  * - `5` the command is unknown
  * - `6` invalid token
+ *
+ * A code the service does not document stays a number of its own rather than being forced
+ * into the union, so a `switch` over it is never exhaustive.
  */
-export type CommandErrorCode = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type CommandErrorCode = 0 | 1 | 2 | 3 | 4 | 5 | 6 | (number & {});
 
 /**
  * Body of a response from the command service.
