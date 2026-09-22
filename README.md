@@ -8,7 +8,7 @@ browsers and edge runtimes. Ships both ESM and CJS builds with bundled type defi
 Early stage: the client currently covers the health check, the server configuration and
 formats, the conversion API, the command service, the document builder and downloading
 the files the server hands back, and `DocumentServerJwt` signs the tokens they are sent
-with.
+with and checks the ones that come back.
 
 ## Installation
 
@@ -317,8 +317,9 @@ of your own remains the way to cancel a download in progress. See
 
 ## JWT
 
-`DocumentServerJwt` signs the tokens the document server expects. It brings no dependency
-of its own: the HMAC comes from WebCrypto, which every runtime this SDK targets provides.
+`DocumentServerJwt` signs the tokens the document server expects, and checks the ones it
+sends back. It brings no dependency of its own: the HMAC comes from WebCrypto, which every
+runtime this SDK targets provides.
 
 ```ts
 import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk";
@@ -344,6 +345,43 @@ configured to expect one of those instead.
 
 What goes into the payload is what the endpoint is signed over, and it differs between the
 body and the header — see [Signing and cluster routing](#signing-and-cluster-routing).
+
+### Checking a token
+
+`verify()` answers with what the token carries, and rejects with a `JwtError` when it
+cannot be trusted. This is the check a `callbackUrl` handler owes: the document server
+posts to it whenever a document is saved, and without it anybody who learns the URL can
+post too.
+
+```ts
+try {
+  const claims = await jwt.verify<CallbackPayload>(token);
+} catch (error) {
+  if (JwtError.is(error)) {
+    // 403: error.kind says which check refused it
+  }
+}
+```
+
+`kind` is `malformed`, `algorithm`, `signature`, `expired` or `premature`. The errors of
+the client are a separate family: `JwtError.is()` and `DocumentServerError.is()` never
+answer `true` for the same value.
+
+The algorithm is the one the signer is configured with. A token naming another in its
+header is refused before anything is computed, rather than being checked the way it asks
+to be — which is what keeps a token headed `alg: "none"` from passing. `exp` and `nbf` are
+honoured when present, each has to be a number if it is there at all, and `iat` is read by
+nobody. The payload is parsed only once the signature has matched.
+
+`clockToleranceSec` is the leeway both claims get, in seconds, for a document server whose
+clock runs apart from ours. It defaults to `0` and, like the lifetime, can be set on the
+signer or on the one call:
+
+```ts
+const jwt = new DocumentServerJwt({ secret, clockToleranceSec: 30 });
+
+await jwt.verify(token, { clockToleranceSec: 0 });
+```
 
 ### One signer, one secret
 
@@ -626,6 +664,7 @@ src/
   client/command.ts   command request and response
   client/builder.ts   document builder request and response
   jwt/index.ts        DocumentServerJwt, the token signer
+  jwt/errors.ts       JwtError and the kinds of refusal
 test/
   client.test.ts
   jwt.test.ts

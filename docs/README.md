@@ -13,6 +13,7 @@
 | [DocumentServerJwt](classes/DocumentServerJwt.md)               | Signs the tokens the document server expects, over the secret it is configured with.                                                                                                                                                                          |
 | [DocumentServerParseError](classes/DocumentServerParseError.md) | The body of a successful response was not the JSON the endpoint promises.                                                                                                                                                                                     |
 | [DocumentServerRawClient](classes/DocumentServerRawClient.md)   | The same endpoints as [DocumentServerClient](classes/DocumentServerClient.md), each answering with the untouched `Response` and none of them throwing on what the document server says.                                                                       |
+| [JwtError](classes/JwtError.md)                                 | A token that could not be trusted: malformed, signed with another algorithm or another secret, expired, or not valid yet.                                                                                                                                     |
 
 ## Interfaces
 
@@ -53,6 +54,7 @@
 | [SignOptions](interfaces/SignOptions.md)                         | Overrides applied to a single token, on top of the signer options.           |
 | [SpreadsheetLayout](interfaces/SpreadsheetLayout.md)             | Layout used when a spreadsheet is converted to PDF or to an image.           |
 | [Thumbnail](interfaces/Thumbnail.md)                             | Settings for an image output format: BMP, GIF, JPG or PNG.                   |
+| [VerifyOptions](interfaces/VerifyOptions.md)                     | Overrides applied to a single check, on top of the signer options.           |
 | [VersionCommand](interfaces/VersionCommand.md)                   | Asks for the version of the document server.                                 |
 | [Watermark](interfaces/Watermark.md)                             | Watermark stamped onto a PDF or image output.                                |
 | [WatermarkParagraph](interfaces/WatermarkParagraph.md)           | A line of watermark text.                                                    |
@@ -75,5 +77,6 @@
 | [FormatAction](types/FormatAction.md)                       | Something the editors can do with a format.                                                                         |
 | [FormatType](types/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
 | [JwtAlgorithm](types/JwtAlgorithm.md)                       | The HMAC algorithms the document server signs with.                                                                 |
+| [JwtErrorKind](types/JwtErrorKind.md)                       | Why a token was refused, and the discriminant of [JwtError](classes/JwtError.md).                                   |
 | [RgbColor](types/RgbColor.md)                               | Red, green and blue components, each 0–255.                                                                         |
 | [TextAssociation](types/TextAssociation.md)                 | How a PDF, XPS or OXPS page is split into text blocks while it is read.                                             |

@@ -1,7 +1,11 @@
+import { JwtError } from "./errors.js";
+
 const DEFAULT_ALGORITHM: JwtAlgorithm = "HS256";
 const DEFAULT_EXPIRES_IN_SEC = 300;
-const MAX_EXPIRES_IN_SEC = 2_147_483_647;
+const DEFAULT_CLOCK_TOLERANCE_SEC = 0;
+const MAX_SECONDS = 2_147_483_647;
 const MILLISECONDS_IN_SECOND = 1000;
+const SEGMENTS = 3;
 
 const HASHES: Readonly<Record<string, string>> = {
   HS256: "SHA-256",
@@ -10,6 +14,7 @@ const HASHES: Readonly<Record<string, string>> = {
 };
 
 const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 type HmacKey = Awaited<ReturnType<typeof crypto.subtle.importKey>>;
 
@@ -27,12 +32,23 @@ export interface JwtOptions {
    * `exp`. `null` leaves the claim out and the token never expires. Default: `300`.
    */
   expiresInSec?: number | null;
+  /**
+   * Leeway on `exp` and `nbf`, in whole seconds from `0` to `2147483647`, for a document
+   * server whose clock runs apart from ours. Default: `0`.
+   */
+  clockToleranceSec?: number;
 }
 
 /** Overrides applied to a single token, on top of the signer options. */
 export interface SignOptions {
   /** Lifetime of this token, in place of the configured one. */
   expiresInSec?: number | null;
+}
+
+/** Overrides applied to a single check, on top of the signer options. */
+export interface VerifyOptions {
+  /** Leeway for this token, in place of the configured one. */
+  clockToleranceSec?: number;
 }
 
 function normalizeSecret(secret: string): string {
@@ -60,13 +76,27 @@ function normalizeExpiresIn(expiresInSec: number | null): number | null {
     return null;
   }
 
-  if (!Number.isInteger(expiresInSec) || expiresInSec <= 0 || expiresInSec > MAX_EXPIRES_IN_SEC) {
+  if (!Number.isInteger(expiresInSec) || expiresInSec <= 0 || expiresInSec > MAX_SECONDS) {
     throw new TypeError(
-      `expiresInSec must be null or an integer from 1 to ${String(MAX_EXPIRES_IN_SEC)}, got: ${String(expiresInSec)}`,
+      `expiresInSec must be null or an integer from 1 to ${String(MAX_SECONDS)}, got: ${String(expiresInSec)}`,
     );
   }
 
   return expiresInSec;
+}
+
+function normalizeTolerance(clockToleranceSec: number): number {
+  if (
+    !Number.isInteger(clockToleranceSec) ||
+    clockToleranceSec < 0 ||
+    clockToleranceSec > MAX_SECONDS
+  ) {
+    throw new TypeError(
+      `clockToleranceSec must be an integer from 0 to ${String(MAX_SECONDS)}, got: ${String(clockToleranceSec)}`,
+    );
+  }
+
+  return clockToleranceSec;
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -81,6 +111,58 @@ function base64url(bytes: Uint8Array): string {
 
 function segment(value: unknown): string {
   return base64url(encoder.encode(JSON.stringify(value)));
+}
+
+function fromBase64url(text: string, what: string): Uint8Array {
+  let binary: string;
+
+  try {
+    binary = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
+  } catch (cause) {
+    throw new JwtError("malformed", `the ${what} of the token is not base64url`, { cause });
+  }
+
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes;
+}
+
+function parseSegment(text: string, what: string): Record<string, unknown> {
+  let value: unknown;
+
+  try {
+    value = JSON.parse(decoder.decode(fromBase64url(text, what))) as unknown;
+  } catch (cause) {
+    if (JwtError.is(cause)) {
+      throw cause;
+    }
+
+    throw new JwtError("malformed", `the ${what} of the token is not JSON`, { cause });
+  }
+
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new JwtError("malformed", `the ${what} of the token is not a JSON object`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function secondsClaim(claims: Record<string, unknown>, name: string): number | undefined {
+  const value = claims[name];
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new JwtError("malformed", `the ${name} claim of the token is not a number`);
+  }
+
+  return value;
 }
 
 function withClaims(payload: object, expiresInSec: number | null): object {
@@ -125,6 +207,9 @@ export class DocumentServerJwt {
       secret: normalizeSecret(options.secret),
       algorithm,
       expiresInSec: normalizeExpiresIn(expiresInSec),
+      clockToleranceSec: normalizeTolerance(
+        options.clockToleranceSec ?? DEFAULT_CLOCK_TOLERANCE_SEC,
+      ),
     });
   }
 
@@ -134,7 +219,7 @@ export class DocumentServerJwt {
       encoder.encode(this.options.secret),
       { name: "HMAC", hash: this.#hash },
       false,
-      ["sign"],
+      ["sign", "verify"],
     );
 
     return this.#key;
@@ -161,5 +246,68 @@ export class DocumentServerJwt {
     );
 
     return `${data}.${base64url(new Uint8Array(signature))}`;
+  }
+
+  /**
+   * Checks a token against the secret and the clock, and answers with what it carries.
+   *
+   * The algorithm is the one the signer is configured with: a token naming another in its
+   * header is refused rather than taken at its word. `exp` and `nbf` are honoured when
+   * present, `iat` is not. The payload is parsed only once the signature has matched.
+   *
+   * @throws {@link JwtError} when the token is malformed, signed with another algorithm
+   * or another secret, expired, or not valid yet.
+   */
+  async verify<T = Record<string, unknown>>(token: string, options?: VerifyOptions): Promise<T> {
+    const segments = token.split(".");
+
+    if (segments.length !== SEGMENTS) {
+      throw new JwtError(
+        "malformed",
+        `a token has ${String(SEGMENTS)} segments, got ${String(segments.length)}`,
+      );
+    }
+
+    const [head, body, signature] = segments as [string, string, string];
+    const algorithm = parseSegment(head, "header")["alg"];
+
+    if (algorithm !== this.options.algorithm) {
+      throw new JwtError(
+        "algorithm",
+        `the token is signed with ${JSON.stringify(algorithm)}, expected ${this.options.algorithm}`,
+      );
+    }
+
+    const matches = await crypto.subtle.verify(
+      "HMAC",
+      await this.#cryptoKey(),
+      fromBase64url(signature, "signature"),
+      encoder.encode(`${head}.${body}`),
+    );
+
+    if (!matches) {
+      throw new JwtError("signature", "the token was signed with another secret");
+    }
+
+    const claims = parseSegment(body, "payload");
+    const tolerance = normalizeTolerance(
+      options?.clockToleranceSec ?? this.options.clockToleranceSec,
+    );
+    const now = Math.floor(Date.now() / MILLISECONDS_IN_SECOND);
+    const exp = secondsClaim(claims, "exp");
+    const nbf = secondsClaim(claims, "nbf");
+
+    if (exp !== undefined && now >= exp + tolerance) {
+      throw new JwtError("expired", `the token expired at ${String(exp)}, now ${String(now)}`);
+    }
+
+    if (nbf !== undefined && now + tolerance < nbf) {
+      throw new JwtError(
+        "premature",
+        `the token is not valid before ${String(nbf)}, now ${String(now)}`,
+      );
+    }
+
+    return claims as T;
   }
 }

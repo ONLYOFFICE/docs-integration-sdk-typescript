@@ -1,6 +1,7 @@
 export { DocumentServerClient } from "./client/index.js";
 export { DocumentServerRawClient } from "./client/raw.js";
 export { DocumentServerJwt } from "./jwt/index.js";
+export { JwtError } from "./jwt/errors.js";
 export {
   BuilderError,
   CommandError,
@@ -66,4 +67,5 @@ export type {
   FormatAction,
   FormatType,
 } from "./client/meta.js";
-export type { JwtAlgorithm, JwtOptions, SignOptions } from "./jwt/index.js";
+export type { JwtAlgorithm, JwtOptions, SignOptions, VerifyOptions } from "./jwt/index.js";
+export type { JwtErrorKind } from "./jwt/errors.js";

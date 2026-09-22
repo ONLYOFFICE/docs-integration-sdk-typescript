@@ -58,3 +58,39 @@ Signs `payload` into a token in the compact serialization.
 
 when the payload is an array, or the lifetime is neither `null`
 nor a positive integer.
+
+---
+
+### verify()
+
+```ts
+verify<T>(token, options?): Promise<T>;
+```
+
+Checks a token against the secret and the clock, and answers with what it carries.
+
+The algorithm is the one the signer is configured with: a token naming another in its
+header is refused rather than taken at its word. `exp` and `nbf` are honoured when
+present, `iat` is not. The payload is parsed only once the signature has matched.
+
+#### Type Parameters
+
+| Type Parameter | Default type                    |
+| -------------- | ------------------------------- |
+| `T`            | `Record`\<`string`, `unknown`\> |
+
+#### Parameters
+
+| Parameter  | Type                                              |
+| ---------- | ------------------------------------------------- |
+| `token`    | `string`                                          |
+| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) |
+
+#### Returns
+
+`Promise`\<`T`\>
+
+#### Throws
+
+[JwtError](JwtError.md) when the token is malformed, signed with another algorithm
+or another secret, expired, or not valid yet.

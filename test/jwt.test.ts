@@ -1,6 +1,12 @@
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DocumentServerJwt, type JwtAlgorithm, type JwtOptions } from "../src/index.js";
+import {
+  DocumentServerError,
+  DocumentServerJwt,
+  JwtError,
+  type JwtAlgorithm,
+  type JwtOptions,
+} from "../src/index.js";
 
 const MAX_EXPIRES_IN_SEC = 2_147_483_647;
 
@@ -29,6 +35,28 @@ function hmac(data: string, secret: string, algorithm: JwtAlgorithm = "HS256"): 
   return createHmac(HASHES[algorithm], secret).update(data).digest("base64url");
 }
 
+/** A segment of a token, from what it should decode to. */
+function encode(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+/** A token built by hand, signed or left with a signature of its own. */
+function craft(
+  header: unknown,
+  payload: unknown,
+  options: { secret?: string; algorithm?: JwtAlgorithm; signature?: string } = {},
+): string {
+  const { secret = "secret", algorithm = "HS256", signature = "" } = options;
+  const data = `${encode(header)}.${encode(payload)}`;
+
+  return `${data}.${signature === "" ? hmac(data, secret, algorithm) : signature}`;
+}
+
+/** Whole seconds since the epoch, the unit every claim of a token counts in. */
+function now(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
 /** The `exp` a token signed now should carry. */
 function expectedExp(expiresInSec: number): number {
   return Math.floor(Date.now() / 1000) + expiresInSec;
@@ -42,11 +70,21 @@ describe("jwt options", () => {
   it("applies the defaults", () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });
 
-    expect(jwt.options).toEqual({ secret: "secret", algorithm: "HS256", expiresInSec: 300 });
+    expect(jwt.options).toEqual({
+      secret: "secret",
+      algorithm: "HS256",
+      expiresInSec: 300,
+      clockToleranceSec: 0,
+    });
   });
 
   it("keeps what was passed", () => {
-    const options: JwtOptions = { secret: "secret", algorithm: "HS512", expiresInSec: 60 };
+    const options: Required<JwtOptions> = {
+      secret: "secret",
+      algorithm: "HS512",
+      expiresInSec: 60,
+      clockToleranceSec: 5,
+    };
 
     expect(new DocumentServerJwt(options).options).toEqual(options);
   });
@@ -191,5 +229,188 @@ describe("sign", () => {
     await jwt.sign({ key: "second" });
 
     expect(importKey).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("verify", () => {
+  it("answers with what the token carries", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document", outputtype: "pdf" });
+
+    await expect(jwt.verify(token)).resolves.toMatchObject({
+      key: "document",
+      outputtype: "pdf",
+    });
+  });
+
+  it("answers with the type the caller asserts", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document" });
+    const claims = await jwt.verify<{ key: string }>(token);
+
+    expect(claims.key).toBe("document");
+  });
+
+  it.each(["HS256", "HS384", "HS512"] as const)(
+    "checks a token signed with %s",
+    async (algorithm) => {
+      const jwt = new DocumentServerJwt({ secret: "secret", algorithm });
+
+      await expect(jwt.verify(await jwt.sign({ key: "document" }))).resolves.toHaveProperty("key");
+    },
+  );
+
+  it("refuses a token signed with another secret", async () => {
+    const mine = new DocumentServerJwt({ secret: "secret" });
+    const theirs = new DocumentServerJwt({ secret: "another secret" });
+
+    await expect(mine.verify(await theirs.sign({ key: "document" }))).rejects.toMatchObject({
+      name: "JwtError",
+      kind: "signature",
+    });
+  });
+
+  it("refuses a payload edited under a signature that was once valid", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [head, , signature] = parts(await jwt.sign({ key: "document" }));
+    const token = `${head}.${encode({ key: "another document" })}.${signature}`;
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "signature" });
+  });
+
+  it("refuses a token naming an algorithm of its own", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", algorithm: "HS512" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document" });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "algorithm" });
+  });
+
+  it("refuses a token signed with none", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "none", typ: "JWT" }, { key: "document" }, { signature: "x" });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "algorithm" });
+  });
+
+  it.each([
+    ["no segments at all", "not-a-token"],
+    ["two segments", "eyJhbGciOiJIUzI1NiJ9.eyJrZXkiOiJkIn0"],
+    ["four segments", "a.b.c.d"],
+    ["an empty string", ""],
+  ])("refuses %s", async (_what, token) => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "malformed" });
+  });
+
+  it("refuses a header that is not JSON", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const head = Buffer.from("{", "utf8").toString("base64url");
+
+    await expect(jwt.verify(`${head}.${encode({})}.x`)).rejects.toMatchObject({
+      kind: "malformed",
+    });
+  });
+
+  it("refuses a payload that is not a JSON object", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, ["document"]);
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "malformed" });
+  });
+
+  it("refuses an expired token", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 1 });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "expired" });
+  });
+
+  it("refuses a token expiring this very second", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "expired" });
+  });
+
+  it("refuses a token that is not valid yet", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", nbf: now() + 60 });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "premature" });
+  });
+
+  it("refuses a lifetime claim that is not a number", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: "tomorrow" });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "malformed" });
+  });
+
+  it("lets the clocks disagree within the tolerance", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", clockToleranceSec: 30 });
+    const expired = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 10 });
+    const early = craft({ alg: "HS256", typ: "JWT" }, { key: "document", nbf: now() + 10 });
+
+    await expect(jwt.verify(expired)).resolves.toHaveProperty("key");
+    await expect(jwt.verify(early)).resolves.toHaveProperty("key");
+  });
+
+  it("takes a tolerance for one token", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 10 });
+
+    await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "expired" });
+    await expect(jwt.verify(token, { clockToleranceSec: 30 })).resolves.toHaveProperty("key");
+  });
+
+  it("rejects a tolerance it cannot apply", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    expect(() => new DocumentServerJwt({ secret: "secret", clockToleranceSec: -1 })).toThrow(
+      TypeError,
+    );
+    await expect(jwt.verify(await jwt.sign({}), { clockToleranceSec: 1.5 })).rejects.toThrow(
+      TypeError,
+    );
+  });
+
+  it("takes a token with no lifetime at all", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: null });
+
+    await expect(jwt.verify(await jwt.sign({ key: "document" }))).resolves.not.toHaveProperty(
+      "exp",
+    );
+  });
+
+  it("imports the key once across signing and checking", async () => {
+    const importKey = vi.spyOn(crypto.subtle, "importKey");
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await jwt.verify(await jwt.sign({ key: "document" }));
+
+    expect(importKey).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("recognizing a refused token", () => {
+  it("is recognized by JwtError", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const error: unknown = await jwt.verify("not-a-token").catch((reason: unknown) => reason);
+
+    expect(JwtError.is(error)).toBe(true);
+    expect(error).toBeInstanceOf(JwtError);
+  });
+
+  it("is not taken for an error of the document server", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const error: unknown = await jwt.verify("not-a-token").catch((reason: unknown) => reason);
+
+    expect(DocumentServerError.is(error)).toBe(false);
+  });
+
+  it("does not take anything else for one", () => {
+    expect(JwtError.is(new Error("no"))).toBe(false);
+    expect(JwtError.is(null)).toBe(false);
   });
 });
