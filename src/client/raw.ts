@@ -28,7 +28,7 @@ function buildUrl(baseUrl: string, path: string, query?: Readonly<Record<string,
     .map(([name, value]) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}`)
     .join("&");
 
-  return `${url}?${search}`;
+  return `${url}${url.includes("?") ? "&" : "?"}${search}`;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {

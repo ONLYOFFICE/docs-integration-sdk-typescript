@@ -1171,6 +1171,17 @@ describe("getFile", () => {
     );
   });
 
+  it("appends the query to one the path already carries", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch }).getFile(
+      `${path}?md5=Zm9vYmFy`,
+      { filename: "output.pdf" },
+    );
+
+    expect(calls[0]?.url).toBe(`https://docs.example.com${path}?md5=Zm9vYmFy&filename=output.pdf`);
+  });
+
   it("escapes the query it was given", async () => {
     const { fetch, calls } = spyFetch();
 
