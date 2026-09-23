@@ -8,8 +8,9 @@ browsers and edge runtimes. Ships both ESM and CJS builds with bundled type defi
 Early stage: the client currently covers the health check, the server configuration and
 formats, the conversion API, the command service, the document builder and downloading
 the files the server hands back, `DocumentServerConfig` builds the config an editor is
-opened with, and `DocumentServerJwt` signs the tokens they are sent with and checks the
-ones that come back.
+opened with, `DocumentServerJwt` signs the tokens they are sent with and checks the
+ones that come back, and `DocumentServerCallback` takes what the document server posts to
+the callback URL.
 
 ## Installation
 
@@ -43,12 +44,13 @@ caller who would rather decide what a failure means.
 The package root exports everything. Each module is also a subpath of its own, for a
 caller who needs one of them:
 
-| Subpath                                    | Exports                                                                      |
-| ------------------------------------------ | ---------------------------------------------------------------------------- |
-| `@onlyoffice/docs-integration-sdk/client`  | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
-| `@onlyoffice/docs-integration-sdk/config`  | `DocumentServerConfig`, `buildDocumentKey`, the editor config types          |
-| `@onlyoffice/docs-integration-sdk/formats` | `DocumentServerFormats`, `Format`                                            |
-| `@onlyoffice/docs-integration-sdk/jwt`     | `DocumentServerJwt`, `JwtError`                                              |
+| Subpath                                     | Exports                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports             |
+| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
+| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `buildDocumentKey`, the editor config types          |
+| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`                                            |
+| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                              |
 
 ```ts
 import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
@@ -562,7 +564,8 @@ body and the header — see [Signing and cluster routing](#signing-and-cluster-r
 `verify()` answers with what the token carries, and rejects with a `JwtError` when it
 cannot be trusted. This is the check a `callbackUrl` handler owes: the document server
 posts to it whenever a document is saved, and without it anybody who learns the URL can
-post too.
+post too. [`DocumentServerCallback`](#callback) makes this check, and the rest of what a
+callback needs, for you.
 
 ```ts
 try {
@@ -609,6 +612,131 @@ await client.convert(request, await inbox.sign({ payload: request }));
 ```
 
 A server that uses one secret everywhere — the common case — needs one signer.
+
+## Callback
+
+The document server posts to the `callbackUrl` of the editor config whenever something
+happens to the document: a user connects, the last editor closes, a save is asked for.
+`DocumentServerCallback` checks such a request against its token, reads what it reports,
+and answers it the way the document server expects.
+
+```ts
+import { DocumentServerCallback } from "@onlyoffice/docs-integration-sdk/callback";
+
+export async function POST(request: Request): Promise<Response> {
+  const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+  const reply = await callback.handle({
+    save: async ({ key, url }) => {
+      const link = new URL(url);
+      const file = await client.getFile(link.pathname, Object.fromEntries(link.searchParams));
+
+      await storage.put(key, file.body);
+    },
+  });
+
+  return Response.json(reply);
+}
+```
+
+`fromRequest()` takes the `Request` of fetch, which Next.js, Hono, Deno and the edge
+runtimes hand over. A framework that parses the body itself passes the parts instead —
+the body parsed, or as the text or the bytes it came in, and the headers as `Headers` or as
+the plain object of Node:
+
+```ts
+app.post("/callback", express.json(), async (req, res) => {
+  const callback = await DocumentServerCallback.parse(
+    { body: req.body, headers: req.headers },
+    { verifier: inbox },
+  );
+
+  res.json(await callback.handle(handlers));
+});
+```
+
+### What it reports
+
+`event` is the body of the request as the document server named its fields, plus a `kind`
+that tells the status apart:
+
+| `status` | `kind`              | What happened                                           | What to do                          |
+| -------- | ------------------- | ------------------------------------------------------- | ----------------------------------- |
+| `1`      | `"editing"`         | A user connected or disconnected; `actions` says which. | Nothing, or track who is editing.   |
+| `2`      | `"save"`            | The last editor closed and the document changed.        | Download `url` and store it.        |
+| `3`      | `"save-error"`      | The document server failed to build the document.       | Report it; `url` may be missing.    |
+| `4`      | `"closed"`          | The last editor closed and nothing changed.             | Nothing.                            |
+| `6`      | `"forcesave"`       | A save was asked for while the document is edited.      | Download `url` and store a version. |
+| `7`      | `"forcesave-error"` | That save failed.                                       | Report it.                          |
+| other    | `"unknown"`         | A status this SDK does not know yet.                    | Look at `status`.                   |
+
+A `switch` over `kind` narrows the event, so `url` is a `string` on `save` and `forcesave`
+— a callback of either status that comes without one is refused — and optional on the
+rest. `forcesavetype` says what asked for a forced save: `0` a command, `1` the save
+button, `2` a timer, `3` a submitted form, whose data is then at `formsdataurl`.
+
+### Signing
+
+With a secret configured, the document server signs every callback, in one of two places.
+In the body, `token` signs the callback itself; in the header — `Authorization: Bearer …`
+by default, or whatever `authorizationHeader` and `authorizationPrefix` name — it signs
+the callback wrapped as `{ payload: … }`. The token in the body is checked first, the one
+in the header when the body carries none.
+
+Once a token has matched, what it carries is the callback, and the body it came with is
+left aside: an unsigned field is something anybody who learns the URL could have written,
+so a `url` pointing elsewhere never reaches the download.
+
+`verifier` takes `DocumentServerJwt` configured with the inbox secret, or anything with a
+`verify(token)` that resolves to what the token carries. It has to be named: `null` takes
+unsigned callbacks, for a document server with no secret, and leaves a token they carry
+unchecked rather than trusted — a choice made on purpose rather than an option forgotten.
+
+### Answering
+
+The document server takes `{"error":0}` for an answer that the callback is dealt with, and
+posts it again on anything else. That makes the answer a promise: `0` may be sent only once
+the document is stored, since the document server lets go of it after that.
+
+`handle()` keeps the promise. It runs the handler of the event and answers
+`DocumentServerCallback.ok` once the handler is done, or `DocumentServerCallback.fail`
+when it threw or rejected, so the document server comes back. `onError` hears of the
+failure before the answer goes out:
+
+```ts
+await callback.handle(handlers, {
+  onError: (error, event) => logger.error({ error, key: event.key }, "callback failed"),
+});
+```
+
+A kind with no handler is answered with `ok`. `save` has to have one — the types refuse
+handlers without it — since a document left unstored on `2` is lost. A handler for
+`forcesave` is worth having as soon as the editors can force a save.
+
+### What it refuses
+
+`parse()` and `fromRequest()` reject with a `CallbackError`, which carries a `kind`:
+
+| `kind`        | Thrown when                                                                  |
+| ------------- | ---------------------------------------------------------------------------- |
+| `"body"`      | The body is not JSON, or carries no `key`, no integer `status`, or no `url`. |
+| `"token"`     | A verifier is named and the callback carries no token.                       |
+| `"signature"` | The verifier refused the token. Its refusal is the `cause`.                  |
+
+A request refused this way was not sent by the document server, or not in a shape it
+sends, so it is answered with an error status rather than with `fail`, which would only
+invite it again:
+
+```ts
+try {
+  callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+} catch (error) {
+  if (CallbackError.is(error)) {
+    return new Response(null, { status: error.kind === "body" ? 400 : 403 });
+  }
+
+  throw error;
+}
+```
 
 ## Errors
 
@@ -865,34 +993,38 @@ copy of it.
 
 ```
 src/
-  index.ts            the root: every module
-  */index.ts          the exports of a module, one subpath each
-  client/client.ts    DocumentServerClient, the typed layer
-  client/raw.ts       DocumentServerRawClient, the transport
-  client/errors.ts    DocumentServerError and the rest
-  client/options.ts   ClientOptions and RequestOptions
-  client/meta.ts      server configuration and formats
-  client/convert.ts   conversion request and response
-  client/command.ts   command request and response
-  client/builder.ts   document builder request and response
-  config/config.ts    DocumentServerConfig, the editor config
-  config/key.ts       buildDocumentKey
-  config/types.ts     the editor config types, from @onlyoffice/doceditor-types
-  formats/formats.ts  DocumentServerFormats, the format lookup
-  jwt/jwt.ts          DocumentServerJwt, the token signer
-  jwt/errors.ts       JwtError and the kinds of refusal
+  index.ts              the root: every module
+  */index.ts            the exports of a module, one subpath each
+  client/client.ts      DocumentServerClient, the typed layer
+  client/raw.ts         DocumentServerRawClient, the transport
+  client/errors.ts      DocumentServerError and the rest
+  client/options.ts     ClientOptions and RequestOptions
+  client/meta.ts        server configuration and formats
+  client/convert.ts     conversion request and response
+  client/command.ts     command request and response
+  client/builder.ts     document builder request and response
+  config/config.ts      DocumentServerConfig, the editor config
+  config/key.ts         buildDocumentKey
+  config/types.ts       the editor config types, from @onlyoffice/doceditor-types
+  formats/formats.ts    DocumentServerFormats, the format lookup
+  jwt/jwt.ts            DocumentServerJwt, the token signer
+  jwt/errors.ts         JwtError and the kinds of refusal
+  callback/callback.ts  DocumentServerCallback, the callback handler
+  callback/types.ts     the callback body and the events it reports
+  callback/errors.ts    CallbackError and the kinds of refusal
 test/
+  callback.test.ts
   client.test.ts
   config.test.ts
   formats.test.ts
   jwt.test.ts
 docs/
-  README.md           generated API reference: the modules
-  */README.md         a module: its classes, functions, interfaces and type aliases
-  */classes/ …        a page for each of them, one folder to a kind
+  README.md             generated API reference: the modules
+  */README.md           a module: its classes, functions, interfaces and type aliases
+  */classes/ …          a page for each of them, one folder to a kind
 scripts/
-  check-exports.mjs   checks the subpaths against src/ and against the root
-typedoc.json          how it is generated
+  check-exports.mjs     checks the subpaths against src/ and against the root
+typedoc.json            how it is generated
 ```
 
 ## Development
