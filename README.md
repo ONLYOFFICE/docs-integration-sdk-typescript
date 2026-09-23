@@ -467,8 +467,8 @@ A token is sent exactly as it is for a conversion — in the body as `token`, si
 itself, or in a header as the second argument, signing the body wrapped as `{ payload: … }`:
 
 ```ts
-await client.command({ ...request, token: jwt.sign(request, secret) });
-await client.command(request, jwt.sign({ payload: request }, secret));
+await client.command({ ...request, token: await jwt.sign(request) });
+await client.command(request, await jwt.sign({ payload: request }));
 ```
 
 The `shardkey` query parameter is added for the commands that carry a `key`, and left out
@@ -1098,8 +1098,8 @@ Signing works exactly as it does elsewhere — in the body as `token`, signing t
 itself, or in a header as the second argument, signing the body wrapped as `{ payload: … }`:
 
 ```ts
-await client.docbuilder({ ...request, token: jwt.sign(request, secret) });
-await client.docbuilder(request, jwt.sign({ payload: request }, secret));
+await client.docbuilder({ ...request, token: await jwt.sign(request) });
+await client.docbuilder(request, await jwt.sign({ payload: request }));
 ```
 
 [builder-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/
