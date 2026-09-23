@@ -151,6 +151,14 @@ describe("DocumentServerCallback.parse, the token in the body", () => {
     expect(await parse({ body: bytes })).toMatchObject({ kind: "save" });
   });
 
+  it("reads a body that came in as an ArrayBuffer", async () => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({ ...save, token: await jwt.sign(save) }),
+    );
+
+    expect(await parse({ body: bytes.slice().buffer })).toMatchObject({ kind: "save" });
+  });
+
   it("checks the token in the body before the one in the header", async () => {
     const header = await jwt.sign({ payload: body({ status: 4 }) });
     const event = await parse({

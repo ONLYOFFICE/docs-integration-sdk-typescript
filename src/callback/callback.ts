@@ -44,7 +44,10 @@ export type CallbackHeaders =
 
 /** A request to the callback URL, taken apart by the framework that received it. */
 export interface CallbackInput {
-  /** The body: parsed already, or as the text or the bytes it came in. */
+  /**
+   * The body: parsed already, or as the text or the bytes it came in — a string, a
+   * `Uint8Array` or `Buffer`, or an `ArrayBuffer`.
+   */
   body: unknown;
   headers?: CallbackHeaders;
 }
@@ -89,7 +92,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseBody(body: unknown): unknown {
   const text =
-    body instanceof Uint8Array
+    body instanceof Uint8Array || body instanceof ArrayBuffer
       ? new TextDecoder().decode(body)
       : typeof body === "string"
         ? body
