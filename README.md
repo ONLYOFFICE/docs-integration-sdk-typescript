@@ -887,7 +887,9 @@ test/
   formats.test.ts
   jwt.test.ts
 docs/
-  README.md           generated API reference, by module
+  README.md           generated API reference: the modules
+  */README.md         a module: its classes, functions, interfaces and type aliases
+  */classes/ …        a page for each of them, one folder to a kind
 scripts/
   check-exports.mjs   checks the subpaths against src/ and against the root
 typedoc.json          how it is generated

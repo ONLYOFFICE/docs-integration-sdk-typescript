@@ -3,7 +3,7 @@
   "entryPoints": ["src/*/index.ts"],
   "plugin": ["typedoc-plugin-markdown"],
   "out": "docs",
-  "router": "kind",
+  "router": "member",
   "readme": "none",
   "excludeExternals": true,
   "excludeInternal": true,
