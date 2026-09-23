@@ -265,3 +265,21 @@ describe("the format of the client", () => {
     expectTypeOf<clientMeta.FormatType>().toEqualTypeOf<lookup.FormatType>();
   });
 });
+
+describe("a format the lookup does not know yet", () => {
+  const vsdx: Format = {
+    name: "vsdx",
+    type: "board",
+    actions: ["view", "sign"],
+    convert: [],
+    mime: [],
+  };
+
+  it("keeps its type and actions", () => {
+    const lookup = new DocumentServerFormats([vsdx]);
+
+    expect(lookup.getDocumentType("vsdx")).toBe("board");
+    expect(lookup.can("vsdx", "sign")).toBe(true);
+    expect(lookup.getFormatsByType("board")).toEqual([vsdx]);
+  });
+});

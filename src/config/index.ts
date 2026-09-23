@@ -230,7 +230,7 @@ export class DocumentServerConfig {
 
     return new DocumentServerConfig({
       ...config,
-      documentType,
+      documentType: documentType as DocumentType,
       document: { ...file, title, fileType, ...config?.document },
     });
   }

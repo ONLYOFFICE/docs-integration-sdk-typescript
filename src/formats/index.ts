@@ -2,7 +2,7 @@
  * Editor a format opens in, or the empty string for one that is only ever produced by a
  * conversion, such as an image.
  */
-export type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word";
+export type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word" | (string & {});
 
 /** Something the editors can do with a format. */
 export type FormatAction =
@@ -14,7 +14,8 @@ export type FormatAction =
   | "fill"
   | "lossy-edit"
   | "review"
-  | "view";
+  | "view"
+  | (string & {});
 
 /** A file format the document server knows. */
 export interface Format {
