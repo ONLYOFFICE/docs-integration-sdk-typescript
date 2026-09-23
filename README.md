@@ -214,7 +214,7 @@ that config, so `JSON.stringify(config)` is what goes into the page.
 Nearly every field of the editor config is optional in the types, while the document
 server is strict about a handful of them. A `TypeError` is thrown for:
 
-- a missing `document` or `documentType`, or a `documentType` no editor answers to;
+- a missing `document`, or a `documentType` that is missing or empty;
 - a `key` that is empty, longer than 128 characters, or carries anything outside
   `0-9`, `a-z`, `A-Z`, `-`, `.`, `_` and `=`;
 - a `document.url` or an `editorConfig.callbackUrl` that is not an absolute `http` or

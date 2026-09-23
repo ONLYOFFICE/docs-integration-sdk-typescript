@@ -99,10 +99,24 @@ describe("DocumentServerConfig", () => {
     );
   });
 
-  it("refuses a document type the editors do not know", () => {
-    expect(() => new DocumentServerConfig(config({ documentType: "text" as "word" }))).toThrow(
-      /documentType must be one of/,
+  it("keeps a document type the editors have learned since", () => {
+    const { config: effective } = new DocumentServerConfig(
+      config({ documentType: "board" as "word" }),
     );
+
+    expect(effective.documentType).toBe("board");
+  });
+
+  it("refuses an empty document type", () => {
+    expect(() => new DocumentServerConfig(config({ documentType: " " as "word" }))).toThrow(
+      /documentType must not be empty/,
+    );
+  });
+
+  it("refuses a document type that is not a string", () => {
+    expect(
+      () => new DocumentServerConfig(config({ documentType: 1 as unknown as "word" })),
+    ).toThrow(/documentType must be a string/);
   });
 
   it("refuses an empty key", () => {
@@ -206,13 +220,13 @@ describe("DocumentServerConfig.forFile", () => {
   });
 
   it("looks the document type up in a lookup of its own", () => {
-    const lookup: DocumentTypeLookup = { getDocumentType: () => "diagram" };
+    const lookup: DocumentTypeLookup = { getDocumentType: () => "board" };
     const { config: effective } = DocumentServerConfig.forFile(
       { ...file, title: "Plan.vsdx" },
       lookup,
     );
 
-    expect(effective.documentType).toBe("diagram");
+    expect(effective.documentType).toBe("board");
   });
 
   it("takes the formats of the server as its lookup", () => {

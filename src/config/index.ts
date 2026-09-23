@@ -10,7 +10,6 @@ import type {
 const MAX_KEY_LENGTH = 128;
 const MAX_TITLE_LENGTH = 128;
 const SUPPORTED_KEY = /^[0-9a-zA-Z._=-]+$/;
-const DOCUMENT_TYPES: ReadonlySet<string> = new Set(["cell", "diagram", "pdf", "slide", "word"]);
 
 /** A file the editors are to open, as your storage knows it. */
 export interface ConfigFile {
@@ -119,10 +118,12 @@ function normalizeFileType(fileType: unknown): FileType {
 }
 
 function normalizeDocumentType(documentType: unknown): DocumentType {
-  if (typeof documentType !== "string" || !DOCUMENT_TYPES.has(documentType)) {
-    throw new TypeError(
-      `documentType must be one of ${[...DOCUMENT_TYPES].join(", ")}, got: ${String(documentType)}`,
-    );
+  if (typeof documentType !== "string") {
+    throw new TypeError(`documentType must be a string, got: ${typeof documentType}`);
+  }
+
+  if (documentType.trim() === "") {
+    throw new TypeError("documentType must not be empty");
   }
 
   return documentType as DocumentType;
@@ -189,9 +190,9 @@ export class DocumentServerConfig {
   readonly config: Readonly<StrictConfig>;
 
   /**
-   * @throws {TypeError} when `document` or `documentType` is missing, a URL is not
-   * absolute, the key is too long or carries a character the server does not accept, or
-   * the config carries the editor events.
+   * @throws {TypeError} when `document` is missing, `documentType` is missing or empty, a
+   * URL is not absolute, the key is too long or carries a character the server does not
+   * accept, or the config carries the editor events.
    */
   constructor(config: SignableConfig) {
     assertRecord(config, "config");
