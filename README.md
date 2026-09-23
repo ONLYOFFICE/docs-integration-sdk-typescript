@@ -745,8 +745,8 @@ or when the document server reports a failure of its own:
 
 | Error                        | `kind`         | Thrown when                                                                                            |
 | ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
-| `DocumentServerNetworkError` | `"network"`    | No answer came: the server could not be reached, or the connection broke. Carries `url` and `cause`.   |
-| `DocumentServerTimeoutError` | `"timeout"`    | The deadline ran out before the answer had been read. Carries `url`, `timeoutMs` and `cause`.          |
+| `DocumentServerNetworkError` | `"network"`    | No answer came: the server could not be reached, or the connection broke. Carries `cause`.             |
+| `DocumentServerTimeoutError` | `"timeout"`    | The deadline ran out before the answer had been read. Carries `timeoutMs` and `cause`.                 |
 | `DocumentServerHttpError`    | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
 | `DocumentServerParseError`   | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
 | `ConversionError`            | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.              |
@@ -757,6 +757,18 @@ All seven extend `DocumentServerError`. The last five carry the `response` they 
 from; its body has already been consumed by the time the error is built, which is why a
 truncated copy of it is on the error itself. A network failure and a timeout may come
 before any response does, so theirs is `undefined`.
+
+Every one of them carries the `url` the request went to, which is what tells two document
+servers apart in a log — the internal and the public address of the same one, say. It
+leaves the query out, since a download link carries its signature there. An error read off
+a response takes it from `response.url`, so it is where a redirect ended up, and it is
+empty when a [`fetch`](#fetch) of your own answers with a `Response` built by hand. A
+failing status names it in the message as well:
+
+```ts
+// DocumentServerHttpError: the document server answered 502 Bad Gateway at
+// http://docs.internal/meta/formats: <html>…
+```
 
 `code` keeps the documented codes as literals, so `-5` is autocompleted and a `case -5:`
 narrows — but a code the service does not document stays a number rather than being forced
@@ -829,10 +841,9 @@ system error code when there is one, and the message of the error under it other
 // http://docs.internal/meta/formats: fetch failed (ECONNREFUSED)
 ```
 
-`url` is where the request went, with the query left out: a download link carries its
-signature there, and an error tends to end up in a log. It covers a body that breaks off
-while it is read as well as a request that never got a response. See
-[timeoutMs](#timeoutms).
+Both cover a body that breaks off while it is read as well as a request that never got a
+response, and both take their `url` from the request, since there may be no response to
+read it off. See [timeoutMs](#timeoutms).
 
 One abort is not wrapped: a call cancelled through a `signal` of your own rejects with the
 reason that signal carries, untouched, since cancelling is your decision rather than a

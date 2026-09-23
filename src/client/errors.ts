@@ -66,16 +66,24 @@ export class DocumentServerError extends Error {
    */
   readonly response: Response | undefined;
 
+  /**
+   * Where the request went, the query left out: a download link carries its signature
+   * there. Read off the response when there is one, redirects followed. Empty when it is
+   * not known, as from a `fetch` of your own that answers with a `Response` built by hand.
+   */
+  readonly url: string;
+
   constructor(
     kind: DocumentServerErrorKind,
     message: string,
     response: Response | undefined,
-    options?: ErrorOptions,
+    options?: ErrorOptions & { url?: string },
   ) {
-    super(message, options);
+    super(message, options?.cause === undefined ? undefined : { cause: options.cause });
     this.name = "DocumentServerError";
     this.kind = kind;
     this.response = response;
+    this.url = location(options?.url ?? response?.url ?? "");
   }
 
   /** @internal */
@@ -102,7 +110,7 @@ export class DocumentServerHttpError extends DocumentServerError {
 
     super(
       "http",
-      `the document server answered ${status}${body === "" ? "" : `: ${body}`}`,
+      `the document server answered ${status}${at(location(response.url))}${body === "" ? "" : `: ${body}`}`,
       response,
     );
     this.name = "DocumentServerHttpError";
@@ -244,20 +252,15 @@ function reason(cause: unknown): string {
 export class DocumentServerNetworkError extends DocumentServerError {
   declare readonly kind: "network";
   declare readonly response: undefined;
-  /** Where the request went, the query left out. Empty when that is not known. */
-  readonly url: string;
 
   constructor(url: string, cause: unknown) {
-    const where = location(url);
-
     super(
       "network",
-      `the document server could not be reached${at(where)}: ${reason(cause)}`,
+      `the document server could not be reached${at(location(url))}: ${reason(cause)}`,
       undefined,
-      { cause },
+      { cause, url },
     );
     this.name = "DocumentServerNetworkError";
-    this.url = where;
   }
 
   static override is(value: unknown): value is DocumentServerNetworkError {
@@ -272,22 +275,17 @@ export class DocumentServerNetworkError extends DocumentServerError {
 export class DocumentServerTimeoutError extends DocumentServerError {
   declare readonly kind: "timeout";
   declare readonly response: undefined;
-  /** Where the request went, the query left out. Empty when that is not known. */
-  readonly url: string;
   /** The deadline that ran out, in milliseconds. */
   readonly timeoutMs: number;
 
   constructor(url: string, timeoutMs: number, cause: unknown) {
-    const where = location(url);
-
     super(
       "timeout",
-      `the document server did not answer${at(where)} within ${String(timeoutMs)} ms`,
+      `the document server did not answer${at(location(url))} within ${String(timeoutMs)} ms`,
       undefined,
-      { cause },
+      { cause, url },
     );
     this.name = "DocumentServerTimeoutError";
-    this.url = where;
     this.timeoutMs = timeoutMs;
   }
 

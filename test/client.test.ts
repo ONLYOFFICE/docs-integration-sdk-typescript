@@ -1712,6 +1712,70 @@ describe("a request that gets no answer", () => {
   });
 });
 
+describe("the url of an error", () => {
+  /** Answers the way fetch does: the response carries the url it was fetched from. */
+  function answering(respond: () => Response): ClientOptions["fetch"] {
+    return (url) => {
+      const response = respond();
+
+      Object.defineProperty(response, "url", { value: url });
+
+      return Promise.resolve(response);
+    };
+  }
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: answering(respond),
+    });
+  }
+
+  it("names the server that answered with a failing status", async () => {
+    const rejection = client(() => new Response("down", { status: 503 })).getFormats();
+
+    await expect(rejection).rejects.toMatchObject({
+      url: "https://docs.example.com/meta/formats",
+      message: "the document server answered 503 at https://docs.example.com/meta/formats: down",
+    });
+  });
+
+  it("leaves the query out of it", async () => {
+    const rejection = client(() => new Response("", { status: 404 })).getFile(
+      "/cache/files/data/key/output.pdf",
+      { md5: "secret", expires: "1" },
+    );
+
+    await expect(rejection).rejects.toMatchObject({
+      url: "https://docs.example.com/cache/files/data/key/output.pdf",
+      message:
+        "the document server answered 404 at https://docs.example.com/cache/files/data/key/output.pdf",
+    });
+  });
+
+  it("is on an unexpected body and on a failure the service reports", async () => {
+    await expect(client(() => new Response("<html>")).getConfig()).rejects.toMatchObject({
+      kind: "parse",
+      url: "https://docs.example.com/meta/config",
+    });
+    await expect(
+      client(() => Response.json({ error: 6 })).command({ c: "version" }),
+    ).rejects.toMatchObject({ kind: "command", url: "https://docs.example.com/command" });
+  });
+
+  it("is empty when the response does not carry one", async () => {
+    const rejection = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(() => new Response("down", { status: 503 })).fetch,
+    }).getFormats();
+
+    await expect(rejection).rejects.toMatchObject({
+      url: "",
+      message: "the document server answered 503: down",
+    });
+  });
+});
+
 describe("healthcheck", () => {
   function client(respond: () => Response) {
     return new DocumentServerClient({
