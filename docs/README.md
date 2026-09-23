@@ -30,6 +30,7 @@
 | [ConfigFile](interfaces/ConfigFile.md)                           | A file the editors are to open, as your storage knows it.                                                                                                    |
 | [ConfigLimits](interfaces/ConfigLimits.md)                       | Bounds the document server enforces.                                                                                                                         |
 | [ConfigResponse](interfaces/ConfigResponse.md)                   | Body of a response from the configuration endpoint.                                                                                                          |
+| [ConfigSigner](interfaces/ConfigSigner.md)                       | What signs a config: [DocumentServerJwt](classes/DocumentServerJwt.md) or any signer of your own.                                                            |
 | [ConfigUrls](interfaces/ConfigUrls.md)                           | Paths of the endpoints the document server serves, relative to its base URL.                                                                                 |
 | [ConvertRequest](interfaces/ConvertRequest.md)                   | Body of a request to the conversion service.                                                                                                                 |
 | [ConvertResponse](interfaces/ConvertResponse.md)                 | Body of a response from the conversion service.                                                                                                              |
@@ -37,6 +38,7 @@
 | [DocumentLayout](interfaces/DocumentLayout.md)                   | Layout of a form printed to PDF or to an image.                                                                                                              |
 | [DocumentMeta](interfaces/DocumentMeta.md)                       | New metadata of a document.                                                                                                                                  |
 | [DocumentRenderer](interfaces/DocumentRenderer.md)               | How a PDF, XPS or OXPS source document is read.                                                                                                              |
+| [DocumentTypeLookup](interfaces/DocumentTypeLookup.md)           | What finds the editor of a file: [DocumentServerFormats](classes/DocumentServerFormats.md) or a lookup of your own.                                          |
 | [DropCommand](interfaces/DropCommand.md)                         | Disconnects users from co-editing, leaving them with view access.                                                                                            |
 | [ForcesaveCommand](interfaces/ForcesaveCommand.md)               | Saves the document being edited without closing it.                                                                                                          |
 | [Format](interfaces/Format.md)                                   | A file format the document server knows.                                                                                                                     |
@@ -81,6 +83,7 @@
 | [CsvDelimiter](types/CsvDelimiter.md)                       | Column separator for CSV input: none, tab, semicolon, colon, comma or space.                                        |
 | [DocumentServerErrorKind](types/DocumentServerErrorKind.md) | Which failure an error stands for, and the discriminant of the union below.                                         |
 | [FormatAction](types/FormatAction.md)                       | Something the editors can do with a format.                                                                         |
+| [FormatsResponse](types/FormatsResponse.md)                 | Body of a response from the formats endpoint: every format the document server knows.                               |
 | [FormatType](types/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
 | [JwtAlgorithm](types/JwtAlgorithm.md)                       | The HMAC algorithms the document server signs with.                                                                 |
 | [JwtErrorKind](types/JwtErrorKind.md)                       | Why a token was refused, and the discriminant of [JwtError](classes/JwtError.md).                                   |

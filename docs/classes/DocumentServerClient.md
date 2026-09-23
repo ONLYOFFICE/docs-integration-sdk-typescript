@@ -189,7 +189,7 @@ The file itself, unread, so a large one can be streamed.
 ### getFormats()
 
 ```ts
-getFormats(options?): Promise<Format[]>;
+getFormats(options?): Promise<FormatsResponse>;
 ```
 
 Every file format the document server knows, and what it may be converted to.
@@ -202,7 +202,7 @@ Every file format the document server knows, and what it may be converted to.
 
 #### Returns
 
-`Promise`\<[`Format`](../interfaces/Format.md)[]\>
+`Promise`\<[`FormatsResponse`](../types/FormatsResponse.md)\>
 
 ---
 

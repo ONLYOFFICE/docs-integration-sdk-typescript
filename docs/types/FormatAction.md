@@ -12,7 +12,8 @@ type FormatAction =
   | "fill"
   | "lossy-edit"
   | "review"
-  | "view";
+  | "view"
+  | (string & {});
 ```
 
 Something the editors can do with a format.

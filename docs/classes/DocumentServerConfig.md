@@ -34,9 +34,9 @@ new DocumentServerConfig(config): DocumentServerConfig;
 
 #### Throws
 
-when `document` or `documentType` is missing, a URL is not
-absolute, the key is too long or carries a character the server does not accept, or
-the config carries the editor events.
+when `document` is missing, `documentType` is missing or empty, a
+URL is not absolute, the key is too long or carries a character the server does not
+accept, or the config carries the editor events.
 
 ## Properties
 
@@ -65,11 +65,11 @@ than replacing it.
 
 #### Parameters
 
-| Parameter | Type                                                |
-| --------- | --------------------------------------------------- |
-| `file`    | [`ConfigFile`](../interfaces/ConfigFile.md)         |
-| `formats` | [`DocumentServerFormats`](DocumentServerFormats.md) |
-| `config?` | [`SignableConfig`](../types/SignableConfig.md)      |
+| Parameter | Type                                                        |
+| --------- | ----------------------------------------------------------- |
+| `file`    | [`ConfigFile`](../interfaces/ConfigFile.md)                 |
+| `formats` | [`DocumentTypeLookup`](../interfaces/DocumentTypeLookup.md) |
+| `config?` | [`SignableConfig`](../types/SignableConfig.md)              |
 
 #### Returns
 
@@ -84,7 +84,7 @@ when the name carries no extension, or no editor opens it.
 ### sign()
 
 ```ts
-sign(jwt): Promise<Readonly<StrictConfig>>;
+sign(signer): Promise<Readonly<StrictConfig>>;
 ```
 
 The config with a `token` signed over it, which is what the editor is handed once the
@@ -95,9 +95,9 @@ one is signed anew rather than signed over its own token.
 
 #### Parameters
 
-| Parameter | Type                                        |
-| --------- | ------------------------------------------- |
-| `jwt`     | [`DocumentServerJwt`](DocumentServerJwt.md) |
+| Parameter | Type                                            |
+| --------- | ----------------------------------------------- |
+| `signer`  | [`ConfigSigner`](../interfaces/ConfigSigner.md) |
 
 #### Returns
 
