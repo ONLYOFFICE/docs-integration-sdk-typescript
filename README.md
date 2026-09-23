@@ -64,6 +64,12 @@ A class is one and the same whichever path it is imported from, so a `JwtError` 
 a signer from `/jwt` passes `instanceof` against the `JwtError` of the root, in ESM as in
 CJS.
 
+A module is a folder under `src/` with an `index.ts`, and the folders are the one list of
+modules: the build takes `src/*/index.ts`, the package exports `./*` onto what it built,
+and the reference documents the same files. A new module takes its folder and a line in
+`src/index.ts`; `npm run check:exports` fails when the line is missing, or when `dist/`
+holds a folder no module stands for.
+
 ## API reference
 
 Every export — the two clients, the signer, the errors, and each request and response
@@ -883,7 +889,7 @@ test/
 docs/
   README.md           generated API reference, by module
 scripts/
-  check-exports.mjs   checks that every subpath shares its exports with the root
+  check-exports.mjs   checks the subpaths against src/ and against the root
 typedoc.json          how it is generated
 ```
 
