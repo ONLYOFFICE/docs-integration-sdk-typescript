@@ -1,4 +1,33 @@
-import type { Format, FormatAction, FormatType } from "../client/meta.js";
+/**
+ * Editor a format opens in, or the empty string for one that is only ever produced by a
+ * conversion, such as an image.
+ */
+export type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word";
+
+/** Something the editors can do with a format. */
+export type FormatAction =
+  | "auto-convert"
+  | "comment"
+  | "customfilter"
+  | "edit"
+  | "encrypt"
+  | "fill"
+  | "lossy-edit"
+  | "review"
+  | "view";
+
+/** A file format the document server knows. */
+export interface Format {
+  /** What the editors can do with it. Empty for a format they never open. */
+  actions: FormatAction[];
+  /** Extensions it can be converted to, each without the dot. */
+  convert: string[];
+  /** MIME types it is served under. */
+  mime: string[];
+  /** Extension of the format, without the dot, such as `"docx"`. */
+  name: string;
+  type: FormatType;
+}
 
 const NONE: readonly never[] = Object.freeze([]);
 

@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type * as clientMeta from "../src/client/meta.js";
+import type * as lookup from "../src/formats/index.js";
 import { DocumentServerFormats, type Format } from "../src/index.js";
 
 const docx: Format = {
@@ -253,5 +255,13 @@ describe("getFormatsByType", () => {
 
   it("lists the ones a conversion only ever produces", () => {
     expect(formats().getFormatsByType("")).toEqual([png, zip]);
+  });
+});
+
+describe("the format of the client", () => {
+  it("is the format the lookup takes", () => {
+    expectTypeOf<clientMeta.Format>().toEqualTypeOf<lookup.Format>();
+    expectTypeOf<clientMeta.FormatAction>().toEqualTypeOf<lookup.FormatAction>();
+    expectTypeOf<clientMeta.FormatType>().toEqualTypeOf<lookup.FormatType>();
   });
 });
