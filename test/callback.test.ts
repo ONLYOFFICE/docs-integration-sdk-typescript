@@ -327,6 +327,19 @@ describe("DocumentServerCallback.handle", () => {
     expect(onError).toHaveBeenCalledWith(failure, expect.objectContaining({ kind: "save" }));
   });
 
+  it("answers fail when the error hook threw too", async () => {
+    const reply = await new DocumentServerCallback(save).handle(
+      { save: () => Promise.reject(new Error("storage unavailable")) },
+      {
+        onError: () => {
+          throw new Error("logger down");
+        },
+      },
+    );
+
+    expect(reply).toEqual({ error: 1 });
+  });
+
   it("answers fail when the handler threw", async () => {
     const reply = await new DocumentServerCallback(save).handle({
       save: () => {

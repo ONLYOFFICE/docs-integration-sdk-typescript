@@ -76,7 +76,10 @@ export interface CallbackHandlers {
 
 /** Overrides of how {@link DocumentServerCallback.handle} answers. */
 export interface HandleOptions {
-  /** Told of the error a handler failed with, before the callback is answered with `1`. */
+  /**
+   * Told of the error a handler failed with, before the callback is answered with `1`. An
+   * error it throws itself is swallowed, so the answer is still `1`.
+   */
   onError?: (error: unknown, event: CallbackEvent) => void;
 }
 
@@ -295,7 +298,9 @@ export class DocumentServerCallback {
           break;
       }
     } catch (error) {
-      options?.onError?.(error, event);
+      try {
+        options?.onError?.(error, event);
+      } catch {}
 
       return FAIL;
     }

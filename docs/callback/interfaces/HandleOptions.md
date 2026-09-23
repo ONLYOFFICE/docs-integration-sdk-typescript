@@ -6,6 +6,6 @@ Overrides of how [DocumentServerCallback.handle](../classes/DocumentServerCallba
 
 ## Properties
 
-| Property                                 | Type                         | Description                                                                        |
-| ---------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| <a id="property-onerror"></a> `onError?` | (`error`, `event`) => `void` | Told of the error a handler failed with, before the callback is answered with `1`. |
+| Property                                 | Type                         | Description                                                                                                                                            |
+| ---------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-onerror"></a> `onError?` | (`error`, `event`) => `void` | Told of the error a handler failed with, before the callback is answered with `1`. An error it throws itself is swallowed, so the answer is still `1`. |
