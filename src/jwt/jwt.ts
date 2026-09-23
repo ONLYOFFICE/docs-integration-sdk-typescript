@@ -165,23 +165,33 @@ function secondsClaim(claims: Record<string, unknown>, name: string): number | u
   return value;
 }
 
+function isUnset(value: unknown): boolean {
+  return value === undefined || value === null;
+}
+
 function withClaims(payload: object, expiresInSec: number | null): object {
   if (Array.isArray(payload)) {
     throw new TypeError("payload must be a JSON object, got an array");
   }
 
   const now = Math.floor(Date.now() / MILLISECONDS_IN_SECOND);
-  const claims: Record<string, number> = {};
+  const claims: Record<string, unknown> = { ...payload };
 
-  if (!("iat" in payload)) {
+  if (isUnset(claims["iat"])) {
     claims["iat"] = now;
   }
 
-  if (expiresInSec !== null && !("exp" in payload)) {
+  if (!isUnset(claims["exp"])) {
+    return claims;
+  }
+
+  if (expiresInSec === null) {
+    delete claims["exp"];
+  } else {
     claims["exp"] = now + expiresInSec;
   }
 
-  return { ...payload, ...claims };
+  return claims;
 }
 
 /**
@@ -191,9 +201,13 @@ function withClaims(payload: object, expiresInSec: number | null): object {
  * and `session` secrets takes a signer for each.
  */
 export class DocumentServerJwt {
-  /** The effective settings: validated, with the defaults applied, and frozen. */
-  readonly options: Readonly<Required<JwtOptions>>;
+  /**
+   * The effective settings: validated, with the defaults applied, and frozen. The secret is
+   * kept out of them, so that logging the signer does not write it out.
+   */
+  readonly options: Readonly<Required<Omit<JwtOptions, "secret">>>;
 
+  readonly #secret: string;
   readonly #hash: string;
   #key?: Promise<HmacKey>;
 
@@ -202,9 +216,9 @@ export class DocumentServerJwt {
     const expiresInSec =
       options.expiresInSec === undefined ? DEFAULT_EXPIRES_IN_SEC : options.expiresInSec;
 
+    this.#secret = normalizeSecret(options.secret);
     this.#hash = hashOf(algorithm);
     this.options = Object.freeze({
-      secret: normalizeSecret(options.secret),
       algorithm,
       expiresInSec: normalizeExpiresIn(expiresInSec),
       clockToleranceSec: normalizeTolerance(
@@ -216,7 +230,7 @@ export class DocumentServerJwt {
   #cryptoKey(): Promise<HmacKey> {
     this.#key ??= crypto.subtle.importKey(
       "raw",
-      encoder.encode(this.options.secret),
+      encoder.encode(this.#secret),
       { name: "HMAC", hash: this.#hash },
       false,
       ["sign", "verify"],
@@ -228,7 +242,8 @@ export class DocumentServerJwt {
   /**
    * Signs `payload` into a token in the compact serialization.
    *
-   * `iat` and `exp` are added, each unless the payload already carries it.
+   * `iat` and `exp` are added, each unless the payload already carries it. A claim set to
+   * `undefined` or `null` counts as not carried.
    *
    * @throws {TypeError} when the payload is an array, or the lifetime is neither `null`
    * nor a positive integer.

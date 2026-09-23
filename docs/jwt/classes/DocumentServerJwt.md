@@ -27,9 +27,9 @@ new DocumentServerJwt(options): DocumentServerJwt;
 
 ## Properties
 
-| Property                                | Modifier   | Type                                                                    | Description                                                               |
-| --------------------------------------- | ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <a id="property-options"></a> `options` | `readonly` | `Readonly`\<`Required`\<[`JwtOptions`](../interfaces/JwtOptions.md)\>\> | The effective settings: validated, with the defaults applied, and frozen. |
+| Property                                | Modifier   | Type                                                                                          | Description                                                                                                                                                 |
+| --------------------------------------- | ---------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-options"></a> `options` | `readonly` | `Readonly`\<`Required`\<`Omit`\<[`JwtOptions`](../interfaces/JwtOptions.md), `"secret"`\>\>\> | The effective settings: validated, with the defaults applied, and frozen. The secret is kept out of them, so that logging the signer does not write it out. |
 
 ## Methods
 
@@ -41,7 +41,8 @@ sign(payload, options?): Promise<string>;
 
 Signs `payload` into a token in the compact serialization.
 
-`iat` and `exp` are added, each unless the payload already carries it.
+`iat` and `exp` are added, each unless the payload already carries it. A claim set to
+`undefined` or `null` counts as not carried.
 
 #### Parameters
 

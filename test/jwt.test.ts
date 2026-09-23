@@ -71,7 +71,6 @@ describe("jwt options", () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });
 
     expect(jwt.options).toEqual({
-      secret: "secret",
       algorithm: "HS256",
       expiresInSec: 300,
       clockToleranceSec: 0,
@@ -86,7 +85,18 @@ describe("jwt options", () => {
       clockToleranceSec: 5,
     };
 
-    expect(new DocumentServerJwt(options).options).toEqual(options);
+    expect(new DocumentServerJwt(options).options).toEqual({
+      algorithm: "HS512",
+      expiresInSec: 60,
+      clockToleranceSec: 5,
+    });
+  });
+
+  it("keeps the secret out of them", () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    expect(jwt.options).not.toHaveProperty("secret");
+    expect(JSON.stringify(jwt)).not.toContain("secret");
   });
 
   it("freezes them", () => {
@@ -178,6 +188,32 @@ describe("sign", () => {
     const [, body] = parts(await jwt.sign({ iat: 1516239022, exp: 1516239922 }));
 
     expect(decode(body)).toEqual({ iat: 1516239022, exp: 1516239922 });
+  });
+
+  it("takes a claim set to undefined as not carried", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: 60 });
+    const [, body] = parts(await jwt.sign({ iat: undefined, exp: undefined }));
+    const claims = decode(body);
+
+    expect(claims["iat"]).toBeCloseTo(Math.floor(Date.now() / 1000), 0);
+    expect(claims["exp"]).toBeCloseTo(expectedExp(60), 0);
+  });
+
+  it("takes a claim set to null as not carried", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: 60 });
+    const [, body] = parts(await jwt.sign({ iat: null, exp: null }));
+    const claims = decode(body);
+
+    expect(claims["iat"]).toBeCloseTo(Math.floor(Date.now() / 1000), 0);
+    expect(claims["exp"]).toBeCloseTo(expectedExp(60), 0);
+  });
+
+  it("leaves out an exp set to null when the lifetime is turned off", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: null });
+    const token = await jwt.sign({ key: "document", exp: null });
+
+    expect(decode(parts(token)[1])).not.toHaveProperty("exp");
+    await expect(jwt.verify(token)).resolves.toMatchObject({ key: "document" });
   });
 
   it("takes a lifetime for one token", async () => {
