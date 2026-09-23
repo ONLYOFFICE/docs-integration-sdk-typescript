@@ -350,6 +350,35 @@ describe("verify", () => {
     await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "malformed" });
   });
 
+  it.each([
+    ["padded", (signature: string) => `${signature}=`],
+    ["with a space", (signature: string) => `${signature.slice(0, 10)} ${signature.slice(10)}`],
+    ["in plain base64", (signature: string) => signature.replace(/-/g, "+").replace(/_/g, "/")],
+  ])("refuses a signature %s", async (_what, rewrite) => {
+    const jwt = new DocumentServerJwt({ secret: "your-256-bit-secret", expiresInSec: null });
+    const [head, body, signature] = parts(
+      await jwt.sign({ sub: "1234567890", name: "John Doe", iat: 1516239022 }),
+    );
+
+    expect(signature).toMatch(/[-_]/);
+    await expect(jwt.verify(`${head}.${body}.${rewrite(signature)}`)).rejects.toMatchObject({
+      kind: "malformed",
+    });
+  });
+
+  it("refuses a signature whose unused bits are set", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [head, body, signature] = parts(await jwt.sign({ key: "document" }));
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const last = alphabet.indexOf(signature.slice(-1));
+    const forged = signature.slice(0, -1) + (alphabet[last ^ 1] ?? "");
+
+    expect(Buffer.from(forged, "base64url")).toEqual(Buffer.from(signature, "base64url"));
+    await expect(jwt.verify(`${head}.${body}.${forged}`)).rejects.toMatchObject({
+      kind: "malformed",
+    });
+  });
+
   it("refuses a header that is not JSON", async () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });
     const head = Buffer.from("{", "utf8").toString("base64url");

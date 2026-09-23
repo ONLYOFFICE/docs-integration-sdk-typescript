@@ -6,6 +6,7 @@ const DEFAULT_CLOCK_TOLERANCE_SEC = 0;
 const MAX_SECONDS = 2_147_483_647;
 const MILLISECONDS_IN_SECOND = 1000;
 const SEGMENTS = 3;
+const BASE64URL = /^[A-Za-z0-9_-]*$/;
 
 const HASHES: Readonly<Record<string, string>> = {
   HS256: "SHA-256",
@@ -114,6 +115,10 @@ function segment(value: unknown): string {
 }
 
 function fromBase64url(text: string, what: string): Uint8Array {
+  if (!BASE64URL.test(text)) {
+    throw new JwtError("malformed", `the ${what} of the token is not base64url`);
+  }
+
   let binary: string;
 
   try {
@@ -126,6 +131,10 @@ function fromBase64url(text: string, what: string): Uint8Array {
 
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
+  }
+
+  if (base64url(bytes) !== text) {
+    throw new JwtError("malformed", `the ${what} of the token is not canonical base64url`);
   }
 
   return bytes;
