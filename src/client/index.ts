@@ -8,7 +8,7 @@ import {
   DocumentServerHttpError,
   DocumentServerParseError,
 } from "./errors.js";
-import type { ConfigResponse, Format } from "./meta.js";
+import type { ConfigResponse, FormatsResponse } from "./meta.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
 import { DocumentServerRawClient } from "./raw.js";
 
@@ -126,10 +126,10 @@ export class DocumentServerClient {
   }
 
   /** Every file format the document server knows, and what it may be converted to. */
-  async getFormats(options?: RequestOptions): Promise<Format[]> {
+  async getFormats(options?: RequestOptions): Promise<FormatsResponse> {
     const response = await this.raw.getFormats(options);
 
-    return (await readArray(response)) as Format[];
+    return (await readArray(response)) as FormatsResponse;
   }
 
   /**

@@ -66,6 +66,7 @@ export type {
   ConfigLimits,
   ConfigResponse,
   ConfigUrls,
+  FormatsResponse,
 } from "./client/meta.js";
 export type { ConfigFile } from "./config/index.js";
 export type { Format, FormatAction, FormatType } from "./formats/index.js";

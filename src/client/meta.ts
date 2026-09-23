@@ -61,3 +61,6 @@ export interface Format {
   name: string;
   type: FormatType;
 }
+
+/** Body of a response from the formats endpoint: every format the document server knows. */
+export type FormatsResponse = Format[];

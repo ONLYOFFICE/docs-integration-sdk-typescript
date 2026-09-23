@@ -260,6 +260,9 @@ describe("getFormatsByType", () => {
 
 describe("the format of the client", () => {
   it("is the format the lookup takes", () => {
+    expectTypeOf<clientMeta.FormatsResponse>().toExtend<
+      ConstructorParameters<typeof DocumentServerFormats>[0]
+    >();
     expectTypeOf<clientMeta.Format>().toEqualTypeOf<lookup.Format>();
     expectTypeOf<clientMeta.FormatAction>().toEqualTypeOf<lookup.FormatAction>();
     expectTypeOf<clientMeta.FormatType>().toEqualTypeOf<lookup.FormatType>();

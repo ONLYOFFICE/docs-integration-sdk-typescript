@@ -11,7 +11,7 @@ import {
   type BuilderResponse,
   type ClientOptions,
   type ConfigResponse,
-  type Format,
+  type FormatsResponse,
   type BuilderErrorCode,
   type CommandErrorCode,
   type CommandRequest,
@@ -472,7 +472,7 @@ describe("raw.getFormats", () => {
     }).raw.getFormats();
 
     expect(response.status).toBe(200);
-    await expect(response.json() as Promise<Format[]>).resolves.toEqual(formats);
+    await expect(response.json() as Promise<FormatsResponse>).resolves.toEqual(formats);
   });
 
   it("hands back a failing response instead of throwing", async () => {
@@ -1630,7 +1630,7 @@ describe("getConfig", () => {
 });
 
 describe("getFormats", () => {
-  const formats: Format[] = [
+  const formats: FormatsResponse = [
     {
       name: "docx",
       type: "word",
