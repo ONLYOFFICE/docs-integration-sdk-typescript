@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   buildDocumentKey,
+  type ConfigSigner,
   DocumentServerConfig,
   DocumentServerFormats,
   DocumentServerJwt,
+  type DocumentTypeLookup,
   type Format,
   type SignableConfig,
 } from "../src/index.js";
@@ -203,6 +205,20 @@ describe("DocumentServerConfig.forFile", () => {
     expect(effective.document.permissions).toEqual({ edit: false });
   });
 
+  it("looks the document type up in a lookup of its own", () => {
+    const lookup: DocumentTypeLookup = { getDocumentType: () => "diagram" };
+    const { config: effective } = DocumentServerConfig.forFile(
+      { ...file, title: "Plan.vsdx" },
+      lookup,
+    );
+
+    expect(effective.documentType).toBe("diagram");
+  });
+
+  it("takes the formats of the server as its lookup", () => {
+    expectTypeOf<DocumentServerFormats>().toExtend<DocumentTypeLookup>();
+  });
+
   it("refuses a name without an extension", () => {
     expect(() => DocumentServerConfig.forFile({ ...file, title: "Report" }, formats)).toThrow(
       /must end in the extension/,
@@ -231,6 +247,26 @@ describe("DocumentServerConfig.sign", () => {
 
     expect(signed.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
     expect(await jwt.verify(signed.token ?? "")).toMatchObject(instance.config);
+  });
+
+  it("signs with a signer of its own", async () => {
+    const payloads: object[] = [];
+    const signer: ConfigSigner = {
+      sign: (payload) => {
+        payloads.push(payload);
+
+        return Promise.resolve("signed");
+      },
+    };
+    const instance = DocumentServerConfig.forFile(file, formats);
+    const signed = await instance.sign(signer);
+
+    expect(signed.token).toBe("signed");
+    expect(payloads).toEqual([instance.config]);
+  });
+
+  it("takes the signer of the sdk", () => {
+    expectTypeOf<DocumentServerJwt>().toExtend<ConfigSigner>();
   });
 
   it("leaves the config it signed alone", async () => {

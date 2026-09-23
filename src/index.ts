@@ -68,7 +68,7 @@ export type {
   ConfigUrls,
   FormatsResponse,
 } from "./client/meta.js";
-export type { ConfigFile } from "./config/index.js";
+export type { ConfigFile, ConfigSigner, DocumentTypeLookup } from "./config/index.js";
 export type { Format, FormatAction, FormatType } from "./formats/index.js";
 export type {
   Config,

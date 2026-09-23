@@ -1,5 +1,3 @@
-import type { DocumentServerFormats } from "../formats/index.js";
-import type { DocumentServerJwt } from "../jwt/index.js";
 import type {
   ConfigDocument,
   ConfigEditor,
@@ -22,6 +20,18 @@ export interface ConfigFile {
   title: string;
   /** Absolute URL the document server downloads the file from. */
   url: string;
+}
+
+/** What signs a config: {@link DocumentServerJwt} or any signer of your own. */
+export interface ConfigSigner {
+  /** Signs the payload into a token. */
+  sign(payload: object): Promise<string>;
+}
+
+/** What finds the editor of a file: {@link DocumentServerFormats} or a lookup of your own. */
+export interface DocumentTypeLookup {
+  /** The editor the extension opens in, or `undefined` or the empty string for none. */
+  getDocumentType(extension: string): string | undefined;
 }
 
 function assertRecord(value: unknown, what: string): void {
@@ -217,7 +227,7 @@ export class DocumentServerConfig {
    */
   static forFile(
     file: ConfigFile,
-    formats: DocumentServerFormats,
+    formats: DocumentTypeLookup,
     config?: SignableConfig,
   ): DocumentServerConfig {
     const title = normalizeTitle(file.title);
@@ -242,12 +252,12 @@ export class DocumentServerConfig {
    * The token covers the whole config apart from itself, so a config that already carries
    * one is signed anew rather than signed over its own token.
    */
-  async sign(jwt: DocumentServerJwt): Promise<Readonly<StrictConfig>> {
+  async sign(signer: ConfigSigner): Promise<Readonly<StrictConfig>> {
     const payload: StrictConfig = { ...this.config };
 
     delete payload.token;
 
-    return Object.freeze({ ...payload, token: await jwt.sign(payload) });
+    return Object.freeze({ ...payload, token: await signer.sign(payload) });
   }
 
   /** The config itself, so that `JSON.stringify` of the instance writes it out. */

@@ -202,6 +202,10 @@ third argument is laid over what it derived, and its `document` is merged into t
 one rather than replacing it. A config assembled by hand goes through the constructor
 instead: `new DocumentServerConfig({ documentType, document, editorConfig })`.
 
+`forFile()` takes anything with a `getDocumentType(extension)`, and `sign()` anything with a
+`sign(payload)` that resolves to a token: `DocumentServerFormats` and `DocumentServerJwt`
+are one such pair, a table of your own or a signer backed by a key vault another.
+
 The effective config is on `config`, validated and frozen, and the instance serializes as
 that config, so `JSON.stringify(config)` is what goes into the page.
 
