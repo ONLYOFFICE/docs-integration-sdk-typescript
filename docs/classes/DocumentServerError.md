@@ -10,11 +10,11 @@ Everything the document server answers with that the SDK turns into a rejection.
 
 ## Extended by
 
-- [`BuilderError`](BuilderError.md)
-- [`CommandError`](CommandError.md)
-- [`ConversionError`](ConversionError.md)
 - [`DocumentServerHttpError`](DocumentServerHttpError.md)
 - [`DocumentServerParseError`](DocumentServerParseError.md)
+- [`ConversionError`](ConversionError.md)
+- [`CommandError`](CommandError.md)
+- [`BuilderError`](BuilderError.md)
 
 ## Constructors
 

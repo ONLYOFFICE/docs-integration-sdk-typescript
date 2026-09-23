@@ -833,8 +833,9 @@ copy of it.
 
 ```
 src/
-  index.ts            public exports
-  client/index.ts     DocumentServerClient, the typed layer
+  index.ts            the root: every module
+  */index.ts          the exports of a module
+  client/client.ts    DocumentServerClient, the typed layer
   client/raw.ts       DocumentServerRawClient, the transport
   client/errors.ts    DocumentServerError and the rest
   client/options.ts   ClientOptions and RequestOptions
@@ -842,11 +843,11 @@ src/
   client/convert.ts   conversion request and response
   client/command.ts   command request and response
   client/builder.ts   document builder request and response
-  config/index.ts     DocumentServerConfig, the editor config
+  config/config.ts    DocumentServerConfig, the editor config
   config/key.ts       buildDocumentKey
   config/types.ts     the editor config types, from @onlyoffice/doceditor-types
-  formats/index.ts    DocumentServerFormats, the format lookup
-  jwt/index.ts        DocumentServerJwt, the token signer
+  formats/formats.ts  DocumentServerFormats, the format lookup
+  jwt/jwt.ts          DocumentServerJwt, the token signer
   jwt/errors.ts       JwtError and the kinds of refusal
 test/
   client.test.ts
