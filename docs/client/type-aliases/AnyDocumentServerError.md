@@ -8,7 +8,9 @@ type AnyDocumentServerError =
   | CommandError
   | ConversionError
   | DocumentServerHttpError
-  | DocumentServerParseError;
+  | DocumentServerNetworkError
+  | DocumentServerParseError
+  | DocumentServerTimeoutError;
 ```
 
 Every error the SDK throws of its own accord.

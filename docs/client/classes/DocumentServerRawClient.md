@@ -3,7 +3,9 @@
 # Class: DocumentServerRawClient
 
 The same endpoints as [DocumentServerClient](DocumentServerClient.md), each answering with the untouched
-`Response` and none of them throwing on what the document server says.
+`Response` and none of them throwing on what the document server says. A request that
+gets no answer still rejects, with a [DocumentServerNetworkError](DocumentServerNetworkError.md) or a
+[DocumentServerTimeoutError](DocumentServerTimeoutError.md).
 
 ## Constructors
 

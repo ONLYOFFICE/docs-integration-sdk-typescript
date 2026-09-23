@@ -33,11 +33,11 @@ new ConversionError(code, response): ConversionError;
 
 ## Properties
 
-| Property                                  | Modifier   | Type                                                            | Description                                                               |
-| ----------------------------------------- | ---------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <a id="property-code"></a> `code`         | `readonly` | [`ConversionErrorCode`](../type-aliases/ConversionErrorCode.md) | -                                                                         |
-| <a id="property-kind"></a> `kind`         | `readonly` | `"conversion"`                                                  | -                                                                         |
-| <a id="property-response"></a> `response` | `readonly` | `Response`                                                      | The response the error was read from. Its body has already been consumed. |
+| Property                                  | Modifier   | Type                                                            | Description                                                                                                                                                         |
+| ----------------------------------------- | ---------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-code"></a> `code`         | `readonly` | [`ConversionErrorCode`](../type-aliases/ConversionErrorCode.md) | -                                                                                                                                                                   |
+| <a id="property-kind"></a> `kind`         | `readonly` | `"conversion"`                                                  | -                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `Response`                                                      | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did. |
 
 ## Methods
 

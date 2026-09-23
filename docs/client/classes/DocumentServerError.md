@@ -2,7 +2,8 @@
 
 # Class: DocumentServerError
 
-Everything the document server answers with that the SDK turns into a rejection.
+Every failure of a call to the document server that the SDK turns into a rejection: a
+failure the server reports, an answer that is not the one promised, or no answer at all.
 
 ## Extends
 
@@ -15,6 +16,8 @@ Everything the document server answers with that the SDK turns into a rejection.
 - [`ConversionError`](ConversionError.md)
 - [`CommandError`](CommandError.md)
 - [`BuilderError`](BuilderError.md)
+- [`DocumentServerNetworkError`](DocumentServerNetworkError.md)
+- [`DocumentServerTimeoutError`](DocumentServerTimeoutError.md)
 
 ## Constructors
 
@@ -35,7 +38,7 @@ new DocumentServerError(
 | ---------- | ----------------------------------------------------------------------- |
 | `kind`     | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) |
 | `message`  | `string`                                                                |
-| `response` | `Response`                                                              |
+| `response` | `Response` \| `undefined`                                               |
 | `options?` | `ErrorOptions`                                                          |
 
 #### Returns
@@ -50,10 +53,10 @@ Error.constructor;
 
 ## Properties
 
-| Property                                  | Modifier   | Type                                                                    | Description                                                               |
-| ----------------------------------------- | ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <a id="property-kind"></a> `kind`         | `readonly` | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | -                                                                         |
-| <a id="property-response"></a> `response` | `readonly` | `Response`                                                              | The response the error was read from. Its body has already been consumed. |
+| Property                                  | Modifier   | Type                                                                    | Description                                                                                                                                                         |
+| ----------------------------------------- | ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-kind"></a> `kind`         | `readonly` | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | -                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `Response` \| `undefined`                                               | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did. |
 
 ## Methods
 

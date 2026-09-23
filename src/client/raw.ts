@@ -2,6 +2,7 @@ import type { BuilderRequest } from "./builder.js";
 import type { CommandRequest } from "./command.js";
 import type { ConvertRequest } from "./convert.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
+import { transportError } from "./transport.js";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 2_147_483_647;
@@ -108,7 +109,9 @@ function buildDeadline(timeoutMs: number, options?: RequestOptions): Deadline {
 
 /**
  * The same endpoints as {@link DocumentServerClient}, each answering with the untouched
- * `Response` and none of them throwing on what the document server says.
+ * `Response` and none of them throwing on what the document server says. A request that
+ * gets no answer still rejects, with a {@link DocumentServerNetworkError} or a
+ * {@link DocumentServerTimeoutError}.
  */
 export class DocumentServerRawClient {
   /** The effective settings: validated, with the defaults applied, and frozen. */
@@ -139,14 +142,23 @@ export class DocumentServerRawClient {
       headers.set(authorizationHeader, `${authorizationPrefix}${spec.token}`);
     }
 
+    const url = buildUrl(this.options.baseUrl, path, spec.query);
+    const init: RequestInit = {
+      method: spec.method,
+      headers: mergeHeaders(headers, options?.headers),
+      body: spec.json === undefined ? undefined : JSON.stringify(spec.json),
+    };
     const deadline = spec.stream ? buildDeadline(this.options.timeoutMs, options) : undefined;
 
+    init.signal = deadline?.signal ?? buildSignal(this.options.timeoutMs, options);
+
     try {
-      return await this.options.fetch(buildUrl(this.options.baseUrl, path, spec.query), {
-        method: spec.method,
-        headers: mergeHeaders(headers, options?.headers),
-        body: spec.json === undefined ? undefined : JSON.stringify(spec.json),
-        signal: deadline?.signal ?? buildSignal(this.options.timeoutMs, options),
+      return await this.options.fetch(url, init);
+    } catch (error) {
+      throw transportError(error, {
+        url,
+        timeoutMs: options?.timeoutMs ?? this.options.timeoutMs,
+        signal: options?.signal,
       });
     } finally {
       deadline?.disarm();

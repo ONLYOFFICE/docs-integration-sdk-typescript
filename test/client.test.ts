@@ -6,7 +6,9 @@ import {
   DocumentServerClient,
   DocumentServerError,
   DocumentServerHttpError,
+  DocumentServerNetworkError,
   DocumentServerParseError,
+  DocumentServerTimeoutError,
   type BuilderRequest,
   type BuilderResponse,
   type ClientOptions,
@@ -257,7 +259,7 @@ describe("raw.healthcheck", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.healthcheck()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.healthcheck()).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("falls back to the global fetch", async () => {
@@ -352,7 +354,7 @@ describe("raw.getConfig", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.getConfig()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.getConfig()).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response untouched", async () => {
@@ -460,7 +462,7 @@ describe("raw.getFormats", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.getFormats()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.getFormats()).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response untouched", async () => {
@@ -683,7 +685,7 @@ describe("raw.convert", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.convert(docx)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.convert(docx)).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response untouched", async () => {
@@ -891,7 +893,7 @@ describe("raw.command", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.command(info)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.command(info)).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response untouched", async () => {
@@ -1093,7 +1095,7 @@ describe("raw.docbuilder", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.docbuilder(script)).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(client.raw.docbuilder(script)).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response untouched", async () => {
@@ -1244,7 +1246,7 @@ describe("getFile", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.getFile(path)).rejects.toThrow("The operation was aborted due to timeout");
+    await expect(client.getFile(path)).rejects.toThrow(DocumentServerTimeoutError);
   });
 
   it("returns the response unread", async () => {
@@ -1482,9 +1484,9 @@ describe("request options", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.healthcheck({ timeoutMs: 20 })).rejects.toMatchObject({
-      name: "TimeoutError",
-    });
+    await expect(client.raw.healthcheck({ timeoutMs: 20 })).rejects.toThrow(
+      DocumentServerTimeoutError,
+    );
   });
 
   it("aborts on the signal it was given", async () => {
@@ -1521,9 +1523,192 @@ describe("request options", () => {
       fetch: hangingFetch,
     });
 
-    await expect(client.raw.healthcheck({ signal: controller.signal })).rejects.toMatchObject({
-      name: "TimeoutError",
+    await expect(client.raw.healthcheck({ signal: controller.signal })).rejects.toThrow(
+      DocumentServerTimeoutError,
+    );
+  });
+});
+
+describe("a request that gets no answer", () => {
+  const docx: ConvertRequest = {
+    filetype: "docx",
+    key: "Khirz6zTPdfd7",
+    outputtype: "pdf",
+    url: "https://example.com/document.docx",
+  };
+  const info: CommandRequest = { c: "info", key: "Khirz6zTPdfd7" };
+
+  /** What Node's fetch rejects with when nothing listens on the port. */
+  function refused(): TypeError {
+    const cause = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:80"), {
+      code: "ECONNREFUSED",
     });
+
+    return new TypeError("fetch failed", { cause });
+  }
+
+  function failing(error: Error): ClientOptions["fetch"] {
+    return () => Promise.reject(error);
+  }
+
+  /** A response whose body breaks off with the given error once it is read. */
+  function broken(error: unknown): () => Response {
+    return () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(error);
+          },
+        }),
+      );
+  }
+
+  it("rejects with a network error when the server cannot be reached", async () => {
+    const error = refused();
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: failing(error),
+    });
+
+    const rejection = client.getFormats().catch((caught: unknown) => caught);
+
+    await expect(rejection).resolves.toBeInstanceOf(DocumentServerNetworkError);
+    await expect(rejection).resolves.toMatchObject({
+      kind: "network",
+      url: "https://docs.example.com/meta/formats",
+      response: undefined,
+      cause: error,
+      message:
+        "the document server could not be reached at https://docs.example.com/meta/formats: " +
+        "fetch failed (ECONNREFUSED)",
+    });
+  });
+
+  it("rejects the same way from the raw client", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: failing(refused()),
+    });
+
+    await expect(client.raw.healthcheck()).rejects.toThrow(DocumentServerNetworkError);
+  });
+
+  it("falls back on the message under the reason when it carries no code", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: failing(new TypeError("fetch failed", { cause: new Error("bad port") })),
+    });
+
+    await expect(client.getConfig()).rejects.toThrow(
+      "the document server could not be reached at https://docs.example.com/meta/config: fetch failed (bad port)",
+    );
+  });
+
+  it("gives the reason alone when nothing lies under it", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: failing(new TypeError("fetch failed")),
+    });
+
+    await expect(client.getConfig()).rejects.toThrow(
+      "the document server could not be reached at https://docs.example.com/meta/config: fetch failed",
+    );
+  });
+
+  it("leaves the query out of the url", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: failing(refused()),
+    });
+
+    await expect(
+      client.getFile("/cache/files/data/key/output.pdf", { md5: "secret", expires: "1" }),
+    ).rejects.toMatchObject({ url: "https://docs.example.com/cache/files/data/key/output.pdf" });
+  });
+
+  it("rejects with a timeout error carrying the deadline", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 60_000,
+      fetch: hangingFetch,
+    });
+
+    const rejection = client.convert(docx, undefined, { timeoutMs: 20 });
+
+    await expect(rejection).rejects.toThrow(DocumentServerTimeoutError);
+    await expect(rejection).rejects.toMatchObject({
+      kind: "timeout",
+      timeoutMs: 20,
+      url: "https://docs.example.com/converter",
+      response: undefined,
+      cause: { name: "TimeoutError" },
+      message:
+        "the document server did not answer at https://docs.example.com/converter within 20 ms",
+    });
+  });
+
+  it("wraps a body that breaks off while it is read", async () => {
+    const error = new TypeError("terminated");
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(broken(error)).fetch,
+    });
+
+    await expect(client.getFormats()).rejects.toThrow(DocumentServerNetworkError);
+    await expect(client.getFormats()).rejects.toMatchObject({ cause: error });
+    await expect(client.healthcheck()).rejects.toThrow(DocumentServerNetworkError);
+  });
+
+  it("wraps a deadline that runs out while the body is read", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 1_000,
+      fetch: spyFetch(broken(new DOMException("aborted", "TimeoutError"))).fetch,
+    });
+
+    await expect(client.command(info)).rejects.toMatchObject({
+      kind: "timeout",
+      timeoutMs: 1_000,
+    });
+  });
+
+  it("keeps the reason of a caller who cancelled", async () => {
+    const reason = new Error("cancelled by the caller");
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: hangingFetch,
+    });
+
+    const controller = new AbortController();
+    const rejection = client.getConfig({ signal: controller.signal });
+
+    controller.abort(reason);
+
+    await expect(rejection).rejects.toBe(reason);
+  });
+
+  it("keeps a deadline of the caller's own as theirs", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: hangingFetch,
+    });
+
+    const rejection = client.getConfig({ signal: AbortSignal.timeout(20) });
+
+    await expect(rejection).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(rejection).rejects.not.toThrow(DocumentServerTimeoutError);
+  });
+
+  it("still throws a bad timeout as it is", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: hangingFetch,
+    });
+
+    await expect(client.getConfig({ timeoutMs: 1.5 })).rejects.toThrow(TypeError);
+    await expect(client.getConfig({ timeoutMs: 1.5 })).rejects.not.toThrow(
+      DocumentServerNetworkError,
+    );
   });
 });
 
@@ -1561,7 +1746,7 @@ describe("healthcheck", () => {
       fetch: hangingFetch,
     });
 
-    await expect(hung.healthcheck()).rejects.toMatchObject({ name: "TimeoutError" });
+    await expect(hung.healthcheck()).rejects.toThrow(DocumentServerTimeoutError);
   });
 });
 
@@ -1940,6 +2125,8 @@ describe("recognizing an error", () => {
     conversion: new ConversionError(-5, response),
     command: new CommandError(6, response),
     builder: new BuilderError(-4, response),
+    network: new DocumentServerNetworkError("https://docs.example.com/meta/formats", "down"),
+    timeout: new DocumentServerTimeoutError("https://docs.example.com/converter", 20, "late"),
   };
 
   it("keeps instanceof working", () => {
@@ -1968,6 +2155,9 @@ describe("recognizing an error", () => {
     expect(DocumentServerHttpError.is(errors.http)).toBe(true);
     expect(DocumentServerParseError.is(errors.parse)).toBe(true);
     expect(DocumentServerParseError.is(errors.http)).toBe(false);
+    expect(DocumentServerNetworkError.is(errors.network)).toBe(true);
+    expect(DocumentServerNetworkError.is(errors.timeout)).toBe(false);
+    expect(DocumentServerTimeoutError.is(errors.timeout)).toBe(true);
   });
 
   it.each([
@@ -2022,10 +2212,24 @@ describe("recognizing an error", () => {
         case "builder":
           seen.push(`${error.kind} ${String(error.code)}`);
           break;
+        case "network":
+          seen.push(`network ${error.url}`);
+          break;
+        case "timeout":
+          seen.push(`timeout ${String(error.timeoutMs)}`);
+          break;
       }
     }
 
-    expect(seen).toEqual(["http 500", "parse <html>", "conversion -5", "command 6", "builder -4"]);
+    expect(seen).toEqual([
+      "http 500",
+      "parse <html>",
+      "conversion -5",
+      "command 6",
+      "builder -4",
+      "network https://docs.example.com/meta/formats",
+      "timeout 20",
+    ]);
   });
 });
 

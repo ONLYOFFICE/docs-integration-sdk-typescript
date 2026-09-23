@@ -40,11 +40,11 @@ new DocumentServerParseError(
 
 ## Properties
 
-| Property                                  | Modifier   | Type       | Description                                                               |
-| ----------------------------------------- | ---------- | ---------- | ------------------------------------------------------------------------- |
-| <a id="property-body"></a> `body`         | `readonly` | `string`   | Beginning of the response body, as far as it could be read.               |
-| <a id="property-kind"></a> `kind`         | `readonly` | `"parse"`  | -                                                                         |
-| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from. Its body has already been consumed. |
+| Property                                  | Modifier   | Type       | Description                                                                                                                                                         |
+| ----------------------------------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-body"></a> `body`         | `readonly` | `string`   | Beginning of the response body, as far as it could be read.                                                                                                         |
+| <a id="property-kind"></a> `kind`         | `readonly` | `"parse"`  | -                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did. |
 
 ## Methods
 

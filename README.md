@@ -743,17 +743,20 @@ try {
 A call rejects when the answer never came, when it is not the one the endpoint promises,
 or when the document server reports a failure of its own:
 
-| Error                      | `kind`         | Thrown when                                                                                            |
-| -------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
-| `DocumentServerHttpError`  | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
-| `DocumentServerParseError` | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
-| `ConversionError`          | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.              |
-| `CommandError`             | `"command"`    | `/command` answered with an `error` that is neither `0` nor `4`. Carries it as `code`.                 |
-| `BuilderError`             | `"builder"`    | `/docbuilder` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.             |
+| Error                        | `kind`         | Thrown when                                                                                            |
+| ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
+| `DocumentServerNetworkError` | `"network"`    | No answer came: the server could not be reached, or the connection broke. Carries `url` and `cause`.   |
+| `DocumentServerTimeoutError` | `"timeout"`    | The deadline ran out before the answer had been read. Carries `url`, `timeoutMs` and `cause`.          |
+| `DocumentServerHttpError`    | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
+| `DocumentServerParseError`   | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
+| `ConversionError`            | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.              |
+| `CommandError`               | `"command"`    | `/command` answered with an `error` that is neither `0` nor `4`. Carries it as `code`.                 |
+| `BuilderError`               | `"builder"`    | `/docbuilder` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.             |
 
-All five extend `DocumentServerError`, which carries the `response` they were read from.
-Its body has already been consumed by the time the error is built, which is why a
-truncated copy of it is on the error itself.
+All seven extend `DocumentServerError`. The last five carry the `response` they were read
+from; its body has already been consumed by the time the error is built, which is why a
+truncated copy of it is on the error itself. A network failure and a timeout may come
+before any response does, so theirs is `undefined`.
 
 `code` keeps the documented codes as literals, so `-5` is autocompleted and a `case -5:`
 narrows — but a code the service does not document stays a number rather than being forced
@@ -763,7 +766,7 @@ heard of, and it arrives as `code` with `unrecognized error code` in the message
 than as a type that promised it could not exist.
 
 Each class recognizes its own through a static `is()`, and `DocumentServerError.is()` takes
-any of the five:
+any of the seven:
 
 ```ts
 try {
@@ -803,6 +806,9 @@ if (DocumentServerError.is(error)) {
     case "command":
     case "builder":
       return report(error.code);
+    case "network":
+    case "timeout":
+      return report(error.url);
   }
 }
 ```
@@ -811,14 +817,31 @@ if (DocumentServerError.is(error)) {
 reverse proxy that answers `200 OK` with a page of its own would otherwise surface as a
 bare `SyntaxError` from `JSON.parse`, with nothing to say where it came from.
 
-Network failures and timeouts are left exactly as `fetch` raises them — a `TypeError` with
-the reason in `error.cause`, or a `DOMException` whose `name` is `"TimeoutError"`. Wrapping
-those would only hide the `cause`. See [timeoutMs](#timeoutms).
+A network failure and a timeout are wrapped as well, so that `DocumentServerError.is()`
+answers for every way a call to the document server can fail, and an integration can tell
+"the document server let me down" from a bug of its own without catching everything. What
+`fetch` raised is kept as `cause` — a `TypeError: fetch failed` with the system error under
+it, or a `DOMException` whose `name` is `"TimeoutError"` — and the message names the
+system error code when there is one, and the message of the error under it otherwise:
+
+```ts
+// DocumentServerNetworkError: the document server could not be reached at
+// http://docs.internal/meta/formats: fetch failed (ECONNREFUSED)
+```
+
+`url` is where the request went, with the query left out: a download link carries its
+signature there, and an error tends to end up in a log. It covers a body that breaks off
+while it is read as well as a request that never got a response. See
+[timeoutMs](#timeoutms).
+
+One abort is not wrapped: a call cancelled through a `signal` of your own rejects with the
+reason that signal carries, untouched, since cancelling is your decision rather than a
+failure of the server — a signal from `AbortSignal.timeout()` included.
 
 Retries, polling and backoff are yours to decide on: the SDK sends one request per call.
 
-Only the five above are thrown by the SDK itself, so nothing else that comes out of a call
-was invented here. Two outcomes deliberately do not throw. `healthcheck()` answers `false` for a failing
+Apart from that reason, only the seven above are thrown by a call, so nothing else that
+comes out of one was invented here. Two outcomes deliberately do not throw. `healthcheck()` answers `false` for a failing
 status rather than rejecting, since a server that is down is the answer it was asked for,
 and `error: 4` from `forcesave` comes back on the result, since nothing to save is an
 outcome rather than a failure.
@@ -826,7 +849,9 @@ outcome rather than a failure.
 ## The raw client
 
 `client.raw` holds the same seven endpoints, each answering with the untouched `Response`
-and none of them throwing on what the document server says:
+and none of them throwing on what the document server says. A request that gets no answer
+at all still rejects, with the same `DocumentServerNetworkError` or
+`DocumentServerTimeoutError` the typed client would:
 
 ```ts
 const response = await client.raw.convert(request);
@@ -892,10 +917,11 @@ Neither the fetch standard nor Node gives a request deadline: undici only aborts
 connection that never opens (~10 s) or a response that stays silent for 5 minutes, so a
 hung server would otherwise hold the call indefinitely. Hence the 30 s default.
 
-A request that runs out of time rejects with a `DOMException` whose `name` is
-`"TimeoutError"`. A server that cannot be reached rejects with `TypeError: fetch failed`;
-the reason is in `error.cause` — on Node an `AggregateError` carrying `code`, such as
-`"ECONNREFUSED"`.
+A request that runs out of time rejects with a `DocumentServerTimeoutError`, which carries
+the deadline as `timeoutMs` and the `DOMException` of the abort as `cause`. A server that
+cannot be reached rejects with a `DocumentServerNetworkError` whose `cause` is the
+`TypeError: fetch failed` of `fetch`; the reason is in its own `cause` in turn — on Node an
+`AggregateError` carrying `code`, such as `"ECONNREFUSED"`, which the message repeats.
 
 The deadline covers the whole exchange, reading the response body included — an abort
 errors the body stream, not just the wait for the headers. That is what you want from the
@@ -980,8 +1006,8 @@ await client.convert(request, token, {
 | `headers`   | Headers laid over the configured ones. Names are matched case-insensitively.    |
 
 `signal` is joined with the deadline through `AbortSignal.any()`, so whichever fires first
-aborts the request: a cancelled call rejects with the reason the signal carries, a call
-that runs out of time with a `"TimeoutError"`. Passing a signal therefore does not disarm
+aborts the request: a cancelled call rejects with the reason the signal carries, untouched,
+a call that runs out of time with a `DocumentServerTimeoutError`. Passing a signal therefore does not disarm
 the timeout — pass a larger `timeoutMs` for a conversion expected to be slow.
 
 The headers are applied last, over the configured ones and over the `content-type`,

@@ -40,7 +40,8 @@ function describe(messages: Readonly<Record<number, string>>, code: number): str
 }
 
 /** Which failure an error stands for, and the discriminant of the union below. */
-export type DocumentServerErrorKind = "builder" | "command" | "conversion" | "http" | "parse";
+export type DocumentServerErrorKind =
+  "builder" | "command" | "conversion" | "http" | "network" | "parse" | "timeout";
 
 /** Every error the SDK throws of its own accord. */
 export type AnyDocumentServerError =
@@ -48,19 +49,27 @@ export type AnyDocumentServerError =
   | CommandError
   | ConversionError
   | DocumentServerHttpError
-  | DocumentServerParseError;
+  | DocumentServerNetworkError
+  | DocumentServerParseError
+  | DocumentServerTimeoutError;
 
-/** Everything the document server answers with that the SDK turns into a rejection. */
+/**
+ * Every failure of a call to the document server that the SDK turns into a rejection: a
+ * failure the server reports, an answer that is not the one promised, or no answer at all.
+ */
 export class DocumentServerError extends Error {
   readonly kind: DocumentServerErrorKind;
 
-  /** The response the error was read from. Its body has already been consumed. */
-  readonly response: Response;
+  /**
+   * The response the error was read from. Its body has already been consumed. Absent from
+   * a network failure and a timeout, which may have come before any response did.
+   */
+  readonly response: Response | undefined;
 
   constructor(
     kind: DocumentServerErrorKind,
     message: string,
-    response: Response,
+    response: Response | undefined,
     options?: ErrorOptions,
   ) {
     super(message, options);
@@ -83,6 +92,7 @@ export class DocumentServerError extends Error {
 /** The document server answered with a status outside the 2xx range. */
 export class DocumentServerHttpError extends DocumentServerError {
   declare readonly kind: "http";
+  declare readonly response: Response;
   readonly status: number;
   /** Beginning of the response body, as far as it could be read. */
   readonly body: string;
@@ -108,6 +118,7 @@ export class DocumentServerHttpError extends DocumentServerError {
 /** The body of a successful response was not the JSON the endpoint promises. */
 export class DocumentServerParseError extends DocumentServerError {
   declare readonly kind: "parse";
+  declare readonly response: Response;
   /** Beginning of the response body, as far as it could be read. */
   readonly body: string;
 
@@ -125,6 +136,7 @@ export class DocumentServerParseError extends DocumentServerError {
 /** The conversion service reported a failure in a body it answered `200 OK` with. */
 export class ConversionError extends DocumentServerError {
   declare readonly kind: "conversion";
+  declare readonly response: Response;
   readonly code: ConversionErrorCode;
 
   constructor(code: ConversionErrorCode, response: Response) {
@@ -145,6 +157,7 @@ export class ConversionError extends DocumentServerError {
 /** The command service reported a failure in a body it answered `200 OK` with. */
 export class CommandError extends DocumentServerError {
   declare readonly kind: "command";
+  declare readonly response: Response;
   readonly code: CommandErrorCode;
 
   constructor(code: CommandErrorCode, response: Response) {
@@ -165,6 +178,7 @@ export class CommandError extends DocumentServerError {
 /** The builder service reported a failure in a body it answered `200 OK` with. */
 export class BuilderError extends DocumentServerError {
   declare readonly kind: "builder";
+  declare readonly response: Response;
   readonly code: BuilderErrorCode;
 
   constructor(code: BuilderErrorCode, response: Response) {
@@ -179,5 +193,105 @@ export class BuilderError extends DocumentServerError {
 
   static override is(value: unknown): value is BuilderError {
     return DocumentServerError.is(value) && value.kind === "builder";
+  }
+}
+
+/** Where a request went, without the query: a download link carries its signature there. */
+function location(url: string): string {
+  try {
+    const parsed = new URL(url);
+
+    parsed.search = "";
+    parsed.hash = "";
+
+    return parsed.href;
+  } catch {
+    return "";
+  }
+}
+
+function at(url: string): string {
+  return url === "" ? "" : ` at ${url}`;
+}
+
+/**
+ * The reason `fetch` gave, and what lies under it: the system error code, such as
+ * `ECONNREFUSED`, or the message of the error when it has no code.
+ */
+function reason(cause: unknown): string {
+  if (!(cause instanceof Error)) {
+    return String(cause);
+  }
+
+  const inner: unknown = cause.cause;
+  let detail = "";
+
+  if (typeof inner === "object" && inner !== null) {
+    if ("code" in inner && typeof inner.code === "string") {
+      detail = inner.code;
+    } else if (inner instanceof Error) {
+      detail = inner.message;
+    }
+  }
+
+  return detail === "" ? cause.message : `${cause.message} (${detail})`;
+}
+
+/**
+ * No answer came: the document server could not be reached, or the connection broke before
+ * its answer had been read. The error `fetch` raised is the `cause`.
+ */
+export class DocumentServerNetworkError extends DocumentServerError {
+  declare readonly kind: "network";
+  declare readonly response: undefined;
+  /** Where the request went, the query left out. Empty when that is not known. */
+  readonly url: string;
+
+  constructor(url: string, cause: unknown) {
+    const where = location(url);
+
+    super(
+      "network",
+      `the document server could not be reached${at(where)}: ${reason(cause)}`,
+      undefined,
+      { cause },
+    );
+    this.name = "DocumentServerNetworkError";
+    this.url = where;
+  }
+
+  static override is(value: unknown): value is DocumentServerNetworkError {
+    return DocumentServerError.is(value) && value.kind === "network";
+  }
+}
+
+/**
+ * The deadline of the call ran out before the answer had been read. The `DOMException` the
+ * abort raised is the `cause`.
+ */
+export class DocumentServerTimeoutError extends DocumentServerError {
+  declare readonly kind: "timeout";
+  declare readonly response: undefined;
+  /** Where the request went, the query left out. Empty when that is not known. */
+  readonly url: string;
+  /** The deadline that ran out, in milliseconds. */
+  readonly timeoutMs: number;
+
+  constructor(url: string, timeoutMs: number, cause: unknown) {
+    const where = location(url);
+
+    super(
+      "timeout",
+      `the document server did not answer${at(where)} within ${String(timeoutMs)} ms`,
+      undefined,
+      { cause },
+    );
+    this.name = "DocumentServerTimeoutError";
+    this.url = where;
+    this.timeoutMs = timeoutMs;
+  }
+
+  static override is(value: unknown): value is DocumentServerTimeoutError {
+    return DocumentServerError.is(value) && value.kind === "timeout";
   }
 }

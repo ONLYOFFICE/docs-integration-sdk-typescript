@@ -11,6 +11,7 @@ import {
 import type { ConfigResponse, FormatsResponse } from "./meta.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
 import { DocumentServerRawClient } from "./raw.js";
+import { type Attempt, transportError } from "./transport.js";
 
 const BODY_SNIPPET_LIMIT = 512;
 const NO_ERROR = 0;
@@ -32,17 +33,26 @@ async function readSnippet(response: Response): Promise<string> {
   }
 }
 
+/** Reads a body, a connection that breaks or a deadline that runs out on the way included. */
+async function readText(response: Response, attempt: Attempt): Promise<string> {
+  try {
+    return await response.text();
+  } catch (error) {
+    throw transportError(error, attempt);
+  }
+}
+
 interface JsonBody {
   value: unknown;
   text: string;
 }
 
-async function readJson(response: Response): Promise<JsonBody> {
+async function readJson(response: Response, attempt: Attempt): Promise<JsonBody> {
   if (!response.ok) {
     throw new DocumentServerHttpError(response, await readSnippet(response));
   }
 
-  const text = await response.text();
+  const text = await readText(response, attempt);
 
   try {
     return { value: JSON.parse(text) as unknown, text };
@@ -56,8 +66,8 @@ async function readJson(response: Response): Promise<JsonBody> {
   }
 }
 
-async function readRecord(response: Response): Promise<Record<string, unknown>> {
-  const { value, text } = await readJson(response);
+async function readRecord(response: Response, attempt: Attempt): Promise<Record<string, unknown>> {
+  const { value, text } = await readJson(response, attempt);
 
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new DocumentServerParseError(
@@ -70,8 +80,8 @@ async function readRecord(response: Response): Promise<Record<string, unknown>> 
   return value as Record<string, unknown>;
 }
 
-async function readArray(response: Response): Promise<unknown[]> {
-  const { value, text } = await readJson(response);
+async function readArray(response: Response, attempt: Attempt): Promise<unknown[]> {
+  const { value, text } = await readJson(response, attempt);
 
   if (!Array.isArray(value)) {
     throw new DocumentServerParseError(
@@ -102,6 +112,14 @@ export class DocumentServerClient {
     return this.raw.options;
   }
 
+  #attempt(response: Response, options?: RequestOptions): Attempt {
+    return {
+      url: response.url,
+      timeoutMs: options?.timeoutMs ?? this.options.timeoutMs,
+      signal: options?.signal,
+    };
+  }
+
   /** Whether the document server is up. A failing status is an answer, not a rejection. */
   async healthcheck(options?: RequestOptions): Promise<boolean> {
     const response = await this.raw.healthcheck(options);
@@ -112,7 +130,7 @@ export class DocumentServerClient {
       return false;
     }
 
-    return (await response.text()).trim() === "true";
+    return (await readText(response, this.#attempt(response, options))).trim() === "true";
   }
 
   /**
@@ -122,14 +140,17 @@ export class DocumentServerClient {
   async getConfig(options?: RequestOptions): Promise<ConfigResponse> {
     const response = await this.raw.getConfig(options);
 
-    return (await readRecord(response)) as unknown as ConfigResponse;
+    return (await readRecord(
+      response,
+      this.#attempt(response, options),
+    )) as unknown as ConfigResponse;
   }
 
   /** Every file format the document server knows, and what it may be converted to. */
   async getFormats(options?: RequestOptions): Promise<FormatsResponse> {
     const response = await this.raw.getFormats(options);
 
-    return (await readArray(response)) as FormatsResponse;
+    return (await readArray(response, this.#attempt(response, options))) as FormatsResponse;
   }
 
   /**
@@ -143,7 +164,7 @@ export class DocumentServerClient {
     options?: RequestOptions,
   ): Promise<ConvertResponse> {
     const response = await this.raw.convert(request, token, options);
-    const body = await readRecord(response);
+    const body = await readRecord(response, this.#attempt(response, options));
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR) {
@@ -165,7 +186,7 @@ export class DocumentServerClient {
     options?: RequestOptions,
   ): Promise<CommandResponse> {
     const response = await this.raw.command(request, token, options);
-    const body = await readRecord(response);
+    const body = await readRecord(response, this.#attempt(response, options));
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR && error !== COMMAND_NOTHING_CHANGED) {
@@ -186,7 +207,7 @@ export class DocumentServerClient {
     options?: RequestOptions,
   ): Promise<BuilderResponse> {
     const response = await this.raw.docbuilder(request, token, options);
-    const body = await readRecord(response);
+    const body = await readRecord(response, this.#attempt(response, options));
     const error = body["error"];
 
     if (typeof error === "number" && error !== NO_ERROR) {
