@@ -18,4 +18,20 @@ export default defineConfig([
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
+  {
+    files: ["src/*/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^\\.\\./",
+              message: "A module stands on its own: declare what it takes instead of importing it.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
