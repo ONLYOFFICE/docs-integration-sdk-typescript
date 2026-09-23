@@ -45,8 +45,9 @@ function assertArray(formats: readonly Format[]): void {
   }
 }
 
+/** Whether an editor opens the format: it names one, whatever it lets the editor do. */
 function opens(format: Format): boolean {
-  return format.type !== "" || format.actions.length > 0;
+  return format.type !== "";
 }
 
 /**
@@ -159,7 +160,10 @@ export class DocumentServerFormats {
     return this.getActions(extension).includes(action);
   }
 
-  /** Whether an editor opens the extension at all, in whatever mode. */
+  /**
+   * Whether an editor opens the extension at all, in whatever mode: the format names an
+   * editor in `type`. Its actions are not consulted.
+   */
   isOpenable(extension: string): boolean {
     const format = this.getFormat(extension);
 

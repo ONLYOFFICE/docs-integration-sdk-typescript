@@ -414,7 +414,8 @@ Whether editing it loses what the format cannot carry, the way `rtf` and `odt` d
 isOpenable(extension): boolean;
 ```
 
-Whether an editor opens the extension at all, in whatever mode.
+Whether an editor opens the extension at all, in whatever mode: the format names an
+editor in `type`. Its actions are not consulted.
 
 #### Parameters
 

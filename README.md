@@ -178,10 +178,11 @@ is read down to the part behind its last dot — so `"docx"`, `".DOCX"` and
 | `getExtensions()`                    | Every extension the list covers, without the dots.                           |
 | `all`, `size`, `[Symbol.iterator]()` | The list itself, frozen, in the order the server gave it.                    |
 
-`getDocumentType()` answers `undefined` both for an extension the server does not know and
-for one no editor opens, so it is exactly the question the editor config asks. Where two
-entries carry the same extension, `getFormat()` keeps the one an editor opens rather than
-the first that matched.
+An editor opens a format when the format names one in `type`, whatever its actions; that is
+what `isOpenable()` answers. `getDocumentType()` answers `undefined` both for an extension the
+server does not know and for one no editor opens, so it is exactly the question the editor
+config asks. Where two entries carry the same extension, `getFormat()` keeps the one an
+editor opens rather than the first that matched.
 
 The list changes with the version of the document server and with its licence, so an
 instance stands for one answer of `/meta/formats` rather than for the server: get a fresh

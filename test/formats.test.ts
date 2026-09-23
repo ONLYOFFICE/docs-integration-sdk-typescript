@@ -61,6 +61,33 @@ const zip: Format = {
 
 const all = [docx, doc, odt, xlsx, pdf, png, zip];
 
+/** Names an editor, whatever it lets the editor do. */
+const typedOnly: Format = {
+  name: "docxf",
+  type: "word",
+  actions: [],
+  convert: ["docx"],
+  mime: [],
+};
+
+/** Carries actions, but names no editor to open it in. */
+const untyped: Format = {
+  name: "bin",
+  type: "",
+  actions: ["view", "encrypt"],
+  convert: [],
+  mime: [],
+};
+
+/** Edited without being listed as viewable. */
+const editOnly: Format = {
+  name: "md",
+  type: "word",
+  actions: ["lossy-edit"],
+  convert: ["docx"],
+  mime: [],
+};
+
 function formats(list: readonly Format[] = all): DocumentServerFormats {
   return new DocumentServerFormats(list);
 }
@@ -136,6 +163,13 @@ describe("getFormat", () => {
     expect(formats([pdf, inert]).getFormat("pdf")).toEqual(pdf);
   });
 
+  it("prefers an entry that names an editor over one with actions but no type", () => {
+    const actionsOnly: Format = { ...untyped, name: "pdf" };
+
+    expect(formats([actionsOnly, pdf]).getFormat("pdf")).toEqual(pdf);
+    expect(formats([pdf, actionsOnly]).getFormat("pdf")).toEqual(pdf);
+  });
+
   it("hasFormat says whether the extension is known at all", () => {
     expect(formats().hasFormat("png")).toBe(true);
     expect(formats().hasFormat(".PNG")).toBe(true);
@@ -161,6 +195,18 @@ describe("getDocumentType", () => {
   it("answers with undefined for an extension the server does not know", () => {
     expect(formats().getDocumentType("psd")).toBeUndefined();
   });
+
+  it("names the editor of a format whatever its actions", () => {
+    expect(formats([typedOnly]).getDocumentType("docxf")).toBe("word");
+  });
+
+  it("answers with undefined for a format with actions but no type", () => {
+    expect(formats([untyped]).getDocumentType("bin")).toBeUndefined();
+  });
+
+  it("names the editor of a format it edits without listing view", () => {
+    expect(formats([editOnly]).getDocumentType("md")).toBe("word");
+  });
 });
 
 describe("actions", () => {
@@ -183,6 +229,19 @@ describe("actions", () => {
     expect(formats().isOpenable("docx")).toBe(true);
     expect(formats().isOpenable("png")).toBe(false);
     expect(formats().isOpenable("psd")).toBe(false);
+  });
+
+  it("isOpenable holds for every mode an editor opens in", () => {
+    expect(formats().isOpenable("doc")).toBe(true);
+    expect(formats().isOpenable("odt")).toBe(true);
+    expect(formats([editOnly]).isOpenable("md")).toBe(true);
+  });
+
+  it("isOpenable reads the type alone, not the actions", () => {
+    const known = formats([typedOnly, untyped]);
+
+    expect(known.isOpenable("docxf")).toBe(true);
+    expect(known.isOpenable("bin")).toBe(false);
   });
 
   it("answers the named questions", () => {
