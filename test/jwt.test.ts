@@ -266,6 +266,17 @@ describe("sign", () => {
 
     expect(importKey).toHaveBeenCalledTimes(1);
   });
+
+  it("imports the key again once an import failed", async () => {
+    const importKey = vi
+      .spyOn(crypto.subtle, "importKey")
+      .mockRejectedValueOnce(new Error("crypto unavailable"));
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await expect(jwt.sign({ key: "first" })).rejects.toThrow("crypto unavailable");
+    expect(await jwt.sign({ key: "second" })).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+    expect(importKey).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("verify", () => {

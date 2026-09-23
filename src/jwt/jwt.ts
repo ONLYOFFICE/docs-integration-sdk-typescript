@@ -228,13 +228,16 @@ export class DocumentServerJwt {
   }
 
   #cryptoKey(): Promise<HmacKey> {
-    this.#key ??= crypto.subtle.importKey(
-      "raw",
-      encoder.encode(this.#secret),
-      { name: "HMAC", hash: this.#hash },
-      false,
-      ["sign", "verify"],
-    );
+    this.#key ??= crypto.subtle
+      .importKey("raw", encoder.encode(this.#secret), { name: "HMAC", hash: this.#hash }, false, [
+        "sign",
+        "verify",
+      ])
+      .catch((error: unknown) => {
+        this.#key = undefined;
+
+        throw error;
+      });
 
     return this.#key;
   }
