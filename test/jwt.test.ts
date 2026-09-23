@@ -242,6 +242,30 @@ describe("sign", () => {
     await expect(jwt.sign([])).rejects.toThrow(/payload must be a JSON object/);
   });
 
+  it.each([
+    ["a Map", new Map([["key", "document"]]), /got: an instance of Map/],
+    ["a Set", new Set(["document"]), /got: an instance of Set/],
+    ["a Date", new Date(0), /got: an instance of Date/],
+    [
+      "an instance of a class",
+      new (class Payload {
+        key = "document";
+      })(),
+      /got: an instance of Payload/,
+    ],
+  ])("rejects %s", async (_what, payload, message) => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await expect(jwt.sign(payload)).rejects.toThrow(message);
+  });
+
+  it("signs an object with no prototype", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: null });
+    const payload = Object.assign(Object.create(null) as object, { key: "document" });
+
+    expect(await jwt.verify(await jwt.sign(payload))).toMatchObject({ key: "document" });
+  });
+
   it("signs a payload outside latin-1", async () => {
     const jwt = new DocumentServerJwt({ secret: "секрет", expiresInSec: null });
     const token = await jwt.sign({ title: "Договор №1 — 📄.docx" });

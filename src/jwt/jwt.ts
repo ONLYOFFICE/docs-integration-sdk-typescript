@@ -174,13 +174,37 @@ function secondsClaim(claims: Record<string, unknown>, name: string): number | u
   return value;
 }
 
+function isPlainObject(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const prototype: unknown = Object.getPrototypeOf(value);
+
+  return prototype === Object.prototype || prototype === null;
+}
+
+function describeValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return "an array";
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return value === null ? "null" : typeof value;
+  }
+
+  const name: unknown = (value as { constructor?: { name?: unknown } }).constructor?.name;
+
+  return typeof name === "string" && name !== "" ? `an instance of ${name}` : "an object";
+}
+
 function isUnset(value: unknown): boolean {
   return value === undefined || value === null;
 }
 
 function withClaims(payload: object, expiresInSec: number | null): object {
-  if (Array.isArray(payload)) {
-    throw new TypeError("payload must be a JSON object, got an array");
+  if (!isPlainObject(payload)) {
+    throw new TypeError(`payload must be a JSON object, got: ${describeValue(payload)}`);
   }
 
   const now = Math.floor(Date.now() / MILLISECONDS_IN_SECOND);
@@ -257,8 +281,8 @@ export class DocumentServerJwt {
    * `iat` and `exp` are added, each unless the payload already carries it. A claim set to
    * `undefined` or `null` counts as not carried.
    *
-   * @throws {TypeError} when the payload is an array, or the lifetime is neither `null`
-   * nor a positive integer.
+   * @throws {TypeError} when the payload is not a plain object — an array, a `Map`, an
+   * instance of a class — or the lifetime is neither `null` nor a positive integer.
    */
   async sign(payload: object, options?: SignOptions): Promise<string> {
     const expiresInSec =

@@ -57,8 +57,8 @@ Signs `payload` into a token in the compact serialization.
 
 #### Throws
 
-when the payload is an array, or the lifetime is neither `null`
-nor a positive integer.
+when the payload is not a plain object — an array, a `Map`, an
+instance of a class — or the lifetime is neither `null` nor a positive integer.
 
 ---
 
