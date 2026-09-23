@@ -65,7 +65,8 @@ export class DocumentServerFormats {
   readonly #byMime: ReadonlyMap<string, readonly Format[]>;
 
   /**
-   * @param formats The answer of {@link DocumentServerClient.getFormats}.
+   * @param formats The answer of
+   * {@link client!DocumentServerClient.getFormats | DocumentServerClient.getFormats}.
    *
    * @throws {TypeError} when it is not an array.
    */

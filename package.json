@@ -17,14 +17,60 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./client": {
+      "import": {
+        "types": "./dist/client/index.d.ts",
+        "default": "./dist/client/index.js"
+      },
+      "require": {
+        "types": "./dist/client/index.d.cts",
+        "default": "./dist/client/index.cjs"
+      }
+    },
+    "./config": {
+      "import": {
+        "types": "./dist/config/index.d.ts",
+        "default": "./dist/config/index.js"
+      },
+      "require": {
+        "types": "./dist/config/index.d.cts",
+        "default": "./dist/config/index.cjs"
+      }
+    },
+    "./formats": {
+      "import": {
+        "types": "./dist/formats/index.d.ts",
+        "default": "./dist/formats/index.js"
+      },
+      "require": {
+        "types": "./dist/formats/index.d.cts",
+        "default": "./dist/formats/index.cjs"
+      }
+    },
+    "./jwt": {
+      "import": {
+        "types": "./dist/jwt/index.d.ts",
+        "default": "./dist/jwt/index.js"
+      },
+      "require": {
+        "types": "./dist/jwt/index.d.cts",
+        "default": "./dist/jwt/index.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsup",
+    "check:exports": "node scripts/check-exports.mjs",
     "clean": "rimraf dist",
     "docs": "typedoc",
     "typecheck": "tsc --noEmit",
@@ -35,7 +81,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build && npm run check:exports"
   },
   "keywords": [
     "onlyoffice",

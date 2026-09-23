@@ -1,6 +1,11 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "entryPoints": ["src/index.ts"],
+  "entryPoints": [
+    "src/client/index.ts",
+    "src/config/index.ts",
+    "src/formats/index.ts",
+    "src/jwt/index.ts"
+  ],
   "plugin": ["typedoc-plugin-markdown"],
   "out": "docs",
   "router": "kind",

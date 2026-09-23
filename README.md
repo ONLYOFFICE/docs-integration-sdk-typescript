@@ -38,11 +38,37 @@ builder services do, in a body it answered `200 OK` with. See [Errors](#errors).
 The untouched `Response` is one property away, on [`client.raw`](#the-raw-client), for a
 caller who would rather decide what a failure means.
 
+## Modules
+
+The package root exports everything. Each module is also a subpath of its own, for a
+caller who needs one of them:
+
+| Subpath                                    | Exports                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `@onlyoffice/docs-integration-sdk/client`  | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
+| `@onlyoffice/docs-integration-sdk/config`  | `DocumentServerConfig`, `buildDocumentKey`, the editor config types          |
+| `@onlyoffice/docs-integration-sdk/formats` | `DocumentServerFormats`, `Format`                                            |
+| `@onlyoffice/docs-integration-sdk/jwt`     | `DocumentServerJwt`, `JwtError`                                              |
+
+```ts
+import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
+```
+
+No module imports another. Where one works with another, it declares what it takes: the
+config signs with any `ConfigSigner` and looks a document type up in any
+`DocumentTypeLookup`, which `DocumentServerJwt` and `DocumentServerFormats` happen to be.
+The client and the lookup each declare `Format`, and the root exports the one of the
+lookup; the two are the same type, and a test keeps them so.
+
+A class is one and the same whichever path it is imported from, so a `JwtError` thrown by
+a signer from `/jwt` passes `instanceof` against the `JwtError` of the root, in ESM as in
+CJS.
+
 ## API reference
 
 Every export — the two clients, the signer, the errors, and each request and response
-type — is listed in [docs/](docs/README.md), generated from the source with
-[TypeDoc](https://typedoc.org). This README is the guide; the reference is where a single
+type — is listed in [docs/](docs/README.md), one module to a subpath, generated from the
+source with [TypeDoc](https://typedoc.org). This README is the guide; the reference is where a single
 field is looked up.
 
 ```sh
@@ -834,7 +860,7 @@ copy of it.
 ```
 src/
   index.ts            the root: every module
-  */index.ts          the exports of a module
+  */index.ts          the exports of a module, one subpath each
   client/client.ts    DocumentServerClient, the typed layer
   client/raw.ts       DocumentServerRawClient, the transport
   client/errors.ts    DocumentServerError and the rest
@@ -855,19 +881,22 @@ test/
   formats.test.ts
   jwt.test.ts
 docs/
-  README.md           generated API reference, by kind
+  README.md           generated API reference, by module
+scripts/
+  check-exports.mjs   checks that every subpath shares its exports with the root
 typedoc.json          how it is generated
 ```
 
 ## Development
 
 ```sh
-npm run typecheck   # tsc --noEmit
-npm test            # vitest
-npm run lint        # eslint
-npm run format      # prettier --write
-npm run build       # tsup -> dist (ESM + CJS + .d.ts)
-npm run docs        # typedoc -> docs (markdown API reference)
+npm run typecheck      # tsc --noEmit
+npm test               # vitest
+npm run lint           # eslint
+npm run format         # prettier --write
+npm run build          # tsup -> dist (ESM + CJS + .d.ts), one entry per subpath
+npm run check:exports  # the built subpaths share every export with the root
+npm run docs           # typedoc -> docs (markdown API reference)
 ```
 
 ## Document builder

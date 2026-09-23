@@ -21,13 +21,19 @@ export interface ConfigFile {
   url: string;
 }
 
-/** What signs a config: {@link DocumentServerJwt} or any signer of your own. */
+/**
+ * What signs a config: {@link jwt!DocumentServerJwt | DocumentServerJwt} or any signer of your
+ * own.
+ */
 export interface ConfigSigner {
   /** Signs the payload into a token. */
   sign(payload: object): Promise<string>;
 }
 
-/** What finds the editor of a file: {@link DocumentServerFormats} or a lookup of your own. */
+/**
+ * What finds the editor of a file:
+ * {@link formats!DocumentServerFormats | DocumentServerFormats} or a lookup of your own.
+ */
 export interface DocumentTypeLookup {
   /** The editor the extension opens in, or `undefined` or the empty string for none. */
   getDocumentType(extension: string): string | undefined;

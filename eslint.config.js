@@ -19,6 +19,10 @@ export default defineConfig([
     },
   },
   {
+    files: ["scripts/**/*.mjs"],
+    extends: [tseslint.configs.disableTypeChecked],
+  },
+  {
     files: ["src/*/**/*.ts"],
     rules: {
       "no-restricted-imports": [
