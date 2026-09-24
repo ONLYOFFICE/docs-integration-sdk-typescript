@@ -3,6 +3,8 @@ import { JwtError } from "./errors.js";
 const DEFAULT_ALGORITHM: JwtAlgorithm = "HS256";
 const DEFAULT_EXPIRES_IN_SEC = 300;
 const DEFAULT_CLOCK_TOLERANCE_SEC = 0;
+const DEFAULT_AUTHORIZATION_HEADER = "Authorization";
+const DEFAULT_AUTHORIZATION_PREFIX = "Bearer ";
 const MAX_SECONDS = 2_147_483_647;
 const MILLISECONDS_IN_SECOND = 1000;
 const SEGMENTS = 3;
@@ -50,6 +52,17 @@ export interface SignOptions {
 export interface VerifyOptions {
   /** Leeway for this token, in place of the configured one. */
   clockToleranceSec?: number;
+}
+
+/** Headers of a request, as the `Headers` of fetch or as the plain object of Node. */
+export type JwtHeaders = Headers | Readonly<Record<string, string | readonly string[] | undefined>>;
+
+/** Where {@link DocumentServerJwt.verifyHeader} finds the token, on top of the check. */
+export interface VerifyHeaderOptions extends VerifyOptions {
+  /** Header the token is sent in. Default: `"Authorization"`. */
+  authorizationHeader?: string;
+  /** Written before the token in that header. Default: `"Bearer "`. */
+  authorizationPrefix?: string;
 }
 
 function normalizeSecret(secret: string): string {
@@ -196,6 +209,30 @@ function describeValue(value: unknown): string {
   const name: unknown = (value as { constructor?: { name?: unknown } }).constructor?.name;
 
   return typeof name === "string" && name !== "" ? `an instance of ${name}` : "an object";
+}
+
+function isHeaders(headers: JwtHeaders): headers is Headers {
+  return typeof headers.get === "function";
+}
+
+function headerValue(headers: JwtHeaders, name: string): string | undefined {
+  if (isHeaders(headers)) {
+    return headers.get(name) ?? undefined;
+  }
+
+  const wanted = name.toLowerCase();
+
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === wanted) {
+      return typeof value === "string" ? value : value?.[0];
+    }
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isUnset(value: unknown): boolean {
@@ -364,5 +401,39 @@ export class DocumentServerJwt {
     }
 
     return claims as T;
+  }
+
+  /**
+   * Checks the token the document server sent in a header of its request, and answers with
+   * the `payload` it signs.
+   *
+   * The document server signs what it sends — the download of a file, a callback — in the
+   * `Authorization` header by default, as `Bearer <token>`, and the claims of such a token
+   * wrap what the request is about under `payload`. The header and the prefix are the
+   * `token.outbox.header` and `token.outbox.prefix` settings of the server.
+   *
+   * @throws {@link JwtError} `missing` when the header carries no token, `malformed` when
+   * the token carries no `payload` object, and whatever {@link DocumentServerJwt.verify}
+   * refuses it with.
+   */
+  async verifyHeader<T = Record<string, unknown>>(
+    headers: JwtHeaders,
+    options?: VerifyHeaderOptions,
+  ): Promise<T> {
+    const name = options?.authorizationHeader ?? DEFAULT_AUTHORIZATION_HEADER;
+    const prefix = options?.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX;
+    const value = headerValue(headers, name);
+
+    if (value?.startsWith(prefix) !== true || value.length === prefix.length) {
+      throw new JwtError("missing", `the request carries no token in ${name}`);
+    }
+
+    const claims = await this.verify(value.slice(prefix.length), options);
+
+    if (!isRecord(claims["payload"])) {
+      throw new JwtError("malformed", `the token in ${name} carries no payload`);
+    }
+
+    return claims["payload"] as T;
   }
 }

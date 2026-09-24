@@ -4,6 +4,10 @@
 
 Overrides applied to a single check, on top of the signer options.
 
+## Extended by
+
+- [`VerifyHeaderOptions`](VerifyHeaderOptions.md)
+
 ## Properties
 
 | Property                                                     | Type     | Description                                            |

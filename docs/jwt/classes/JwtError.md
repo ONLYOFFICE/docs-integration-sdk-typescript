@@ -2,8 +2,8 @@
 
 # Class: JwtError
 
-A token that could not be trusted: malformed, signed with another algorithm or another
-secret, expired, or not valid yet.
+A token that could not be trusted: missing where one is required, malformed, signed with
+another algorithm or another secret, expired, or not valid yet.
 
 ## Extends
 

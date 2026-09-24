@@ -1,11 +1,12 @@
 const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.jwt-error");
 
 /** Why a token was refused, and the discriminant of {@link JwtError}. */
-export type JwtErrorKind = "algorithm" | "expired" | "malformed" | "premature" | "signature";
+export type JwtErrorKind =
+  "algorithm" | "expired" | "malformed" | "missing" | "premature" | "signature";
 
 /**
- * A token that could not be trusted: malformed, signed with another algorithm or another
- * secret, expired, or not valid yet.
+ * A token that could not be trusted: missing where one is required, malformed, signed with
+ * another algorithm or another secret, expired, or not valid yet.
  */
 export class JwtError extends Error {
   /** Which of the checks refused the token. */

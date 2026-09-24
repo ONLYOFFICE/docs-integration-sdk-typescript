@@ -504,6 +504,75 @@ describe("verify with what is not a token", () => {
   });
 });
 
+describe("verifyHeader", () => {
+  const jwt = new DocumentServerJwt({ secret: "secret" });
+  const payload = { url: "https://app.example.com/files/report.docx" };
+
+  it("answers with the payload of a token in the Authorization header", async () => {
+    const headers = new Headers({ Authorization: `Bearer ${await jwt.sign({ payload })}` });
+
+    await expect(jwt.verifyHeader(headers)).resolves.toEqual(payload);
+  });
+
+  it("reads the plain headers object of Node, in any case and as a list", async () => {
+    const token = await jwt.sign({ payload });
+
+    await expect(jwt.verifyHeader({ authorization: `Bearer ${token}` })).resolves.toEqual(payload);
+    await expect(jwt.verifyHeader({ AUTHORIZATION: [`Bearer ${token}`] })).resolves.toEqual(
+      payload,
+    );
+  });
+
+  it("reads a header and a prefix of the server's own", async () => {
+    const headers = { "x-docs-token": `Token ${await jwt.sign({ payload })}` };
+
+    await expect(
+      jwt.verifyHeader(headers, {
+        authorizationHeader: "X-Docs-Token",
+        authorizationPrefix: "Token ",
+      }),
+    ).resolves.toEqual(payload);
+  });
+
+  it("reads a bare token when the prefix is empty", async () => {
+    const headers = { authorization: await jwt.sign({ payload }) };
+
+    await expect(jwt.verifyHeader(headers, { authorizationPrefix: "" })).resolves.toEqual(payload);
+  });
+
+  it.each([
+    ["no header", {}],
+    ["another prefix", { authorization: "Basic dXNlcjpwYXNz" }],
+    ["the prefix alone", { authorization: "Bearer " }],
+  ])("refuses %s as missing", async (_, headers) => {
+    await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "missing" });
+  });
+
+  it("refuses a token that carries no payload", async () => {
+    const headers = { authorization: `Bearer ${await jwt.sign({ url: payload.url })}` };
+
+    await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({
+      kind: "malformed",
+      message: expect.stringMatching(/carries no payload/) as unknown,
+    });
+  });
+
+  it("refuses a token signed with another secret", async () => {
+    const other = new DocumentServerJwt({ secret: "other" });
+    const headers = { authorization: `Bearer ${await other.sign({ payload })}` };
+
+    await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "signature" });
+  });
+
+  it("applies the tolerance it is given", async () => {
+    const expired = await jwt.sign({ payload, exp: now() - 10 });
+    const headers = { authorization: `Bearer ${expired}` };
+
+    await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "expired" });
+    await expect(jwt.verifyHeader(headers, { clockToleranceSec: 60 })).resolves.toEqual(payload);
+  });
+});
+
 describe("recognizing a refused token", () => {
   it("is recognized by JwtError", async () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });

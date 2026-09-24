@@ -618,7 +618,8 @@ try {
 }
 ```
 
-`kind` is `malformed`, `algorithm`, `signature`, `expired` or `premature`. The errors of
+`kind` is `malformed`, `algorithm`, `signature`, `expired` or `premature`, and `missing`
+for a header that carries no token. The errors of
 the client are a separate family: `JwtError.is()` and `DocumentServerError.is()` never
 answer `true` for the same value.
 
@@ -637,6 +638,43 @@ const jwt = new DocumentServerJwt({ secret, clockToleranceSec: 30 });
 
 await jwt.verify(token, { clockToleranceSec: 0 });
 ```
+
+### A token in a header
+
+The document server signs what it sends — the download of a file, a callback — in a
+header, `Authorization: Bearer <token>` by default, and the claims of such a token wrap what
+the request is about under `payload`. `verifyHeader()` reads the token out of the headers
+of the request, checks it the way `verify()` does, and answers with that `payload`:
+
+```ts
+const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
+```
+
+It takes the `Headers` of fetch or the plain headers object of Node, whose names it matches
+in any case. A server configured with a `token.outbox.header` or `token.outbox.prefix` of
+its own is met with `authorizationHeader` and `authorizationPrefix`, and an empty prefix
+reads a bare token:
+
+```ts
+await jwt.verifyHeader(headers, { authorizationHeader: "X-Docs-Token", authorizationPrefix: "" });
+```
+
+A header that is not there, carries another prefix or the prefix alone is refused as
+`missing`, and a token without a `payload` object as `malformed`. A request that may come
+either way — a download asked for by the document server or by a user — tells the two
+apart by the kind:
+
+```ts
+try {
+  await jwt.verifyHeader(request.headers);
+} catch (error) {
+  if (!JwtError.is(error) || error.kind !== "missing") throw error;
+  // no token: the request did not come from the document server
+}
+```
+
+A callback carries its token in the body or in a header; [`DocumentServerCallback`](#callback)
+reads either.
 
 ### One signer, one secret
 

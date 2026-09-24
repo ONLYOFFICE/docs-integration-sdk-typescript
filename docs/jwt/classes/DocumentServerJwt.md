@@ -95,3 +95,42 @@ present, `iat` is not. The payload is parsed only once the signature has matched
 
 [JwtError](JwtError.md) when the token is malformed, signed with another algorithm
 or another secret, expired, or not valid yet.
+
+---
+
+### verifyHeader()
+
+```ts
+verifyHeader<T>(headers, options?): Promise<T>;
+```
+
+Checks the token the document server sent in a header of its request, and answers with
+the `payload` it signs.
+
+The document server signs what it sends — the download of a file, a callback — in the
+`Authorization` header by default, as `Bearer <token>`, and the claims of such a token
+wrap what the request is about under `payload`. The header and the prefix are the
+`token.outbox.header` and `token.outbox.prefix` settings of the server.
+
+#### Type Parameters
+
+| Type Parameter | Default type                    |
+| -------------- | ------------------------------- |
+| `T`            | `Record`\<`string`, `unknown`\> |
+
+#### Parameters
+
+| Parameter  | Type                                                          |
+| ---------- | ------------------------------------------------------------- |
+| `headers`  | [`JwtHeaders`](../type-aliases/JwtHeaders.md)                 |
+| `options?` | [`VerifyHeaderOptions`](../interfaces/VerifyHeaderOptions.md) |
+
+#### Returns
+
+`Promise`\<`T`\>
+
+#### Throws
+
+[JwtError](JwtError.md) `missing` when the header carries no token, `malformed` when
+the token carries no `payload` object, and whatever [DocumentServerJwt.verify](#verify)
+refuses it with.
