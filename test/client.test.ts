@@ -9,6 +9,7 @@ import {
   DocumentServerNetworkError,
   DocumentServerParseError,
   DocumentServerTimeoutError,
+  splitFileUrl,
   type BuilderRequest,
   type BuilderResponse,
   type ClientOptions,
@@ -2143,6 +2144,67 @@ describe("getFile on a failing status", () => {
     const response = await missing.raw.getFile(path);
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("splitFileUrl", () => {
+  const file = "/cache/files/data/key/output.docx/output.docx";
+
+  it("takes the path of the public address off the location", () => {
+    expect(
+      splitFileUrl(
+        `https://my-doc-server.com/some-path/office${file}?md5=Zm9v&expires=1735689600`,
+        "https://my-doc-server.com/some-path/office/",
+      ),
+    ).toEqual({ path: file, query: { md5: "Zm9v", expires: "1735689600" } });
+  });
+
+  it("gives a path the client resolves against its own address", async () => {
+    const { fetch, calls } = spyFetch();
+    const client = new DocumentServerClient({ baseUrl: "https://192.168.6.10/some-path", fetch });
+    const { path, query } = splitFileUrl(
+      `https://my-doc-server.com/some-path/office${file}?md5=Zm9v`,
+      "https://my-doc-server.com/some-path/office",
+    );
+
+    await client.getFile(path, query);
+
+    expect(calls[0]?.url).toBe(`https://192.168.6.10/some-path${file}?md5=Zm9v`);
+  });
+
+  it("keeps the whole path when the public address has none", () => {
+    expect(splitFileUrl(`https://docs.example.com${file}`, "https://docs.example.com").path).toBe(
+      file,
+    );
+  });
+
+  it("keeps the whole path of a location outside the public address", () => {
+    expect(splitFileUrl(`http://localhost${file}`, "https://docs.example.com/office").path).toBe(
+      file,
+    );
+  });
+
+  it("takes off only a whole segment", () => {
+    expect(
+      splitFileUrl(
+        "https://docs.example.com/office2/cache/files/a",
+        "https://docs.example.com/office",
+      ).path,
+    ).toBe("/office2/cache/files/a");
+  });
+
+  it("decodes the query the way the document server reads it", () => {
+    expect(
+      splitFileUrl(
+        `https://docs.example.com${file}?filename=%D0%9E%D1%82%D1%87%D1%91%D1%82+1.docx`,
+        new URL("https://docs.example.com"),
+      ).query,
+    ).toEqual({ filename: "Отчёт 1.docx" });
+  });
+
+  it("refuses a location that is not an absolute URL", () => {
+    expect(() => splitFileUrl(file, "https://docs.example.com")).toThrow(TypeError);
+    expect(() => splitFileUrl(`https://docs.example.com${file}`, "/office")).toThrow(TypeError);
   });
 });
 

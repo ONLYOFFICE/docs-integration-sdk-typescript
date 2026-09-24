@@ -536,20 +536,37 @@ const bytes = new Uint8Array(await file.arrayBuffer());
 ```
 
 The document server hands these locations out as absolute URLs — `fileUrl` in a conversion
-response, `url` in a callback, `url` in the answer to `getForgotten` — so split one before
-passing it on:
+response, `url` in a callback, `url` in the answer to `getForgotten` — so split one with
+`splitFileUrl()` before passing it on. It takes the address the document server is
+published at, the one the editors load `api.js` from:
 
 ```ts
-const link = new URL(result.fileUrl);
+import { splitFileUrl } from "@onlyoffice/docs-integration-sdk";
 
-await client.getFile(link.pathname, Object.fromEntries(link.searchParams));
+const { path, query } = splitFileUrl(result.fileUrl, "https://docs.example.com/office");
+
+await client.getFile(path, query);
 ```
 
 Splitting it rather than requesting it whole is what makes the URL usable at all when the
-document server sits behind a reverse proxy: it answers with its own internal host, and
-the default Docker setup returns `http://localhost/cache/files/…`, which is unreachable
-from where the integration runs. Only the path and the query of that URL mean anything to
-you; the host is the one you already configured.
+integration reaches the document server at another address than the public one. The
+locations are written against the public address, path included, and the client may be
+configured with another host and another path:
+
+```ts
+const client = new DocumentServerClient({ baseUrl: "https://192.168.6.10/some-path" });
+
+// url: https://my-doc-server.com/some-path/office/cache/files/…
+const { path, query } = splitFileUrl(url, "https://my-doc-server.com/some-path/office");
+
+await client.getFile(path, query); // https://192.168.6.10/some-path/cache/files/…
+```
+
+The path of the public address is taken off the front, which leaves a path relative to the
+server itself, and the host is dropped: only the path and the query mean anything to you,
+the host is the one you already configured. A location outside the public address is kept
+whole — the default Docker setup answers with `http://localhost/cache/files/…`, which is
+unreachable from where the integration runs, yet its path is the right one.
 
 No token is taken: these locations are signed by the document server itself and carry
 their own expiry in the query, so no authorization header is sent. The configured
@@ -706,8 +723,8 @@ export async function POST(request: Request): Promise<Response> {
   const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
   const reply = await callback.handle({
     save: async ({ key, url }) => {
-      const link = new URL(url);
-      const file = await client.getFile(link.pathname, Object.fromEntries(link.searchParams));
+      const { path, query } = splitFileUrl(url, publicUrl);
+      const file = await client.getFile(path, query);
 
       await storage.put(key, file.body);
     },

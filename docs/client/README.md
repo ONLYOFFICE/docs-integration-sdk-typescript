@@ -22,45 +22,46 @@ what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/
 
 ## Interfaces
 
-| Interface                                                        | Description                                                                  |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [BuilderResponse](interfaces/BuilderResponse.md)                 | Body of a response from the builder service.                                 |
-| [BuildRequest](interfaces/BuildRequest.md)                       | Starts a build: the document server downloads the script and runs it.        |
-| [BuildResultRequest](interfaces/BuildResultRequest.md)           | Collects the result of an asynchronous build.                                |
-| [ClientOptions](interfaces/ClientOptions.md)                     | Settings of a client, applied to every request it sends.                     |
-| [CommandResponse](interfaces/CommandResponse.md)                 | Body of a response from the command service.                                 |
-| [ConfigAuthorization](interfaces/ConfigAuthorization.md)         | Where the document server expects the JWT of a request.                      |
-| [ConfigLimits](interfaces/ConfigLimits.md)                       | Bounds the document server enforces.                                         |
-| [ConfigResponse](interfaces/ConfigResponse.md)                   | Body of a response from the configuration endpoint.                          |
-| [ConfigUrls](interfaces/ConfigUrls.md)                           | Paths of the endpoints the document server serves, relative to its base URL. |
-| [ConvertRequest](interfaces/ConvertRequest.md)                   | Body of a request to the conversion service.                                 |
-| [ConvertResponse](interfaces/ConvertResponse.md)                 | Body of a response from the conversion service.                              |
-| [DeleteForgottenCommand](interfaces/DeleteForgottenCommand.md)   | Removes a document the editors left behind.                                  |
-| [DocumentLayout](interfaces/DocumentLayout.md)                   | Layout of a form printed to PDF or to an image.                              |
-| [DocumentMeta](interfaces/DocumentMeta.md)                       | New metadata of a document.                                                  |
-| [DocumentRenderer](interfaces/DocumentRenderer.md)               | How a PDF, XPS or OXPS source document is read.                              |
-| [DropCommand](interfaces/DropCommand.md)                         | Disconnects users from co-editing, leaving them with view access.            |
-| [ForcesaveCommand](interfaces/ForcesaveCommand.md)               | Saves the document being edited without closing it.                          |
-| [Format](interfaces/Format.md)                                   | A file format the document server knows.                                     |
-| [GetForgottenCommand](interfaces/GetForgottenCommand.md)         | Asks for the URL a forgotten document can be downloaded from.                |
-| [GetForgottenListCommand](interfaces/GetForgottenListCommand.md) | Lists the documents the editors left behind.                                 |
-| [InfoCommand](interfaces/InfoCommand.md)                         | Asks who has the document open.                                              |
-| [License](interfaces/License.md)                                 | Terms of the license the document server runs under.                         |
-| [LicenseCommand](interfaces/LicenseCommand.md)                   | Asks for the license and for the quota spent against it.                     |
-| [LicenseQuota](interfaces/LicenseQuota.md)                       | Users counted against the license since the document server was started.     |
-| [LicenseQuotaUser](interfaces/LicenseQuotaUser.md)               | A user counted against the license quota.                                    |
-| [LicenseServer](interfaces/LicenseServer.md)                     | Build of the document server, and the verdict on its license.                |
-| [MetaCommand](interfaces/MetaCommand.md)                         | Renames the document in every editor that has it open.                       |
-| [PageMargins](interfaces/PageMargins.md)                         | Page margins, in CSS-like units such as `"17.8mm"`.                          |
-| [PageSize](interfaces/PageSize.md)                               | Size of a page, in CSS-like units such as `"210mm"`.                         |
-| [PdfOptions](interfaces/PdfOptions.md)                           | PDF output settings.                                                         |
-| [RequestOptions](interfaces/RequestOptions.md)                   | Overrides applied to a single request, on top of the client options.         |
-| [SpreadsheetLayout](interfaces/SpreadsheetLayout.md)             | Layout used when a spreadsheet is converted to PDF or to an image.           |
-| [Thumbnail](interfaces/Thumbnail.md)                             | Settings for an image output format: BMP, GIF, JPG or PNG.                   |
-| [VersionCommand](interfaces/VersionCommand.md)                   | Asks for the version of the document server.                                 |
-| [Watermark](interfaces/Watermark.md)                             | Watermark stamped onto a PDF or image output.                                |
-| [WatermarkParagraph](interfaces/WatermarkParagraph.md)           | A line of watermark text.                                                    |
-| [WatermarkRun](interfaces/WatermarkRun.md)                       | A styled piece of watermark text.                                            |
+| Interface                                                        | Description                                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [BuilderResponse](interfaces/BuilderResponse.md)                 | Body of a response from the builder service.                                   |
+| [BuildRequest](interfaces/BuildRequest.md)                       | Starts a build: the document server downloads the script and runs it.          |
+| [BuildResultRequest](interfaces/BuildResultRequest.md)           | Collects the result of an asynchronous build.                                  |
+| [ClientOptions](interfaces/ClientOptions.md)                     | Settings of a client, applied to every request it sends.                       |
+| [CommandResponse](interfaces/CommandResponse.md)                 | Body of a response from the command service.                                   |
+| [ConfigAuthorization](interfaces/ConfigAuthorization.md)         | Where the document server expects the JWT of a request.                        |
+| [ConfigLimits](interfaces/ConfigLimits.md)                       | Bounds the document server enforces.                                           |
+| [ConfigResponse](interfaces/ConfigResponse.md)                   | Body of a response from the configuration endpoint.                            |
+| [ConfigUrls](interfaces/ConfigUrls.md)                           | Paths of the endpoints the document server serves, relative to its base URL.   |
+| [ConvertRequest](interfaces/ConvertRequest.md)                   | Body of a request to the conversion service.                                   |
+| [ConvertResponse](interfaces/ConvertResponse.md)                 | Body of a response from the conversion service.                                |
+| [DeleteForgottenCommand](interfaces/DeleteForgottenCommand.md)   | Removes a document the editors left behind.                                    |
+| [DocumentLayout](interfaces/DocumentLayout.md)                   | Layout of a form printed to PDF or to an image.                                |
+| [DocumentMeta](interfaces/DocumentMeta.md)                       | New metadata of a document.                                                    |
+| [DocumentRenderer](interfaces/DocumentRenderer.md)               | How a PDF, XPS or OXPS source document is read.                                |
+| [DropCommand](interfaces/DropCommand.md)                         | Disconnects users from co-editing, leaving them with view access.              |
+| [FileLocation](interfaces/FileLocation.md)                       | Path and query of a file the document server keeps, as `getFile()` takes them. |
+| [ForcesaveCommand](interfaces/ForcesaveCommand.md)               | Saves the document being edited without closing it.                            |
+| [Format](interfaces/Format.md)                                   | A file format the document server knows.                                       |
+| [GetForgottenCommand](interfaces/GetForgottenCommand.md)         | Asks for the URL a forgotten document can be downloaded from.                  |
+| [GetForgottenListCommand](interfaces/GetForgottenListCommand.md) | Lists the documents the editors left behind.                                   |
+| [InfoCommand](interfaces/InfoCommand.md)                         | Asks who has the document open.                                                |
+| [License](interfaces/License.md)                                 | Terms of the license the document server runs under.                           |
+| [LicenseCommand](interfaces/LicenseCommand.md)                   | Asks for the license and for the quota spent against it.                       |
+| [LicenseQuota](interfaces/LicenseQuota.md)                       | Users counted against the license since the document server was started.       |
+| [LicenseQuotaUser](interfaces/LicenseQuotaUser.md)               | A user counted against the license quota.                                      |
+| [LicenseServer](interfaces/LicenseServer.md)                     | Build of the document server, and the verdict on its license.                  |
+| [MetaCommand](interfaces/MetaCommand.md)                         | Renames the document in every editor that has it open.                         |
+| [PageMargins](interfaces/PageMargins.md)                         | Page margins, in CSS-like units such as `"17.8mm"`.                            |
+| [PageSize](interfaces/PageSize.md)                               | Size of a page, in CSS-like units such as `"210mm"`.                           |
+| [PdfOptions](interfaces/PdfOptions.md)                           | PDF output settings.                                                           |
+| [RequestOptions](interfaces/RequestOptions.md)                   | Overrides applied to a single request, on top of the client options.           |
+| [SpreadsheetLayout](interfaces/SpreadsheetLayout.md)             | Layout used when a spreadsheet is converted to PDF or to an image.             |
+| [Thumbnail](interfaces/Thumbnail.md)                             | Settings for an image output format: BMP, GIF, JPG or PNG.                     |
+| [VersionCommand](interfaces/VersionCommand.md)                   | Asks for the version of the document server.                                   |
+| [Watermark](interfaces/Watermark.md)                             | Watermark stamped onto a PDF or image output.                                  |
+| [WatermarkParagraph](interfaces/WatermarkParagraph.md)           | A line of watermark text.                                                      |
+| [WatermarkRun](interfaces/WatermarkRun.md)                       | A styled piece of watermark text.                                              |
 
 ## Type Aliases
 
@@ -81,3 +82,9 @@ what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/
 | [FormatType](type-aliases/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
 | [RgbColor](type-aliases/RgbColor.md)                               | Red, green and blue components, each 0–255.                                                                         |
 | [TextAssociation](type-aliases/TextAssociation.md)                 | How a PDF, XPS or OXPS page is split into text blocks while it is read.                                             |
+
+## Functions
+
+| Function                                  | Description                                                                                                                                                                                                                                                    |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [splitFileUrl](functions/splitFileUrl.md) | Splits a location the document server handed out — `url` in a callback, `fileUrl` in a conversion response, `url` in the answer to `getForgotten` — into the path and the query [DocumentServerClient.getFile](classes/DocumentServerClient.md#getfile) takes. |
