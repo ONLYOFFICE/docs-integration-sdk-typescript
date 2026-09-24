@@ -493,6 +493,17 @@ describe("verify", () => {
   });
 });
 
+describe("verify with what is not a token", () => {
+  it.each([null, undefined, 42, {}])("refuses %s as malformed", async (token) => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await expect(jwt.verify(token as string)).rejects.toMatchObject({
+      kind: "malformed",
+      message: expect.stringMatching(/a token is a string/) as unknown,
+    });
+  });
+});
+
 describe("recognizing a refused token", () => {
   it("is recognized by JwtError", async () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });

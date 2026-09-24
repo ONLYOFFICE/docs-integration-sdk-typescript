@@ -310,6 +310,10 @@ export class DocumentServerJwt {
    * or another secret, expired, or not valid yet.
    */
   async verify<T = Record<string, unknown>>(token: string, options?: VerifyOptions): Promise<T> {
+    if (typeof token !== "string") {
+      throw new JwtError("malformed", `a token is a string, got: ${describeValue(token)}`);
+    }
+
     const segments = token.split(".");
 
     if (segments.length !== SEGMENTS) {
