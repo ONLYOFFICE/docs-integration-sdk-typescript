@@ -48,7 +48,7 @@ caller who needs one of them:
 | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports             |
 | `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
-| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `buildDocumentKey`, the editor config types          |
+| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types  |
 | `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`                                            |
 | `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                              |
 
@@ -57,8 +57,8 @@ import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
 ```
 
 No module imports another. Where one works with another, it declares what it takes: the
-config signs with any `ConfigSigner` and looks a document type up in any
-`DocumentTypeLookup`, which `DocumentServerJwt` and `DocumentServerFormats` happen to be.
+config signs with any `ConfigSigner` and looks a format up in any `FormatLookup`, which
+`DocumentServerJwt` and `DocumentServerFormats` happen to be.
 The client and the lookup each declare `Format`, and the root exports the one of the
 lookup; the two are the same type, and a test keeps them so.
 
@@ -211,60 +211,98 @@ import {
 
 const formats = new DocumentServerFormats(await client.getFormats());
 
-const config = DocumentServerConfig.forFile(
+const config = new DocumentServerConfig(
   {
-    key: buildDocumentKey(file.id, file.modifiedAt),
-    title: "Report.docx",
-    url: "https://storage.example.com/report.docx",
-  },
-  formats,
-  {
+    document: {
+      key: buildDocumentKey(file.id, file.modifiedAt),
+      title: "Report.docx",
+      url: "https://storage.example.com/report.docx",
+      permissions: { edit: user.mayEdit(file) },
+    },
     editorConfig: {
       callbackUrl: "https://app.example.com/callback",
       lang: "de",
       user: { id: "u-17", name: "Anna Schmidt" },
     },
   },
+  formats,
 );
 
 config.config.documentType; // word
 config.config.document.fileType; // docx
 ```
 
-`forFile()` reads `fileType` off the name of the file and looks `documentType` up in the
-formats the server answered with, so neither can contradict the other or the file. The
-third argument is laid over what it derived, and its `document` is merged into the derived
-one rather than replacing it. A config assembled by hand goes through the constructor
-instead: `new DocumentServerConfig({ documentType, document, editorConfig })`.
+What goes in is what your system knows of the editor it opens: the file, the permissions
+it grants on it and the whole `editorConfig`. What the document server decides is derived
+from its formats. The types declare those fields `never`, and a value that reaches the
+constructor anyway — from JavaScript, or through a cast — is replaced by the derived one
+rather than refused:
 
-`forFile()` takes anything with a `getDocumentType(extension)`, and `sign()` anything with a
-`sign(payload)` that resolves to a token: `DocumentServerFormats` and `DocumentServerJwt`
-are one such pair, a table of your own or a signer backed by a key vault another.
+- `document.fileType` is the extension `title` ends in, in lower case;
+- `documentType` is the editor the server opens that format in;
 
-The effective config is on `config`, validated and frozen, and the instance serializes as
-that config, so `JSON.stringify(config)` is what goes into the page.
+`document.permissions.edit` is required: whether a file may be changed is a decision of
+your system, not a default of the editor. The permissions are then fitted to the format:
+one the format does not allow is lowered to `false`, silently, and one that is not given is
+left out rather than filled in.
+
+| Permission     | Kept when the format allows |
+| -------------- | --------------------------- |
+| `edit`         | `edit` or `lossy-edit`      |
+| `review`       | `review`                    |
+| `comment`      | `comment`                   |
+| `fillForms`    | `fill`                      |
+| `modifyFilter` | `customfilter`              |
+
+So `{ edit: true }` for an `ett`, which the editors only view, comes out `{ edit: false }`.
+The other permissions — `download`, `print`, `copy`, `chat` and the rest — do not depend on
+the format and are kept as they were given.
+
+`editorConfig.mode` is kept as it was given, too, and decides what happens to
+`callbackUrl`. The document server posts the changes of a document there, so it is kept
+only in `edit` mode — the default — for a user who may change the document: whose `edit`,
+`review`, `comment` or `fillForms` is `true` once fitted. There it is required. Anywhere
+else — `view` mode, or nothing left to change — it is cut, and `customization.forcesave`
+along with it.
+
+The constructor takes anything with a `getFormat(extension)` answering the `type` and the
+`actions` of a format, and `sign()` anything with a `sign(payload)` that resolves to a
+token: `DocumentServerFormats` and `DocumentServerJwt` are one such pair, a table of your
+own or a signer backed by a key vault another.
+
+The effective config is on `config`, validated, completed and frozen through and through,
+and the instance serializes as that config, so `JSON.stringify(config)` is what goes into
+the page. The input is copied, so changing it afterwards changes nothing.
 
 ### What it refuses
 
-Nearly every field of the editor config is optional in the types, while the document
-server is strict about a handful of them. A `TypeError` is thrown for:
+A `ConfigError` is thrown, whose `field` names the path refused, such as
+`"document.title"`, and whose `kind` is:
 
-- a missing `document`, or a `documentType` that is missing or empty;
-- a `key` that is empty, longer than 128 characters, or carries anything outside
-  `0-9`, `a-z`, `A-Z`, `-`, `.`, `_` and `=`;
-- a `document.url` or an `editorConfig.callbackUrl` that is not an absolute `http` or
-  `https` URL;
-- a `title` longer than the 128 characters the server allows;
-- the editor `events`, which are no part of a config that is serialized and signed.
+- `"unsupported"` for a file whose format the server does not know, or knows but opens in
+  no editor, such as `png`;
+- `"invalid"` for everything else:
+  - a `title` that ends in no extension;
+  - a `key` that is empty, longer than 128 characters, or carries anything outside
+    `0-9`, `a-z`, `A-Z`, `-`, `.`, `_` and `=`;
+  - `permissions` without a boolean `edit`, or with a permission of the table above that is
+    not a boolean;
+  - a `mode` other than `"edit"` and `"view"`;
+  - no `callbackUrl` where it is required;
+  - a `user` without an `id`, or with one longer than 128 characters;
+  - a URL that is not an absolute `http` or `https` one: `document.url`, the kept
+    `callbackUrl`, `createUrl`, `mergeFolderUrl`, `saveAsUrl`, `sharingSettingsUrl`, the
+    `url` of `recent` and `templates`, of `customization.goback`, `customization.feedback`
+    and `customization.logo` — whose empty `url` is kept, it makes the logo not clickable —
+    and the URLs of `embedded`.
 
-`fileType` is normalized rather than refused: `".DOCX"` and `"DOCX"` both become `"docx"`.
+`ConfigError.is()` recognizes one, a second copy of the package included.
 
 ### Signing
 
 `sign()` answers with a copy of the config carrying a `token` over it, which is what the
-editor is handed once the document server has a secret. The token covers the whole config
-apart from itself, so a config that already carries one is signed anew rather than signed
-over its own token.
+editor is handed once the document server has a secret. The token covers the whole config apart from itself, so a config that already carries
+one is signed anew rather than signed over its own token.
 
 ```ts
 const jwt = new DocumentServerJwt({ secret: process.env["JWT_SECRET"] ?? "" });
@@ -275,8 +313,7 @@ const signed = await config.sign(jwt);
 
 The config travels to the browser as JSON, and the `events` of the editor API are
 functions — they survive neither `JSON.stringify` nor a signature. The type the SDK takes,
-`SignableConfig`, is the editor config without them, and a config that carries them anyway
-is refused rather than quietly stripped. They are attached where the editor is built, on
+`ConfigInput`, has no room for them. They are attached where the editor is built, on
 top of the config that came from here:
 
 ```html
@@ -1042,6 +1079,7 @@ src/
   client/command.ts     command request and response
   client/builder.ts     document builder request and response
   config/config.ts      DocumentServerConfig, the editor config
+  config/errors.ts      ConfigError and the kinds of refusal
   config/key.ts         buildDocumentKey
   config/types.ts       the editor config types, from @onlyoffice/doceditor-types
   formats/formats.ts    DocumentServerFormats, the format lookup

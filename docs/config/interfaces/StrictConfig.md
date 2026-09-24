@@ -3,7 +3,7 @@
 # Interface: StrictConfig
 
 A config carrying what the document server requires of it, which is what
-[DocumentServerConfig](../classes/DocumentServerConfig.md) validates a loose one into.
+[DocumentServerConfig](../classes/DocumentServerConfig.md) builds out of a [ConfigInput](../type-aliases/ConfigInput.md).
 
 ## Extends
 

@@ -5,6 +5,9 @@ export type { Config, DocumentType, FileType };
 /** The `document` section of a config. */
 export type ConfigDocument = NonNullable<Config["document"]>;
 
+/** The `document.permissions` section of a config. */
+export type ConfigPermissions = NonNullable<ConfigDocument["permissions"]>;
+
 /** The `editorConfig` section of a config. */
 export type ConfigEditor = NonNullable<Config["editorConfig"]>;
 
@@ -18,8 +21,46 @@ export type ConfigEditor = NonNullable<Config["editorConfig"]>;
 export type SignableConfig = Omit<Config, "events">;
 
 /**
+ * What your system grants on the file. `edit` is required: whether the file may be
+ * changed is a decision of your system, not a default of the editor.
+ */
+export type ConfigInputPermissions = Omit<ConfigPermissions, "edit"> & { edit: boolean };
+
+/**
+ * The file as your storage knows it. `fileType` is read off `title` by
+ * {@link DocumentServerConfig}, so the type leaves no room for it.
+ */
+export type ConfigInputDocument = Omit<
+  ConfigDocument,
+  "fileType" | "key" | "permissions" | "title" | "url"
+> & {
+  /** Identifier of this revision of the file. See {@link buildDocumentKey}. */
+  key: string;
+  /** Name of the file, extension included, which the editor shows and downloads it under. */
+  title: string;
+  /** Absolute URL the document server downloads the file from. */
+  url: string;
+  permissions: ConfigInputPermissions;
+  fileType?: never;
+};
+
+/**
+ * Everything your system knows of the editor it opens: the file, the permissions it grants
+ * and the whole `editorConfig`. What the document server decides — `documentType`,
+ * `document.fileType` — is derived by {@link DocumentServerConfig}, so the type leaves no
+ * room for it, and neither for the `token`, which only {@link DocumentServerConfig.sign}
+ * writes.
+ */
+export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "token"> & {
+  document: ConfigInputDocument;
+  documentType?: never;
+  token?: never;
+  events?: never;
+};
+
+/**
  * A config carrying what the document server requires of it, which is what
- * {@link DocumentServerConfig} validates a loose one into.
+ * {@link DocumentServerConfig} builds out of a {@link ConfigInput}.
  */
 export interface StrictConfig extends SignableConfig {
   document: ConfigDocument;

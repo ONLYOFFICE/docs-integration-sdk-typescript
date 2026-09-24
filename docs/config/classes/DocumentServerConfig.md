@@ -2,31 +2,37 @@
 
 # Class: DocumentServerConfig
 
-The config the editor is opened with: validated, normalized and signed with the secret
+The config the editor is opened with, built out of what your system knows of the file
+and the formats of the document server: validated, completed and signed with the secret
 the document server is configured with.
 
-The editor takes its config in the browser, so the config travels as JSON — which is
-why the `events` of the editor API are no part of it. Those are functions the browser
-calls, and they are attached where the editor is constructed, on top of the config that
-came from here.
+What your system knows goes in — the file, the permissions it grants, the whole
+`editorConfig`. What the document server decides is derived, over whatever was given:
 
-Every field is the one the editor API documents, from `@onlyoffice/doceditor-types`,
-where nearly all of them are optional. This class requires what the document server
-requires of them, and refuses what it silently rejects.
+- `document.fileType` is the extension `title` ends in;
+- `documentType` is the editor the server opens that format in;
+- a permission the format does not allow — `edit`, `review`, `comment`, `fillForms`,
+  `modifyFilter` — is lowered to `false`;
+- `callbackUrl` is kept only in `edit` mode for a user who may change the document, and
+  required there; anywhere else it is cut, `customization.forcesave` along with it.
+
+`mode` is left as it was given. The editor takes its config in the browser, so the
+config travels as JSON — which is why the `events` of the editor API are no part of it.
 
 ## Constructors
 
 ### Constructor
 
 ```ts
-new DocumentServerConfig(config): DocumentServerConfig;
+new DocumentServerConfig(input, formats): DocumentServerConfig;
 ```
 
 #### Parameters
 
-| Parameter | Type                                                  |
-| --------- | ----------------------------------------------------- |
-| `config`  | [`SignableConfig`](../type-aliases/SignableConfig.md) |
+| Parameter | Type                                            | Description                                                  |
+| --------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| `input`   | [`ConfigInput`](../type-aliases/ConfigInput.md) | What your system knows of the editor it opens.               |
+| `formats` | [`FormatLookup`](../interfaces/FormatLookup.md) | The formats of the document server, or a lookup of your own. |
 
 #### Returns
 
@@ -34,52 +40,16 @@ new DocumentServerConfig(config): DocumentServerConfig;
 
 #### Throws
 
-when `document` is missing, `documentType` is missing or empty, a
-URL is not absolute, the key is too long or carries a character the server does not
-accept, or the config carries the editor events.
+[ConfigError](ConfigError.md) `unsupported` when no editor of the server opens the format
+of the file, and `invalid` when a field is missing or would be rejected by the server.
 
 ## Properties
 
-| Property                              | Modifier   | Type                                                          | Description                                                              |
-| ------------------------------------- | ---------- | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| <a id="property-config"></a> `config` | `readonly` | `Readonly`\<[`StrictConfig`](../interfaces/StrictConfig.md)\> | The effective config: validated, with the values normalized, and frozen. |
+| Property                              | Modifier   | Type                                                          | Description                                                                 |
+| ------------------------------------- | ---------- | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| <a id="property-config"></a> `config` | `readonly` | `Readonly`\<[`StrictConfig`](../interfaces/StrictConfig.md)\> | The effective config: validated, completed, and frozen through and through. |
 
 ## Methods
-
-### forFile()
-
-```ts
-static forFile(
-   file,
-   formats,
-   config?
-): DocumentServerConfig;
-```
-
-A config for a file, with `fileType` read off its name and `documentType` looked up in
-the formats the document server answered with.
-
-Anything else — the callback URL, the user, the permissions, the customization — is
-laid over the derived config, and its `document` is merged into the derived one rather
-than replacing it.
-
-#### Parameters
-
-| Parameter | Type                                                        |
-| --------- | ----------------------------------------------------------- |
-| `file`    | [`ConfigFile`](../interfaces/ConfigFile.md)                 |
-| `formats` | [`DocumentTypeLookup`](../interfaces/DocumentTypeLookup.md) |
-| `config?` | [`SignableConfig`](../type-aliases/SignableConfig.md)       |
-
-#### Returns
-
-`DocumentServerConfig`
-
-#### Throws
-
-when the name carries no extension, or no editor opens it.
-
----
 
 ### sign()
 

@@ -6,5 +6,6 @@
  */
 
 export * from "./config.js";
+export * from "./errors.js";
 export * from "./key.js";
 export * from "./types.js";
