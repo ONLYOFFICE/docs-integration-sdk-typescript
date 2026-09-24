@@ -462,12 +462,37 @@ describe("buildDocumentKey", () => {
     expect(buildDocumentKey("file-42", 1_732_000_000)).toBe("file-42_1732000000");
   });
 
-  it("replaces every character the server does not accept", () => {
-    expect(buildDocumentKey("files/report 1.docx", "v2")).toBe("files-report-1.docx_v2");
+  it("replaces every character the server does not accept, and adds a fingerprint", () => {
+    expect(buildDocumentKey("files/report 1.docx", "v2")).toMatch(
+      /^files-report-1\.docx_v2-[0-9a-z]{7}$/,
+    );
+  });
+
+  it("keeps apart names that differ only in the characters it replaced", () => {
+    const first = buildDocumentKey("Отчёт.docx", 1_732_000_000, 48_213);
+    const second = buildDocumentKey("Счёт.docx", 1_732_000_000, 48_213);
+
+    expect(first).toMatch(/^\.docx_1732000000_48213-[0-9a-z]{7}$/);
+    expect(second).toMatch(/^\.docx_1732000000_48213-[0-9a-z]{7}$/);
+    expect(first).not.toBe(second);
+  });
+
+  it("builds a key out of a name made of nothing it accepts", () => {
+    const key = buildDocumentKey("Отчёт");
+
+    expect(key).toMatch(/^[0-9a-z]{7}$/);
+    expect(key).not.toBe(buildDocumentKey("Счёт"));
   });
 
   it("fits a long key into the 128 characters the server allows", () => {
     const key = buildDocumentKey("a".repeat(200), "1");
+
+    expect(key).toHaveLength(128);
+    expect(key).toMatch(/^[0-9a-zA-Z._=-]+$/);
+  });
+
+  it("fits a long key with replaced characters into the 128 characters", () => {
+    const key = buildDocumentKey("я".repeat(10) + "a".repeat(200));
 
     expect(key).toHaveLength(128);
     expect(key).toMatch(/^[0-9a-zA-Z._=-]+$/);
@@ -482,10 +507,11 @@ describe("buildDocumentKey", () => {
 
   it("builds the same key out of the same parts", () => {
     expect(buildDocumentKey("a".repeat(200))).toBe(buildDocumentKey("a".repeat(200)));
+    expect(buildDocumentKey("Отчёт.docx", 1)).toBe(buildDocumentKey("Отчёт.docx", 1));
   });
 
   it("refuses to build a key out of nothing", () => {
     expect(() => buildDocumentKey()).toThrow(/at least one part/);
-    expect(() => buildDocumentKey("/", "?")).toThrow(/must not be empty/);
+    expect(() => buildDocumentKey("", "_")).toThrow(/must not be empty/);
   });
 });

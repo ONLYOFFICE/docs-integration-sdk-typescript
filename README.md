@@ -337,13 +337,16 @@ saved has to be given a new one. `buildDocumentKey()` builds one out of the part
 identify a revision in your storage:
 
 ```ts
-buildDocumentKey("files/report 1.docx", 1732000000); // files-report-1.docx_1732000000
+buildDocumentKey("report.docx", 1732000000); // report.docx_1732000000
+buildDocumentKey("Отчёт.docx", 1732000000); // .docx_1732000000-<fingerprint>
 ```
 
-The parts are joined with `_`, and every character the server does not accept becomes `-`.
-A key that would come out longer than the 128 characters the server allows is cut to fit
-and given a fingerprint of the whole, so two long keys that differ only in their tail stay
-apart.
+The parts are joined with `_`, and every run of characters the server does not accept
+becomes `-`. That loses what those characters were — `Отчёт.docx` and `Счёт.docx` would
+both come out `.docx` — so a key that had any replaced is given a fingerprint of the parts
+as they were given, which keeps two such files apart. A key that would come out longer
+than the 128 characters the server allows is cut to fit and given a fingerprint as well,
+so two long keys that differ only in their tail stay apart.
 
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
