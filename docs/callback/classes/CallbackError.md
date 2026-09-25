@@ -3,7 +3,9 @@
 # Class: CallbackError
 
 A callback that could not be taken: a body that is not one, a token missing where one is
-required, or a token the verifier refused, which is then the `cause`.
+required, or a token the verifier refused, which is then the `cause`. Or, as
+[DocumentServerCallback.handle](DocumentServerCallback.md#handle) tells `onError`, a document saved on `6` with no
+handler to store it.
 
 ## Extends
 

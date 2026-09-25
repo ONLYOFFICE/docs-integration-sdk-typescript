@@ -805,8 +805,17 @@ await callback.handle(handlers, {
 ```
 
 A kind with no handler is answered with `ok`. `save` has to have one — the types refuse
-handlers without it — since a document left unstored on `2` is lost. A handler for
-`forcesave` is worth having as soon as the editors can force a save.
+handlers without it — since a document left unstored on `2` is lost. So is one left
+unstored on `6`, but the types leave `forcesave` optional, for an integration that never
+forces a save: a callback of status `6` that comes with no handler for it is answered with
+`fail`, and `onError` hears of it as a `CallbackError` of kind `"unhandled"`. The document
+server posts it again, so the missing handler shows up in the log rather than as a lost
+version.
+
+A `6` may come even when the editor config never turns `customization.forcesave` on: from
+the `forcesave` command of the [command service](#commands) (`forcesavetype` `0`),
+from a submitted form (`3`), or from the autosave timer in the settings of the document
+server itself (`2`).
 
 ### What it refuses
 
@@ -817,6 +826,9 @@ handlers without it — since a document left unstored on `2` is lost. A handler
 | `"body"`      | The body is not JSON, or carries no `key`, no integer `status`, or no `url`. |
 | `"token"`     | A verifier is named and the callback carries no token.                       |
 | `"signature"` | The verifier refused the token. Its refusal is the `cause`.                  |
+
+A fourth kind, `"unhandled"`, never comes out of `parse()` or `fromRequest()`: it is what
+`handle()` tells `onError` of a `6` with no `forcesave` handler.
 
 A request refused this way was not sent by the document server, or not in a shape it
 sends, so it is answered with an error status rather than with `fail`, which would only

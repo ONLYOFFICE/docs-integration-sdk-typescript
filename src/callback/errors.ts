@@ -1,11 +1,13 @@
 const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.callback-error");
 
 /** Why a callback was refused, and the discriminant of {@link CallbackError}. */
-export type CallbackErrorKind = "body" | "signature" | "token";
+export type CallbackErrorKind = "body" | "signature" | "token" | "unhandled";
 
 /**
  * A callback that could not be taken: a body that is not one, a token missing where one is
- * required, or a token the verifier refused, which is then the `cause`.
+ * required, or a token the verifier refused, which is then the `cause`. Or, as
+ * {@link DocumentServerCallback.handle} tells `onError`, a document saved on `6` with no
+ * handler to store it.
  */
 export class CallbackError extends Error {
   /** Which of the checks refused the callback. */

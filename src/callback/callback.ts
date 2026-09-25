@@ -271,7 +271,8 @@ export class DocumentServerCallback {
    * callback again.
    *
    * A kind with no handler is answered with `ok`. `save` has to have one, since a document
-   * left unstored on it is lost.
+   * left unstored on it is lost, and `forcesave` without one is answered with `fail`, a
+   * {@link CallbackError} of kind `unhandled` told to `onError`.
    */
   async handle(handlers: CallbackHandlers, options?: HandleOptions): Promise<CallbackReply> {
     const event = this.event;
@@ -291,7 +292,14 @@ export class DocumentServerCallback {
           await handlers.closed?.(event);
           break;
         case "forcesave":
-          await handlers.forcesave?.(event);
+          if (handlers.forcesave === undefined) {
+            throw new CallbackError(
+              "unhandled",
+              "a callback of status 6 carries a document to store, and no forcesave handler is given",
+            );
+          }
+
+          await handlers.forcesave(event);
           break;
         case "forcesave-error":
           await handlers["forcesave-error"]?.(event);

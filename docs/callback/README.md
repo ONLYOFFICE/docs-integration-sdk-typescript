@@ -7,10 +7,10 @@ apart by what it reports. Imported from `@onlyoffice/docs-integration-sdk/callba
 
 ## Classes
 
-| Class                                                       | Description                                                                                                                                                    |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [CallbackError](classes/CallbackError.md)                   | A callback that could not be taken: a body that is not one, a token missing where one is required, or a token the verifier refused, which is then the `cause`. |
-| [DocumentServerCallback](classes/DocumentServerCallback.md) | A request the document server posted to the callback URL: checked against its token, and told apart by what it reports.                                        |
+| Class                                                       | Description                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [CallbackError](classes/CallbackError.md)                   | A callback that could not be taken: a body that is not one, a token missing where one is required, or a token the verifier refused, which is then the `cause`. Or, as [DocumentServerCallback.handle](classes/DocumentServerCallback.md#handle) tells `onError`, a document saved on `6` with no handler to store it. |
+| [DocumentServerCallback](classes/DocumentServerCallback.md) | A request the document server posted to the callback URL: checked against its token, and told apart by what it reports.                                                                                                                                                                                               |
 
 ## Interfaces
 

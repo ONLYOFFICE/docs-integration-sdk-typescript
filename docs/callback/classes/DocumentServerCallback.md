@@ -79,7 +79,8 @@ Runs the handler of the event and answers the way the document server expects:
 callback again.
 
 A kind with no handler is answered with `ok`. `save` has to have one, since a document
-left unstored on it is lost.
+left unstored on it is lost, and `forcesave` without one is answered with `fail`, a
+[CallbackError](CallbackError.md) of kind `unhandled` told to `onError`.
 
 #### Parameters
 

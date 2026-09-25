@@ -368,8 +368,35 @@ describe("DocumentServerCallback.handle", () => {
     expect(handlers.forcesave).not.toHaveBeenCalled();
   });
 
-  it.each([1, 3, 4, 6, 7, 9])("answers ok on status %i with no handler for it", async (status) => {
+  it.each([1, 3, 4, 7, 9])("answers ok on status %i with no handler for it", async (status) => {
     const reply = await new DocumentServerCallback(body({ status })).handle({ save: vi.fn() });
+
+    expect(reply).toBe(DocumentServerCallback.ok);
+  });
+
+  it("answers fail on status 6 with no handler for it, and tells of it", async () => {
+    const onError = vi.fn();
+    const handlers = { save: vi.fn() };
+    const reply = await new DocumentServerCallback(body({ status: 6 })).handle(handlers, {
+      onError,
+    });
+
+    expect(reply).toBe(DocumentServerCallback.fail);
+    expect(handlers.save).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledOnce();
+
+    const [error, event] = onError.mock.calls[0] as [unknown, CallbackEvent];
+
+    expect(CallbackError.is(error)).toBe(true);
+    expect((error as CallbackError).kind).toBe("unhandled");
+    expect(event.kind).toBe("forcesave");
+  });
+
+  it("answers ok on status 6 once its handler is done", async () => {
+    const reply = await new DocumentServerCallback(body({ status: 6 })).handle({
+      save: vi.fn(),
+      forcesave: vi.fn(),
+    });
 
     expect(reply).toBe(DocumentServerCallback.ok);
   });
