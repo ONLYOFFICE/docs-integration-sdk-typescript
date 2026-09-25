@@ -1,62 +1,61 @@
-const MAX_KEY_LENGTH = 128;
-const UNSUPPORTED = /[^0-9a-zA-Z._=-]+/g;
-const EDGES = /^[-_]+|[-_]+$/g;
-const FNV_OFFSET = 2_166_136_261;
-const FNV_PRIME = 16_777_619;
-const HASH_LENGTH = 7;
-const RADIX = 36;
+const encoder = new TextEncoder();
 
-function fingerprint(text: string): string {
-  let value = FNV_OFFSET;
+function base64url(bytes: Uint8Array): string {
+  let binary = "";
 
-  for (let index = 0; index < text.length; index += 1) {
-    value ^= text.charCodeAt(index);
-    value = Math.imul(value, FNV_PRIME);
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
   }
 
-  return (value >>> 0).toString(RADIX).padStart(HASH_LENGTH, "0");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** The key cut to leave room for a fingerprint, and given it. */
-function withFingerprint(key: string, hash: string): string {
-  const kept = key.slice(0, MAX_KEY_LENGTH - HASH_LENGTH - 1);
+function checkPart(part: unknown, index: number): string {
+  if (typeof part === "string") {
+    return part;
+  }
 
-  return kept === "" ? hash : `${kept}-${hash}`;
+  if (typeof part === "number" && Number.isFinite(part)) {
+    return String(part);
+  }
+
+  throw new TypeError(
+    `part ${String(index)} of a document key must be a string or a finite number, got: ${
+      typeof part === "number" ? String(part) : typeof part
+    }`,
+  );
 }
 
 /**
- * Builds a document key out of the parts that identify a revision of a file, such as its
- * identifier in your storage and the moment it was last written.
+ * Builds a document key out of the parts that identify a revision of a file, such as the
+ * instance of your system, the identifier of the file in your storage and its version.
  *
- * The parts are joined with `_`, and every run of characters the document server does not
- * accept in a key becomes a `-`. That loses what those characters were — `Отчёт.docx` and
- * `Счёт.docx` would both come out `.docx` — so a key that had any replaced is given a
- * fingerprint of the parts as they were given, which keeps two such files apart. A key
- * that would come out longer than the 128 characters the server allows is cut to fit and
- * given a fingerprint too, so two long keys that differ only in their tail stay apart.
+ * The key is the SHA-256 of the parts, in base64url: 43 characters the document server
+ * accepts, whatever the parts are made of and however long they are. Two lists of parts
+ * that differ in any way — `["a_b", "c"]` and `["a", "b_c"]` included — never come out the
+ * same key, and the same parts always do. A number and the string it is written as count
+ * as the same part.
  *
- * The key stands for one revision, not for one file: a document the editors saved is a
- * new revision and takes a new key, or the server hands back the one it has cached.
+ * The key stands for one revision, not for one file: a document the editors saved is a new
+ * revision and takes a new key, or the server hands back the one it has cached. So one of
+ * the parts has to change with every write — a version counter, an etag, a hash of the
+ * content — and the key tells nothing of the file it was built from.
  *
- * @throws {TypeError} when no part is given, or the parts are all empty.
+ * @throws {TypeError} when no part is given, every part is empty, or a part is neither a
+ * string nor a finite number.
  */
-export function buildDocumentKey(...parts: readonly (string | number)[]): string {
+export async function buildDocumentKey(...parts: readonly (string | number)[]): Promise<string> {
   if (parts.length === 0) {
     throw new TypeError("a document key is built from at least one part");
   }
 
-  const given = parts.map(String);
-  const source = given.join("_");
-  const joined = given.map((part) => part.replace(UNSUPPORTED, "-")).join("_");
-  const key = joined.replace(EDGES, "");
+  const given = parts.map(checkPart);
 
-  if (joined !== source) {
-    return withFingerprint(key, fingerprint(source));
+  if (given.every((part) => part === "")) {
+    throw new TypeError("a document key is built from at least one part that is not empty");
   }
 
-  if (key === "") {
-    throw new TypeError(`a document key must not be empty, got: ${parts.join(", ")}`);
-  }
+  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify(given)));
 
-  return key.length <= MAX_KEY_LENGTH ? key : withFingerprint(key, fingerprint(key));
+  return base64url(new Uint8Array(digest));
 }

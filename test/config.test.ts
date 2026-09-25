@@ -458,60 +458,69 @@ describe("ConfigInput", () => {
 });
 
 describe("buildDocumentKey", () => {
-  it("joins the parts it is given", () => {
-    expect(buildDocumentKey("file-42", 1_732_000_000)).toBe("file-42_1732000000");
-  });
+  const SUPPORTED = /^[0-9a-zA-Z._=-]{1,128}$/;
 
-  it("replaces every character the server does not accept, and adds a fingerprint", () => {
-    expect(buildDocumentKey("files/report 1.docx", "v2")).toMatch(
-      /^files-report-1\.docx_v2-[0-9a-z]{7}$/,
+  it("builds the SHA-256 of the parts, in base64url", async () => {
+    expect(await buildDocumentKey("file-42", 7)).toBe(
+      "PgpslDSqIbs-htHChshVnbJ_ogvLYU1bYQXw7BoCXjc",
     );
   });
 
-  it("keeps apart names that differ only in the characters it replaced", () => {
-    const first = buildDocumentKey("Отчёт.docx", 1_732_000_000, 48_213);
-    const second = buildDocumentKey("Счёт.docx", 1_732_000_000, 48_213);
+  it("builds a key the server accepts out of any parts", async () => {
+    for (const parts of [
+      ["files/report 1.docx", "v2"],
+      ["Отчёт.docx", 1_732_000_000],
+      ["a".repeat(500), "я".repeat(500)],
+      ["🙂", "\u0000", '"quoted"'],
+    ] as const) {
+      const key = await buildDocumentKey(...parts);
 
-    expect(first).toMatch(/^\.docx_1732000000_48213-[0-9a-z]{7}$/);
-    expect(second).toMatch(/^\.docx_1732000000_48213-[0-9a-z]{7}$/);
-    expect(first).not.toBe(second);
+      expect(key).toMatch(SUPPORTED);
+      expect(key).toHaveLength(43);
+    }
   });
 
-  it("builds a key out of a name made of nothing it accepts", () => {
-    const key = buildDocumentKey("Отчёт");
-
-    expect(key).toMatch(/^[0-9a-z]{7}$/);
-    expect(key).not.toBe(buildDocumentKey("Счёт"));
+  it("builds the same key out of the same parts", async () => {
+    expect(await buildDocumentKey("Отчёт.docx", 3)).toBe(await buildDocumentKey("Отчёт.docx", 3));
   });
 
-  it("fits a long key into the 128 characters the server allows", () => {
-    const key = buildDocumentKey("a".repeat(200), "1");
-
-    expect(key).toHaveLength(128);
-    expect(key).toMatch(/^[0-9a-zA-Z._=-]+$/);
+  it("takes a number and the string it is written as for the same part", async () => {
+    expect(await buildDocumentKey("file-42", 7)).toBe(await buildDocumentKey("file-42", "7"));
   });
 
-  it("fits a long key with replaced characters into the 128 characters", () => {
-    const key = buildDocumentKey("я".repeat(10) + "a".repeat(200));
-
-    expect(key).toHaveLength(128);
-    expect(key).toMatch(/^[0-9a-zA-Z._=-]+$/);
+  it.each([
+    [
+      ["a_b", "c"],
+      ["a", "b_c"],
+    ],
+    [["ab"], ["a", "b"]],
+    [["a", ""], ["a"]],
+    [
+      ["Отчёт.docx", 1],
+      ["Счёт.docx", 1],
+    ],
+    [[`${"a".repeat(200)}-1`], [`${"a".repeat(200)}-2`]],
+    [
+      ["file-42", 1],
+      ["file-42", 2],
+    ],
+    [
+      ["tenant-a", "file-42", 1],
+      ["tenant-b", "file-42", 1],
+    ],
+  ] as const)("keeps %j apart from %j", async (first, second) => {
+    expect(await buildDocumentKey(...first)).not.toBe(await buildDocumentKey(...second));
   });
 
-  it("keeps two long keys apart by what they end in", () => {
-    const first = buildDocumentKey(`${"a".repeat(200)}-1`);
-    const second = buildDocumentKey(`${"a".repeat(200)}-2`);
-
-    expect(first).not.toBe(second);
+  it("refuses to build a key out of nothing", async () => {
+    await expect(buildDocumentKey()).rejects.toThrow(/at least one part/);
+    await expect(buildDocumentKey("", "")).rejects.toThrow(/not empty/);
   });
 
-  it("builds the same key out of the same parts", () => {
-    expect(buildDocumentKey("a".repeat(200))).toBe(buildDocumentKey("a".repeat(200)));
-    expect(buildDocumentKey("Отчёт.docx", 1)).toBe(buildDocumentKey("Отчёт.docx", 1));
-  });
-
-  it("refuses to build a key out of nothing", () => {
-    expect(() => buildDocumentKey()).toThrow(/at least one part/);
-    expect(() => buildDocumentKey("", "_")).toThrow(/must not be empty/);
-  });
+  it.each<unknown>([Number.NaN, Number.POSITIVE_INFINITY, undefined, null, {}])(
+    "refuses a part that is %s",
+    async (part) => {
+      await expect(buildDocumentKey("file-42", part as string)).rejects.toThrow(TypeError);
+    },
+  );
 });

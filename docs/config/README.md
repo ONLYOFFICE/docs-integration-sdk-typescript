@@ -36,6 +36,6 @@ The config an editor is opened with, validated and signed. Imported from
 
 ## Functions
 
-| Function                                          | Description                                                                                                                                           |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [buildDocumentKey](functions/buildDocumentKey.md) | Builds a document key out of the parts that identify a revision of a file, such as its identifier in your storage and the moment it was last written. |
+| Function                                          | Description                                                                                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [buildDocumentKey](functions/buildDocumentKey.md) | Builds a document key out of the parts that identify a revision of a file, such as the instance of your system, the identifier of the file in your storage and its version. |

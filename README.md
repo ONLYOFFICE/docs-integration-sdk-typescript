@@ -214,13 +214,13 @@ const formats = new DocumentServerFormats(await client.getFormats());
 const config = new DocumentServerConfig(
   {
     document: {
-      key: buildDocumentKey(file.id, file.modifiedAt),
+      key: await buildDocumentKey(instanceId, file.id, file.version),
       title: "Report.docx",
       url: "https://storage.example.com/report.docx",
       permissions: { edit: user.mayEdit(file) },
     },
     editorConfig: {
-      callbackUrl: "https://app.example.com/callback",
+      callbackUrl: `https://app.example.com/callback?fileId=${file.id}`,
       lang: "de",
       user: { id: "u-17", name: "Anna Schmidt" },
     },
@@ -333,20 +333,42 @@ the document server itself.
 
 A key stands for one revision of a file, not for the file: the document server takes a
 document from its cache whenever it sees a key it already knows, so a document the editors
-saved has to be given a new one. `buildDocumentKey()` builds one out of the parts that
-identify a revision in your storage:
+saved has to be given a new one, and two files, or two revisions of one, must never share
+a key. Everybody who opens the same revision has to get the same key, or they do not meet
+in one editing session.
+
+`buildDocumentKey()` builds one out of the parts that identify a revision in your storage:
 
 ```ts
-buildDocumentKey("report.docx", 1732000000); // report.docx_1732000000
-buildDocumentKey("Отчёт.docx", 1732000000); // .docx_1732000000-<fingerprint>
+await buildDocumentKey(instanceId, file.id, file.version); // 43 characters of base64url
 ```
 
-The parts are joined with `_`, and every run of characters the server does not accept
-becomes `-`. That loses what those characters were — `Отчёт.docx` and `Счёт.docx` would
-both come out `.docx` — so a key that had any replaced is given a fingerprint of the parts
-as they were given, which keeps two such files apart. A key that would come out longer
-than the 128 characters the server allows is cut to fit and given a fingerprint as well,
-so two long keys that differ only in their tail stay apart.
+The key is the SHA-256 of the parts, in base64url. It is made of characters the server
+accepts and fits its 128, whatever the parts are made of and however long they are. Parts
+that differ in any way never come out the same key — `("a_b", "c")` and `("a", "b_c")`
+included — and the same parts always do, across restarts too. A number and the string it
+is written as count as the same part. A part that is neither a string nor a finite number,
+such as `undefined` or `NaN`, is refused, since it would hand every revision one key.
+
+What the parts are is up to you, and two things are:
+
+- One of them has to change with every write: a version counter, an etag, a hash of the
+  content. A modification time in seconds does not — two saves within a second would share
+  a key.
+- A document server that serves several instances of your system, or several tenants, sees
+  their keys side by side: name the instance among the parts, or two files with the same
+  identifier in two of them meet.
+
+The key tells nothing of the file it was built from, so the callback cannot find the file
+by it — and the key changes with every save anyway. Put the identifier of the file in
+`callbackUrl` instead, which the signed config keeps from being changed on its way. The
+token of a callback signs its body, though, not the URL it was posted to, so compare the
+`key` it carries with the key of the revision the file is at before storing anything: a
+callback for one file posted again under the identifier of another is then refused.
+
+An editing session keeps its key until it closes, and everybody who joins it has to be
+handed that key. A document stored on a forced save, `6`, is a copy, then: the revision
+the key is built from moves on only with the save on `2`.
 
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
@@ -717,16 +739,27 @@ happens to the document: a user connects, the last editor closes, a save is aske
 and answers it the way the document server expects.
 
 ```ts
+import { buildDocumentKey } from "@onlyoffice/docs-integration-sdk/config";
 import { DocumentServerCallback } from "@onlyoffice/docs-integration-sdk/callback";
 
 export async function POST(request: Request): Promise<Response> {
+  const fileId = new URL(request.url).searchParams.get("fileId");
   const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
-  const reply = await callback.handle({
-    save: async ({ key, url }) => {
-      const { path, query } = splitFileUrl(url, publicUrl);
-      const file = await client.getFile(path, query);
+  const file = await storage.find(fileId);
 
-      await storage.put(key, file.body);
+  if (
+    file === undefined ||
+    callback.event.key !== (await buildDocumentKey(instanceId, file.id, file.version))
+  ) {
+    return new Response(null, { status: 403 });
+  }
+
+  const reply = await callback.handle({
+    save: async ({ url }) => {
+      const { path, query } = splitFileUrl(url, publicUrl);
+      const download = await client.getFile(path, query);
+
+      await storage.saveVersion(file.id, download.body);
     },
   });
 
