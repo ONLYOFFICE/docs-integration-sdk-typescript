@@ -469,7 +469,7 @@ version of the same file needs a new key.
 When the document server is configured with a secret, the request has to carry a JWT — and
 it takes one in either of two places, signed over two different payloads. In the body,
 `token` signs the body itself; in a header, the signature covers the body wrapped as
-`{ payload: … }`. [`DocumentServerJwt`](#jwt) signs both:
+`{ payload: … }`. [`DocumentServerJwt`](#jwt) signs both, with `sign()` and `signHeader()`:
 
 ```ts
 const jwt = new DocumentServerJwt({ secret });
@@ -478,7 +478,7 @@ const jwt = new DocumentServerJwt({ secret });
 await client.convert({ ...request, token: await jwt.sign(request) });
 
 // In a header, as the second argument.
-await client.convert(request, await jwt.sign({ payload: request }));
+await client.convert(request, await jwt.signHeader(request));
 ```
 
 Sending both is fine as long as each was signed over its own payload — handing the same
@@ -552,7 +552,7 @@ itself, or in a header as the second argument, signing the body wrapped as `{ pa
 
 ```ts
 await client.command({ ...request, token: await jwt.sign(request) });
-await client.command(request, await jwt.sign({ payload: request }));
+await client.command(request, await jwt.signHeader(request));
 ```
 
 The `shardkey` query parameter is added for the commands that carry a `key`, and left out
@@ -659,6 +659,22 @@ configured to expect one of those instead.
 
 What goes into the payload is what the endpoint is signed over, and it differs between the
 body and the header — see [Signing and cluster routing](#signing-and-cluster-routing).
+`signHeader()` signs for the header: it wraps the body as `{ payload: … }` and puts `iat`,
+`exp` and `operation` beside it, so `jwt.signHeader(request)` is
+`jwt.sign({ payload: request })`.
+
+`operation` names the endpoint a token is meant for — `"converter"`, `"command"` or
+`"docbuilder"` — and is written as a claim of its own, over one the payload carries:
+
+```ts
+await jwt.sign(request, { operation: "converter" });
+await jwt.signHeader(request, { operation: "converter" });
+```
+
+The document server refuses a token whose `operation` names another endpoint, so a token
+signed for a conversion cannot be replayed as a command. `/converter`, `/command` and
+`/docbuilder` take a token without it; the `from-file` endpoints refuse a token that lacks
+it. The claim is looked for at the top of the token only: inside `payload` it is not found.
 
 ### Checking a token
 
@@ -747,7 +763,7 @@ for each, and the one to sign with is then picked by naming it:
 const inbox = new DocumentServerJwt({ secret: inboxSecret });
 const outbox = new DocumentServerJwt({ secret: outboxSecret });
 
-await client.convert(request, await inbox.sign({ payload: request }));
+await client.convert(request, await inbox.signHeader(request));
 ```
 
 A server that uses one secret everywhere — the common case — needs one signer.
@@ -1306,7 +1322,7 @@ itself, or in a header as the second argument, signing the body wrapped as `{ pa
 
 ```ts
 await client.docbuilder({ ...request, token: await jwt.sign(request) });
-await client.docbuilder(request, await jwt.sign({ payload: request }));
+await client.docbuilder(request, await jwt.signHeader(request));
 ```
 
 [builder-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/

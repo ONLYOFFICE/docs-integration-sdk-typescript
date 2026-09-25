@@ -42,10 +42,23 @@ export interface JwtOptions {
   clockToleranceSec?: number;
 }
 
+/**
+ * The endpoint a token is meant for: `"converter"` for `/converter` and
+ * `/converter/from-file`, `"command"` for `/command`, `"docbuilder"` for `/docbuilder` and
+ * `/docbuilder/from-file`.
+ */
+export type JwtOperation = "converter" | "command" | "docbuilder";
+
 /** Overrides applied to a single token, on top of the signer options. */
 export interface SignOptions {
   /** Lifetime of this token, in place of the configured one. */
   expiresInSec?: number | null;
+  /**
+   * Written to the `operation` claim, in place of one the payload carries. The document
+   * server refuses a token whose `operation` names another endpoint, and the `from-file`
+   * endpoints refuse one without it.
+   */
+  operation?: JwtOperation;
 }
 
 /** Overrides applied to a single check, on top of the signer options. */
@@ -239,13 +252,25 @@ function isUnset(value: unknown): boolean {
   return value === undefined || value === null;
 }
 
-function withClaims(payload: object, expiresInSec: number | null): object {
+function assertPlainObject(payload: object): void {
   if (!isPlainObject(payload)) {
     throw new TypeError(`payload must be a JSON object, got: ${describeValue(payload)}`);
   }
+}
+
+function withClaims(
+  payload: object,
+  expiresInSec: number | null,
+  operation: JwtOperation | undefined,
+): object {
+  assertPlainObject(payload);
 
   const now = Math.floor(Date.now() / MILLISECONDS_IN_SECOND);
   const claims: Record<string, unknown> = { ...payload };
+
+  if (operation !== undefined) {
+    claims["operation"] = operation;
+  }
 
   if (isUnset(claims["iat"])) {
     claims["iat"] = now;
@@ -316,7 +341,8 @@ export class DocumentServerJwt {
    * Signs `payload` into a token in the compact serialization.
    *
    * `iat` and `exp` are added, each unless the payload already carries it. A claim set to
-   * `undefined` or `null` counts as not carried.
+   * `undefined` or `null` counts as not carried. `operation`, when given, is written over
+   * the one the payload carries.
    *
    * @throws {TypeError} when the payload is not a plain object — an array, a `Map`, an
    * instance of a class — or the lifetime is neither `null` nor a positive integer.
@@ -325,7 +351,7 @@ export class DocumentServerJwt {
     const expiresInSec =
       options?.expiresInSec === undefined ? this.options.expiresInSec : options.expiresInSec;
     const head = segment({ alg: this.options.algorithm, typ: "JWT" });
-    const body = segment(withClaims(payload, normalizeExpiresIn(expiresInSec)));
+    const body = segment(withClaims(payload, normalizeExpiresIn(expiresInSec), options?.operation));
     const data = `${head}.${body}`;
     const signature = await crypto.subtle.sign(
       "HMAC",
@@ -334,6 +360,21 @@ export class DocumentServerJwt {
     );
 
     return `${data}.${base64url(new Uint8Array(signature))}`;
+  }
+
+  /**
+   * Signs `payload` into a token for a header of a request to the document server, which
+   * takes the body of such a request wrapped as `{ payload: … }`.
+   *
+   * `iat`, `exp` and `operation` go beside `payload`, as {@link DocumentServerJwt.sign}
+   * writes them. The document server does not look for `operation` inside `payload`.
+   *
+   * @throws {TypeError} whenever {@link DocumentServerJwt.sign} would.
+   */
+  async signHeader(payload: object, options?: SignOptions): Promise<string> {
+    assertPlainObject(payload);
+
+    return await this.sign({ payload }, options);
   }
 
   /**

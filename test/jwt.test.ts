@@ -230,6 +230,34 @@ describe("sign", () => {
     expect(decode(body)).not.toHaveProperty("exp");
   });
 
+  it("writes the operation it is given", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [, body] = parts(await jwt.sign({ c: "version" }, { operation: "command" }));
+
+    expect(decode(body)).toMatchObject({ c: "version", operation: "command" });
+  });
+
+  it("writes the operation over the one the payload carries", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [, body] = parts(await jwt.sign({ operation: "command" }, { operation: "converter" }));
+
+    expect(decode(body)["operation"]).toBe("converter");
+  });
+
+  it("keeps the operation the payload carries when none is given", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [, body] = parts(await jwt.sign({ operation: "docbuilder" }));
+
+    expect(decode(body)["operation"]).toBe("docbuilder");
+  });
+
+  it("adds no operation of its own", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const [, body] = parts(await jwt.sign({ key: "document" }));
+
+    expect(decode(body)).not.toHaveProperty("operation");
+  });
+
   it("rejects a lifetime it cannot write", async () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });
 
@@ -300,6 +328,50 @@ describe("sign", () => {
     await expect(jwt.sign({ key: "first" })).rejects.toThrow("crypto unavailable");
     expect(await jwt.sign({ key: "second" })).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
     expect(importKey).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("signHeader", () => {
+  const request = { filetype: "docx", outputtype: "pdf", key: "document" };
+
+  it("wraps the payload as { payload: … }", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: 60 });
+    const claims = decode(parts(await jwt.signHeader(request))[1]);
+
+    expect(claims).toEqual({ payload: request, iat: claims["iat"], exp: claims["exp"] });
+    expect(claims["iat"]).toBeCloseTo(Math.floor(Date.now() / 1000), 0);
+    expect(claims["exp"]).toBeCloseTo(expectedExp(60), 0);
+  });
+
+  it("writes the operation beside the payload", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const claims = decode(parts(await jwt.signHeader(request, { operation: "converter" }))[1]);
+
+    expect(claims).toMatchObject({ payload: request, operation: "converter" });
+    expect(claims["payload"]).not.toHaveProperty("operation");
+  });
+
+  it("takes a lifetime for one token", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", expiresInSec: 60 });
+    const claims = decode(parts(await jwt.signHeader(request, { expiresInSec: null }))[1]);
+
+    expect(claims).not.toHaveProperty("exp");
+  });
+
+  it("is read back by verifyHeader", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const headers = { authorization: `Bearer ${await jwt.signHeader(request)}` };
+
+    await expect(jwt.verifyHeader(headers)).resolves.toEqual(request);
+  });
+
+  it.each([
+    ["an array", [], /got: an array/],
+    ["a Map", new Map(), /got: an instance of Map/],
+  ])("rejects %s", async (_what, payload, message) => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+
+    await expect(jwt.signHeader(payload)).rejects.toThrow(message);
   });
 });
 

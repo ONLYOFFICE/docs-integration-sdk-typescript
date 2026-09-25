@@ -42,7 +42,8 @@ sign(payload, options?): Promise<string>;
 Signs `payload` into a token in the compact serialization.
 
 `iat` and `exp` are added, each unless the payload already carries it. A claim set to
-`undefined` or `null` counts as not carried.
+`undefined` or `null` counts as not carried. `operation`, when given, is written over
+the one the payload carries.
 
 #### Parameters
 
@@ -59,6 +60,35 @@ Signs `payload` into a token in the compact serialization.
 
 when the payload is not a plain object — an array, a `Map`, an
 instance of a class — or the lifetime is neither `null` nor a positive integer.
+
+---
+
+### signHeader()
+
+```ts
+signHeader(payload, options?): Promise<string>;
+```
+
+Signs `payload` into a token for a header of a request to the document server, which
+takes the body of such a request wrapped as `{ payload: … }`.
+
+`iat`, `exp` and `operation` go beside `payload`, as [DocumentServerJwt.sign](#sign)
+writes them. The document server does not look for `operation` inside `payload`.
+
+#### Parameters
+
+| Parameter  | Type                                          |
+| ---------- | --------------------------------------------- |
+| `payload`  | `object`                                      |
+| `options?` | [`SignOptions`](../interfaces/SignOptions.md) |
+
+#### Returns
+
+`Promise`\<`string`\>
+
+#### Throws
+
+whenever [DocumentServerJwt.sign](#sign) would.
 
 ---
 

@@ -23,8 +23,9 @@ Signing and checking the tokens the document server exchanges. Imported from
 
 ## Type Aliases
 
-| Type Alias                                   | Description                                                                       |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| [JwtAlgorithm](type-aliases/JwtAlgorithm.md) | The HMAC algorithms the document server signs with.                               |
-| [JwtErrorKind](type-aliases/JwtErrorKind.md) | Why a token was refused, and the discriminant of [JwtError](classes/JwtError.md). |
-| [JwtHeaders](type-aliases/JwtHeaders.md)     | Headers of a request, as the `Headers` of fetch or as the plain object of Node.   |
+| Type Alias                                   | Description                                                                                                                                                                             |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [JwtAlgorithm](type-aliases/JwtAlgorithm.md) | The HMAC algorithms the document server signs with.                                                                                                                                     |
+| [JwtErrorKind](type-aliases/JwtErrorKind.md) | Why a token was refused, and the discriminant of [JwtError](classes/JwtError.md).                                                                                                       |
+| [JwtHeaders](type-aliases/JwtHeaders.md)     | Headers of a request, as the `Headers` of fetch or as the plain object of Node.                                                                                                         |
+| [JwtOperation](type-aliases/JwtOperation.md) | The endpoint a token is meant for: `"converter"` for `/converter` and `/converter/from-file`, `"command"` for `/command`, `"docbuilder"` for `/docbuilder` and `/docbuilder/from-file`. |
