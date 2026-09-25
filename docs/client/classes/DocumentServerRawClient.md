@@ -85,6 +85,34 @@ Posts to `/converter`.
 
 ---
 
+### convertFromFile()
+
+```ts
+convertFromFile(
+   request,
+   file,
+   token?,
+   options?
+): Promise<Response>;
+```
+
+Posts to `/converter/from-file`, the document sent along with the request.
+
+#### Parameters
+
+| Parameter  | Type                                                          |
+| ---------- | ------------------------------------------------------------- |
+| `request`  | [`ConvertFileRequest`](../type-aliases/ConvertFileRequest.md) |
+| `file`     | `Blob`                                                        |
+| `token?`   | `string`                                                      |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)           |
+
+#### Returns
+
+`Promise`\<`Response`\>
+
+---
+
 ### docbuilder()
 
 ```ts

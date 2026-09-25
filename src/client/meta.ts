@@ -12,7 +12,17 @@ export interface ConfigUrls {
   api: string;
   command: string;
   converter: string;
+  /**
+   * The conversion of a document sent along with the request, `"/converter/from-file"`.
+   * Absent on a document server that has none.
+   */
+  converterFromFile?: string;
   docbuilder: string;
+  /**
+   * The builder of a script sent along with the request, `"/docbuilder/from-file"`.
+   * Absent on a document server that has none.
+   */
+  docbuilderFromFile?: string;
 }
 
 /** Bounds the document server enforces. */

@@ -176,6 +176,36 @@ export interface ConvertRequest {
 }
 
 /**
+ * Body of a request to convert a document sent along with it, rather than one the
+ * document server downloads from `url`.
+ *
+ * `title` names the converted file, which the answer carries in its `Content-Disposition`.
+ */
+export type ConvertFileRequest = Omit<ConvertRequest, "key" | "url"> & {
+  /**
+   * Identifier of the source document. The service makes one up when it is left out, which
+   * leaves an `async` conversion nothing to be asked for again by.
+   */
+  key?: string;
+};
+
+/**
+ * What a conversion of a document sent along with the request answers: the converted file,
+ * or, while an `async` one is still running, how far it has got.
+ */
+export type ConvertFileResult =
+  | {
+      endConvert: false;
+      /** Progress of the conversion, in percent. */
+      percent: number;
+    }
+  | {
+      endConvert: true;
+      /** The converted file, unread, so a large one can be streamed. */
+      file: Response;
+    };
+
+/**
  * Why a conversion failed:
  *
  * - `-1` unknown error

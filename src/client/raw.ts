@@ -1,6 +1,6 @@
 import type { BuilderRequest } from "./builder.js";
 import type { CommandRequest } from "./command.js";
-import type { ConvertRequest } from "./convert.js";
+import type { ConvertFileRequest, ConvertRequest } from "./convert.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
 import { transportError } from "./transport.js";
 
@@ -13,6 +13,7 @@ interface RequestSpec {
   method: "GET" | "POST";
   query?: Readonly<Record<string, string>>;
   json?: unknown;
+  form?: FormData;
   token?: string;
   stream?: boolean;
 }
@@ -30,6 +31,26 @@ function buildUrl(baseUrl: string, path: string, query?: Readonly<Record<string,
     .join("&");
 
   return `${url}${url.includes("?") ? "&" : "?"}${search}`;
+}
+
+/**
+ * Lays a request out as the form `/converter/from-file` reads: the whole request as the JSON
+ * of one `params` part, and the document as `file`.
+ */
+function buildForm(request: object, file: Blob, filename: string): FormData {
+  const form = new FormData();
+
+  form.append("params", JSON.stringify(request));
+  form.append("file", file, filename);
+
+  return form;
+}
+
+/** The name a file is sent under: its own, or one the extension it is converted from gives. */
+function fileName(file: Blob, filetype: string): string {
+  const name = "name" in file ? file.name : undefined;
+
+  return typeof name === "string" && name !== "" ? name : `document.${filetype}`;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -136,6 +157,11 @@ export class DocumentServerRawClient {
       headers.set("accept", "application/json");
     }
 
+    if (spec.form !== undefined) {
+      // fetch writes the content type of a form itself, boundary included
+      headers.delete("content-type");
+    }
+
     if (spec.token !== undefined) {
       const { authorizationHeader, authorizationPrefix } = this.options;
 
@@ -146,7 +172,7 @@ export class DocumentServerRawClient {
     const init: RequestInit = {
       method: spec.method,
       headers: mergeHeaders(headers, options?.headers),
-      body: spec.json === undefined ? undefined : JSON.stringify(spec.json),
+      body: spec.form ?? (spec.json === undefined ? undefined : JSON.stringify(spec.json)),
     };
     const deadline = spec.stream ? buildDeadline(this.options.timeoutMs, options) : undefined;
 
@@ -189,6 +215,28 @@ export class DocumentServerRawClient {
     return await this.#request(
       "/converter",
       { method: "POST", query: { shardkey: request.key }, json: request, token },
+      options,
+    );
+  }
+
+  /** Posts to `/converter/from-file`, the document sent along with the request. */
+  async convertFromFile(
+    request: ConvertFileRequest,
+    file: Blob,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<Response> {
+    const query = request.key === undefined ? undefined : { shardkey: request.key };
+
+    return await this.#request(
+      "/converter/from-file",
+      {
+        method: "POST",
+        query,
+        form: buildForm(request, file, fileName(file, request.filetype)),
+        token,
+        stream: true,
+      },
       options,
     );
   }

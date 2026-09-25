@@ -65,23 +65,25 @@ what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/
 
 ## Type Aliases
 
-| Type Alias                                                         | Description                                                                                                         |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| [AnyDocumentServerError](type-aliases/AnyDocumentServerError.md)   | Every error the SDK throws of its own accord.                                                                       |
-| [BuilderArgument](type-aliases/BuilderArgument.md)                 | Values the builder script reads back through its `Argument` global.                                                 |
-| [BuilderErrorCode](type-aliases/BuilderErrorCode.md)               | Why a build failed:                                                                                                 |
-| [BuilderRequest](type-aliases/BuilderRequest.md)                   | Body of a request to the builder service.                                                                           |
-| [CommandErrorCode](type-aliases/CommandErrorCode.md)               | Why a command failed:                                                                                               |
-| [CommandRequest](type-aliases/CommandRequest.md)                   | Body of a request to the command service.                                                                           |
-| [CommandType](type-aliases/CommandType.md)                         | Name of a command the service accepts.                                                                              |
-| [ConversionErrorCode](type-aliases/ConversionErrorCode.md)         | Why a conversion failed:                                                                                            |
-| [CsvDelimiter](type-aliases/CsvDelimiter.md)                       | Column separator for CSV input: none, tab, semicolon, colon, comma or space.                                        |
-| [DocumentServerErrorKind](type-aliases/DocumentServerErrorKind.md) | Which failure an error stands for, and the discriminant of the union below.                                         |
-| [FormatAction](type-aliases/FormatAction.md)                       | Something the editors can do with a format.                                                                         |
-| [FormatsResponse](type-aliases/FormatsResponse.md)                 | Body of a response from the formats endpoint: every format the document server knows.                               |
-| [FormatType](type-aliases/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
-| [RgbColor](type-aliases/RgbColor.md)                               | Red, green and blue components, each 0–255.                                                                         |
-| [TextAssociation](type-aliases/TextAssociation.md)                 | How a PDF, XPS or OXPS page is split into text blocks while it is read.                                             |
+| Type Alias                                                         | Description                                                                                                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [AnyDocumentServerError](type-aliases/AnyDocumentServerError.md)   | Every error the SDK throws of its own accord.                                                                                                           |
+| [BuilderArgument](type-aliases/BuilderArgument.md)                 | Values the builder script reads back through its `Argument` global.                                                                                     |
+| [BuilderErrorCode](type-aliases/BuilderErrorCode.md)               | Why a build failed:                                                                                                                                     |
+| [BuilderRequest](type-aliases/BuilderRequest.md)                   | Body of a request to the builder service.                                                                                                               |
+| [CommandErrorCode](type-aliases/CommandErrorCode.md)               | Why a command failed:                                                                                                                                   |
+| [CommandRequest](type-aliases/CommandRequest.md)                   | Body of a request to the command service.                                                                                                               |
+| [CommandType](type-aliases/CommandType.md)                         | Name of a command the service accepts.                                                                                                                  |
+| [ConversionErrorCode](type-aliases/ConversionErrorCode.md)         | Why a conversion failed:                                                                                                                                |
+| [ConvertFileRequest](type-aliases/ConvertFileRequest.md)           | Body of a request to convert a document sent along with it, rather than one the document server downloads from `url`.                                   |
+| [ConvertFileResult](type-aliases/ConvertFileResult.md)             | What a conversion of a document sent along with the request answers: the converted file, or, while an `async` one is still running, how far it has got. |
+| [CsvDelimiter](type-aliases/CsvDelimiter.md)                       | Column separator for CSV input: none, tab, semicolon, colon, comma or space.                                                                            |
+| [DocumentServerErrorKind](type-aliases/DocumentServerErrorKind.md) | Which failure an error stands for, and the discriminant of the union below.                                                                             |
+| [FormatAction](type-aliases/FormatAction.md)                       | Something the editors can do with a format.                                                                                                             |
+| [FormatsResponse](type-aliases/FormatsResponse.md)                 | Body of a response from the formats endpoint: every format the document server knows.                                                                   |
+| [FormatType](type-aliases/FormatType.md)                           | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image.                                     |
+| [RgbColor](type-aliases/RgbColor.md)                               | Red, green and blue components, each 0–255.                                                                                                             |
+| [TextAssociation](type-aliases/TextAssociation.md)                 | How a PDF, XPS or OXPS page is split into text blocks while it is read.                                                                                 |
 
 ## Functions
 

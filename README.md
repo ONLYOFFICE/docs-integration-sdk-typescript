@@ -490,6 +490,58 @@ parameter carrying the document key, which keeps every call about one document o
 same node. Being a query parameter rather than a body field, it stays out of both signed
 payloads. Sent always; versions before Docs 8.1 ignore it.
 
+### Sending the file in the request
+
+`convertFromFile()` posts to `/converter/from-file`, which takes the document itself in a
+`multipart/form-data` request rather than downloading it from a `url` — for a file the
+document server could not reach, or one that is not stored anywhere yet. It answers with the
+converted file:
+
+```ts
+import { openAsBlob } from "node:fs";
+
+const result = await client.convertFromFile(
+  { filetype: "docx", key, outputtype: "pdf", title: "Contract.docx" },
+  await openAsBlob("contract.docx"),
+);
+
+if (result.endConvert) {
+  await pipeline(Readable.fromWeb(result.file.body), createWriteStream("Contract.pdf"));
+}
+```
+
+The request takes the parameters `convert()` does, `url` aside, and travels as the JSON of one
+`params` part of the form; the document follows it as `file`, under the name of a `File`, or
+`document.<filetype>` for a `Blob` that has none. `title` names the converted file, which the
+answer carries in `Content-Disposition`. `key` may be left out, and the service then makes one
+up; the `shardkey` query parameter carries it when there is one.
+
+The file comes back streamed rather than read, the way [`getFile()`](#downloading-files)
+answers — the deadline covers the conversion and is called off once the answer arrives.
+`async: true` answers at once with `{ endConvert: false, percent }` instead; repeat the very
+same request until `endConvert` turns `true`, and `file` is then there. Each repeat sends the
+document again.
+
+A failed conversion is answered with `200 OK` and an `error` code, the way `/converter` answers,
+and rejects with a `ConversionError` carrying it as `code`.
+
+A token is sent as it is for `convert()` — in the params as `token`, signing the request
+itself, or in a header as the third argument, signing the request wrapped as `{ payload: … }`.
+Either has to name what it was signed for as well: a token of this endpoint that carries no
+`operation` claim of `"converter"` is refused as an invalid token, `-8`. See
+[the operation claim](#jwt).
+
+```ts
+const signOptions = { operation: "converter" } as const;
+
+await client.convertFromFile({ ...request, token: await jwt.sign(request, signOptions) }, file);
+await client.convertFromFile(request, file, await jwt.signHeader(request, signOptions));
+```
+
+The endpoint is newer than the rest: a document server that has it names it in
+`urls.converterFromFile` of [`getConfig()`](#server-configuration), and one that lacks it answers
+`404`, which rejects with a `DocumentServerHttpError`.
+
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 
 ## Commands
@@ -1044,7 +1096,7 @@ outcome rather than a failure.
 
 ## The raw client
 
-`client.raw` holds the same seven endpoints, each answering with the untouched `Response`
+`client.raw` holds the same eight endpoints, each answering with the untouched `Response`
 and none of them throwing on what the document server says. A request that gets no answer
 at all still rejects, with the same `DocumentServerNetworkError` or
 `DocumentServerTimeoutError` the typed client would:
@@ -1064,9 +1116,9 @@ mixed freely. Reach for it when a status or a header matters to you, when a body
 read some other way, or when an error is a value in your codebase rather than an
 exception. `client.options` and `client.raw.options` are the same frozen object.
 
-`getFile()` differs the least of the seven: a file is a stream, so on a 2xx the `Response`
-comes back unread from both. Only a failing status parts them — the typed one rejects, the
-raw one hands the response over.
+`getFile()` and `convertFromFile()` differ the least of the eight: a file is a stream, so on
+a 2xx the `Response` comes back unread from both. Only a failing status parts them — the
+typed one rejects, the raw one hands the response over.
 
 ## Options
 

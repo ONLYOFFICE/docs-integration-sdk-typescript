@@ -109,6 +109,40 @@ Converts the document the server downloads from `url`.
 
 ---
 
+### convertFromFile()
+
+```ts
+convertFromFile(
+   request,
+   file,
+   token?,
+   options?
+): Promise<ConvertFileResult>;
+```
+
+Converts a document sent along with the request, and answers with the converted file,
+unread, so a large one can be streamed — or, while an `async` conversion is still
+running, with how far it has got.
+
+#### Parameters
+
+| Parameter  | Type                                                          |
+| ---------- | ------------------------------------------------------------- |
+| `request`  | [`ConvertFileRequest`](../type-aliases/ConvertFileRequest.md) |
+| `file`     | `Blob`                                                        |
+| `token?`   | `string`                                                      |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)           |
+
+#### Returns
+
+`Promise`\<[`ConvertFileResult`](../type-aliases/ConvertFileResult.md)\>
+
+#### Throws
+
+[ConversionError](ConversionError.md) when the service answers with an `error` code.
+
+---
+
 ### docbuilder()
 
 ```ts

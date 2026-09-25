@@ -20,6 +20,7 @@ import {
   type CommandRequest,
   type CommandResponse,
   type ConversionErrorCode,
+  type ConvertFileRequest,
   type ConvertRequest,
   type ConvertResponse,
   type RequestOptions,
@@ -1136,6 +1137,304 @@ describe("raw.docbuilder", () => {
     await new DocumentServerClient({ baseUrl: "https://docs.example.com" }).raw.docbuilder(script);
 
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("raw.convertFromFile", () => {
+  const docx: ConvertFileRequest = { filetype: "docx", key: "Khirz6zTPdfd7", outputtype: "pdf" };
+  const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+
+  /** Reads the form back off a recorded call. */
+  function formOf(call: RecordedCall | undefined): FormData {
+    return call?.init?.body as FormData;
+  }
+
+  it("posts the request to /converter/from-file", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe(
+      "https://docs.example.com/converter/from-file?shardkey=Khirz6zTPdfd7",
+    );
+    expect(calls[0]?.init?.method).toBe("POST");
+  });
+
+  it("sends no shardkey when the service is left to make a key up", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile({ filetype: "docx", outputtype: "pdf" }, new Blob([bytes]));
+
+    expect(calls[0]?.url).toBe("https://docs.example.com/converter/from-file");
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect(calls[0]?.url).toBe(
+      "https://example.com/office/converter/from-file?shardkey=Khirz6zTPdfd7",
+    );
+  });
+
+  it("sends the request as the JSON of a params part, the file after it", async () => {
+    const { fetch, calls } = spyFetch();
+    const request: ConvertFileRequest = {
+      ...docx,
+      async: true,
+      codePage: 65001,
+      pdf: { form: true },
+      title: "Contract.docx",
+      watermark: { fill: [255, 0, 0] },
+    };
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(request, new Blob([bytes]));
+
+    const form = formOf(calls[0]);
+
+    expect(form).toBeInstanceOf(FormData);
+    expect([...form.keys()]).toEqual(["params", "file"]);
+    expect(JSON.parse(form.get("params") as string)).toEqual(request);
+  });
+
+  it("sends the file under its own name", async () => {
+    const { fetch, calls } = spyFetch();
+    const file = new File([bytes], "Q3 Report.docx");
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, file);
+
+    const sent = formOf(calls[0]).get("file") as File;
+
+    expect(sent.name).toBe("Q3 Report.docx");
+    await expect(sent.arrayBuffer().then((b) => new Uint8Array(b))).resolves.toEqual(bytes);
+  });
+
+  it("names a file that has no name of its own by the extension it is converted from", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect((formOf(calls[0]).get("file") as File).name).toBe("document.docx");
+  });
+
+  it("leaves the content type of the form to fetch", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "Content-Type": "application/json", "x-tenant": "acme" },
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+    expect(headerOf(calls[0], "accept")).toBeNull();
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends no authorization header when no token is given", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("sends the token in an authorization header", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]), "header.token");
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer header.token");
+  });
+
+  it("follows a configured header name and prefix", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]), "header.token");
+
+    expect(headerOf(calls[0], "x-docs-token")).toBe("header.token");
+    expect(headerOf(calls[0], "authorization")).toBeNull();
+  });
+
+  it("sends a token of the body within the params", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile({ ...docx, token: "body.token" }, new Blob([bytes]));
+
+    const form = formOf(calls[0]);
+
+    expect(JSON.parse(form.get("params") as string)).toMatchObject({ token: "body.token" });
+    expect(form.has("token")).toBe(false);
+  });
+
+  it("does not modify the request it was given", async () => {
+    const { fetch } = spyFetch();
+    const request: ConvertFileRequest = { ...docx, pdf: { form: true } };
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(request, new Blob([bytes]));
+
+    expect(request).toEqual({ ...docx, pdf: { form: true } });
+  });
+
+  it("calls the deadline off once the response has arrived", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    expect(calls[0]?.init?.signal?.aborted).toBe(false);
+  });
+
+  it("times out on a conversion that never answers", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.raw.convertFromFile(docx, new Blob([bytes]))).rejects.toThrow(
+      DocumentServerTimeoutError,
+    );
+  });
+
+  it("hands back a failing response instead of throwing", async () => {
+    const { fetch } = spyFetch(() => new Response("Bad Request", { status: 400 }));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.convertFromFile(docx, new Blob([bytes]));
+
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("convertFromFile", () => {
+  const docx: ConvertFileRequest = { filetype: "docx", key: "Khirz6zTPdfd7", outputtype: "pdf" };
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("answers with the converted file, unread", async () => {
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+    const result = await client(
+      () =>
+        new Response(pdf, {
+          headers: {
+            "content-disposition": 'inline; filename="Contract.pdf"',
+            "content-type": "application/pdf",
+          },
+        }),
+    ).convertFromFile(docx, new Blob(["docx"]));
+
+    expect(result.endConvert).toBe(true);
+    if (!result.endConvert) return;
+
+    expect(result.file.bodyUsed).toBe(false);
+    expect(result.file.headers.get("content-disposition")).toBe('inline; filename="Contract.pdf"');
+    await expect(result.file.arrayBuffer().then((b) => new Uint8Array(b))).resolves.toEqual(pdf);
+  });
+
+  it("takes a file whose type says nothing as the file", async () => {
+    const result = await client(() => new Response(new Uint8Array([1, 2]))).convertFromFile(
+      docx,
+      new Blob(["docx"]),
+    );
+
+    expect(result.endConvert).toBe(true);
+  });
+
+  it("answers with the progress of an async conversion that is still running", async () => {
+    const result = await client(() =>
+      Response.json({ percent: 40, endConvert: false }),
+    ).convertFromFile({ ...docx, async: true }, new Blob(["docx"]));
+
+    expect(result).toEqual({ endConvert: false, percent: 40 });
+  });
+
+  it("reads JSON whatever charset it is labelled with", async () => {
+    const result = await client(
+      () =>
+        new Response('{"percent":0,"endConvert":false}', {
+          headers: { "content-type": "Application/JSON; charset=UTF-8" },
+        }),
+    ).convertFromFile({ ...docx, async: true }, new Blob(["docx"]));
+
+    expect(result).toEqual({ endConvert: false, percent: 0 });
+  });
+
+  it("throws the code of a failed conversion", async () => {
+    const failed = client(() => Response.json({ error: -5 }));
+
+    await expect(failed.convertFromFile(docx, new Blob(["docx"]))).rejects.toThrow(ConversionError);
+    await expect(failed.convertFromFile(docx, new Blob(["docx"]))).rejects.toMatchObject({
+      kind: "conversion",
+      code: -5,
+    });
+  });
+
+  it("refuses JSON that neither carries a code nor reports progress", async () => {
+    const odd = client(() => Response.json({ endConvert: true, fileUrl: "https://x/y.pdf" }));
+
+    await expect(odd.convertFromFile(docx, new Blob(["docx"]))).rejects.toThrow(
+      DocumentServerParseError,
+    );
+  });
+
+  it("throws on a failing status", async () => {
+    const failed = client(() => new Response("Bad Gateway", { status: 502 }));
+
+    await expect(failed.convertFromFile(docx, new Blob(["docx"]))).rejects.toMatchObject({
+      kind: "http",
+      status: 502,
+      body: "Bad Gateway",
+    });
   });
 });
 

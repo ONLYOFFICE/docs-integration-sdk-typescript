@@ -1,6 +1,11 @@
 import type { BuilderRequest, BuilderResponse } from "./builder.js";
 import type { CommandErrorCode, CommandRequest, CommandResponse } from "./command.js";
-import type { ConvertRequest, ConvertResponse } from "./convert.js";
+import type {
+  ConvertFileRequest,
+  ConvertFileResult,
+  ConvertRequest,
+  ConvertResponse,
+} from "./convert.js";
 import {
   BuilderError,
   CommandError,
@@ -64,6 +69,13 @@ async function readJson(response: Response, attempt: Attempt): Promise<JsonBody>
       { cause },
     );
   }
+}
+
+/** Whether a response carries JSON rather than a file. */
+function isJson(response: Response): boolean {
+  const type = response.headers.get("content-type") ?? "";
+
+  return type.split(";")[0]?.trim().toLowerCase() === "application/json";
 }
 
 async function readRecord(response: Response, attempt: Attempt): Promise<Record<string, unknown>> {
@@ -172,6 +184,49 @@ export class DocumentServerClient {
     }
 
     return body;
+  }
+
+  /**
+   * Converts a document sent along with the request, and answers with the converted file,
+   * unread, so a large one can be streamed — or, while an `async` conversion is still
+   * running, with how far it has got.
+   *
+   * @throws {@link ConversionError} when the service answers with an `error` code.
+   */
+  async convertFromFile(
+    request: ConvertFileRequest,
+    file: Blob,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<ConvertFileResult> {
+    const response = await this.raw.convertFromFile(request, file, token, options);
+
+    if (!response.ok) {
+      throw new DocumentServerHttpError(response, await readSnippet(response));
+    }
+
+    if (!isJson(response)) {
+      return { endConvert: true, file: response };
+    }
+
+    const body = await readRecord(response, this.#attempt(response, options));
+    const { error, percent } = body;
+
+    if (typeof error === "number" && error !== NO_ERROR) {
+      throw new ConversionError(error, response);
+    }
+
+    if (body["endConvert"] !== false) {
+      throw new DocumentServerParseError(
+        `the document server answered with JSON rather than the converted file: ${snippet(
+          JSON.stringify(body),
+        )}`,
+        response,
+        snippet(JSON.stringify(body)),
+      );
+    }
+
+    return { endConvert: false, percent: typeof percent === "number" ? percent : 0 };
   }
 
   /**
