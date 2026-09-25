@@ -265,6 +265,16 @@ only in `edit` mode — the default — for a user who may change the document: 
 else — `view` mode, or nothing left to change — it is cut, and `customization.forcesave`
 along with it.
 
+`editorConfig.user` may be left out, for a visitor your system does not know, such as one
+viewing a public link. Once given, it needs an `id`, which the document server tells
+co-authors apart by, names the author of the changes by — the `users` and
+`actions[].userid` of a callback, the `users` the `info` command answers — and counts
+users against a license by. So it is the same for a user every time they open a document,
+and anonymized: a hash or an identifier of your own, never an email or a real name, which
+the [documentation][config-editor-user] warns against. A visitor who is not signed in but
+comes back and is given an `id` is best given the same one, out of their session, rather
+than a new one on every visit, which the license would count as a new user.
+
 The constructor takes anything with a `getFormat(extension)` answering the `type` and the
 `actions` of a format, and `sign()` anything with a `sign(payload)` that resolves to a
 token: `DocumentServerFormats` and `DocumentServerJwt` are one such pair, a table of your
@@ -371,6 +381,7 @@ handed that key. A document stored on a forced save, `6`, is a copy, then: the r
 the key is built from moves on only with the save on `2`.
 
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
+[config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
 
 ## Conversion
