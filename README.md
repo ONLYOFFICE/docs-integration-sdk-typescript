@@ -380,6 +380,16 @@ An editing session keeps its key until it closes, and everybody who joins it has
 handed that key. A document stored on a forced save, `6`, is a copy, then: the revision
 the key is built from moves on only with the save on `2`.
 
+That save can come twice. When `{"error":0}` never reaches the document server — the
+connection broke, its request timed out — it posts the same `2` again, with the key of the
+revision the file has just moved on from. Refused, it is posted over and over until the
+document server gives up, though nothing is lost. So record, with each version stored on
+`2`, the key it was saved from, and answer a `2` whose key a stored version was saved from
+with `ok` rather than refusing it. Recording the key, rather than accepting whatever key
+came before the current one, keeps a session whose revision was replaced some other way —
+an upload of a new version while the document was open — from being answered `ok` and
+dropped.
+
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
 [config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
@@ -758,19 +768,26 @@ export async function POST(request: Request): Promise<Response> {
   const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
   const file = await storage.find(fileId);
 
-  if (
-    file === undefined ||
-    callback.event.key !== (await buildDocumentKey(instanceId, file.id, file.version))
-  ) {
+  if (file === undefined) {
+    return new Response(null, { status: 403 });
+  }
+
+  const { event } = callback;
+
+  if (event.key !== (await buildDocumentKey(instanceId, file.id, file.version))) {
+    if (event.kind === "save" && (await storage.hasVersionSavedFrom(file.id, event.key))) {
+      return Response.json(DocumentServerCallback.ok);
+    }
+
     return new Response(null, { status: 403 });
   }
 
   const reply = await callback.handle({
-    save: async ({ url }) => {
+    save: async ({ key, url }) => {
       const { path, query } = splitFileUrl(url, publicUrl);
       const download = await client.getFile(path, query);
 
-      await storage.saveVersion(file.id, download.body);
+      await storage.saveVersion(file.id, download.body, { savedFrom: key });
     },
   });
 
