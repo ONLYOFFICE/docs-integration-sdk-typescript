@@ -1358,6 +1358,10 @@ test/
   config.test.ts
   formats.test.ts
   jwt.test.ts
+  integration/          against a real document server, run by npm run test:integration
+    setup.ts            starts the stack and waits for the server to be healthy
+    env.ts              the client, the signer and the helpers the tests share
+    fixtures/           the files the document server downloads
 docs/
   README.md             generated API reference: the modules
   */README.md           a module: its classes, functions, interfaces and type aliases
@@ -1365,6 +1369,7 @@ docs/
 scripts/
   check-exports.mjs     checks the subpaths against src/ and against the root
 typedoc.json            how it is generated
+docker-compose.integration.yml  the document server and the fixtures the tests run against
 ```
 
 ## Development
@@ -1372,9 +1377,32 @@ typedoc.json            how it is generated
 ```sh
 npm run typecheck      # tsc --noEmit
 npm test               # vitest
+npm run test:integration  # vitest against a document server in docker
 npm run lint           # eslint
 npm run format         # prettier --write
 npm run build          # tsup -> dist (ESM + CJS + .d.ts), one entry per subpath
 npm run check:exports  # the built subpaths share every export with the root
 npm run docs           # typedoc -> docs (markdown API reference)
 ```
+
+### Integration tests
+
+`npm run test:integration` runs the tests under `test/integration/` against a real document
+server rather than a mocked `fetch`. It starts `docker-compose.integration.yml` — the document
+server with a JWT secret, and an nginx that publishes `test/integration/fixtures/` for the
+server to download — waits for `/healthcheck`, runs the tests and stops the stack again. The
+tests cover what can be checked without an editor open: the server configuration and formats,
+conversion by url and from a file, the command service, the document builder, downloading the
+results, and tokens signed in the body and in a header.
+
+The run is tuned by environment variables:
+
+| Variable          | Default              | Does                                                        |
+| ----------------- | -------------------- | ----------------------------------------------------------- |
+| `DOCS_URL`        | —                    | a document server already running; the stack is not started |
+| `DOCS_JWT_SECRET` | `integration-secret` | the secret of that server                                   |
+| `FIXTURES_URL`    | `http://fixtures`    | where that server downloads the fixtures from               |
+| `DOCS_KEEP`       | —                    | leaves the stack running after the tests, for the next run  |
+
+Without `DOCS_URL` the tests reach the server at `http://localhost:8080`, so the port has to
+be free.

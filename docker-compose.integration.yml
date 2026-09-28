@@ -1,0 +1,13 @@
+services:
+  documentserver:
+    image: onlyoffice/4testing-documentserver-de:10.0.0.114
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: integration-secret
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+    ports:
+      - "8080:80"
+  fixtures:
+    image: nginx:alpine
+    volumes:
+      - ./test/integration/fixtures:/usr/share/nginx/html:ro
