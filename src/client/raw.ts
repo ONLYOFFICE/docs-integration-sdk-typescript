@@ -1,4 +1,4 @@
-import type { BuilderRequest } from "./builder.js";
+import type { BuildFileRequest, BuilderRequest } from "./builder.js";
 import type { CommandRequest } from "./command.js";
 import type { ConvertFileRequest, ConvertRequest } from "./convert.js";
 import type { ClientOptions, RequestOptions } from "./options.js";
@@ -46,11 +46,11 @@ function buildForm(request: object, file: Blob, filename: string): FormData {
   return form;
 }
 
-/** The name a file is sent under: its own, or one the extension it is converted from gives. */
-function fileName(file: Blob, filetype: string): string {
+/** The name a file is sent under: its own, or the fallback for a `Blob` that has none. */
+function fileName(file: Blob, fallback: string): string {
   const name = "name" in file ? file.name : undefined;
 
-  return typeof name === "string" && name !== "" ? name : `document.${filetype}`;
+  return typeof name === "string" && name !== "" ? name : fallback;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -233,7 +233,7 @@ export class DocumentServerRawClient {
       {
         method: "POST",
         query,
-        form: buildForm(request, file, fileName(file, request.filetype)),
+        form: buildForm(request, file, fileName(file, `document.${request.filetype}`)),
         token,
         stream: true,
       },
@@ -267,6 +267,24 @@ export class DocumentServerRawClient {
     return await this.#request(
       "/docbuilder",
       { method: "POST", query, json: request, token },
+      options,
+    );
+  }
+
+  /** Posts to `/docbuilder/from-file`, the script sent along with the request. */
+  async docbuilderFromFile(
+    request: BuildFileRequest,
+    file: Blob,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<Response> {
+    return await this.#request(
+      "/docbuilder/from-file",
+      {
+        method: "POST",
+        form: buildForm(request, file, fileName(file, "script.docbuilder")),
+        token,
+      },
       options,
     );
   }

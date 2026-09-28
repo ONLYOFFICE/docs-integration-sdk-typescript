@@ -1,4 +1,4 @@
-import type { BuilderRequest, BuilderResponse } from "./builder.js";
+import type { BuildFileRequest, BuilderRequest, BuilderResponse } from "./builder.js";
 import type { CommandErrorCode, CommandRequest, CommandResponse } from "./command.js";
 import type {
   ConvertFileRequest,
@@ -261,7 +261,29 @@ export class DocumentServerClient {
     token?: string,
     options?: RequestOptions,
   ): Promise<BuilderResponse> {
-    const response = await this.raw.docbuilder(request, token, options);
+    return await this.#build(await this.raw.docbuilder(request, token, options), options);
+  }
+
+  /**
+   * Runs a builder script sent along with the request rather than downloaded from a `url`,
+   * and answers the way {@link DocumentServerClient.docbuilder} does. An `async` build is
+   * asked after by the key it answered, with `docbuilder({ key })`.
+   *
+   * @throws {@link BuilderError} when the service answers with an `error` code.
+   */
+  async docbuilderFromFile(
+    request: BuildFileRequest,
+    file: Blob,
+    token?: string,
+    options?: RequestOptions,
+  ): Promise<BuilderResponse> {
+    return await this.#build(
+      await this.raw.docbuilderFromFile(request, file, token, options),
+      options,
+    );
+  }
+
+  async #build(response: Response, options?: RequestOptions): Promise<BuilderResponse> {
     const body = await readRecord(response, this.#attempt(response, options));
     const error = body["error"];
 

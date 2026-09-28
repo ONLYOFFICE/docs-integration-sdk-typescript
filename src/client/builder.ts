@@ -30,6 +30,9 @@ export interface BuildResultRequest extends Builder {
 /** Body of a request to the builder service. */
 export type BuilderRequest = BuildRequest | BuildResultRequest;
 
+/** Starts a build of a script sent along with the request rather than downloaded from a `url`. */
+export type BuildFileRequest = Omit<BuildRequest, "key" | "url">;
+
 /**
  * Why a build failed:
  *

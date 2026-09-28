@@ -676,6 +676,47 @@ await client.docbuilder({ ...request, token: await jwt.sign(request) });
 await client.docbuilder(request, await jwt.signHeader(request));
 ```
 
+### Sending the script in the request
+
+`docbuilderFromFile()` posts to `/docbuilder/from-file`, which takes the script itself in a
+`multipart/form-data` request rather than downloading it from a `url` — for a script the
+document server could not reach, or one generated on the spot. It answers the way `docbuilder()`
+does, with the `key`, `end` and `urls` of the build:
+
+```ts
+const result = await client.docbuilderFromFile(
+  { argument: { customer: "Acme" } },
+  new Blob([script], { type: "text/javascript" }),
+);
+
+result.urls; // { "output.docx": "https://docs.example.com/…/output.docx" }
+```
+
+The request takes `argument`, `async` and `token`, and travels as the JSON of one `params`
+part of the form; the script follows it as `file`, under the name of a `File`, or
+`script.docbuilder` for a `Blob` that has none. It takes no `key`: the service mints one for
+every build, and answers `-3` to a request that names its own.
+
+`async: true` answers at once with `end: false` and that key. The result is collected the way
+it is for any build, with `docbuilder({ async: true, key })`, which does not send the script
+again.
+
+A token is sent as it is for `docbuilder()`, in the params as `token` or in a header as the
+third argument, and has to name what it was signed for as well: a token of this endpoint that
+carries no `operation` claim of `"docbuilder"` is refused as an invalid token, `-8`. The poll
+through `docbuilder()` takes a token without it.
+
+```ts
+const signOptions = { operation: "docbuilder" } as const;
+
+await client.docbuilderFromFile({ ...request, token: await jwt.sign(request, signOptions) }, file);
+await client.docbuilderFromFile(request, file, await jwt.signHeader(request, signOptions));
+```
+
+A document server that has the endpoint names it in `urls.docbuilderFromFile` of
+[`getConfig()`](#server-configuration); one that lacks it answers `404`, which rejects with a
+`DocumentServerHttpError`.
+
 [builder-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/
 
 ## Downloading files
@@ -1045,15 +1086,15 @@ try {
 A call rejects when the answer never came, when it is not the one the endpoint promises,
 or when the document server reports a failure of its own:
 
-| Error                        | `kind`         | Thrown when                                                                                            |
-| ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------------ |
-| `DocumentServerNetworkError` | `"network"`    | No answer came: the server could not be reached, or the connection broke. Carries `cause`.             |
-| `DocumentServerTimeoutError` | `"timeout"`    | The deadline ran out before the answer had been read. Carries `timeoutMs` and `cause`.                 |
-| `DocumentServerHttpError`    | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                 |
-| `DocumentServerParseError`   | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`. |
-| `ConversionError`            | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.              |
-| `CommandError`               | `"command"`    | `/command` answered with an `error` that is neither `0` nor `4`. Carries it as `code`.                 |
-| `BuilderError`               | `"builder"`    | `/docbuilder` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.             |
+| Error                        | `kind`         | Thrown when                                                                                                           |
+| ---------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `DocumentServerNetworkError` | `"network"`    | No answer came: the server could not be reached, or the connection broke. Carries `cause`.                            |
+| `DocumentServerTimeoutError` | `"timeout"`    | The deadline ran out before the answer had been read. Carries `timeoutMs` and `cause`.                                |
+| `DocumentServerHttpError`    | `"http"`       | The status is outside the 2xx range. Carries `status` and the beginning of the `body`.                                |
+| `DocumentServerParseError`   | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Carries the `body` and the parse failure as `cause`.                |
+| `ConversionError`            | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Carries it as `code`.                             |
+| `CommandError`               | `"command"`    | `/command` answered with an `error` that is neither `0` nor `4`. Carries it as `code`.                                |
+| `BuilderError`               | `"builder"`    | `/docbuilder` or `/docbuilder/from-file` answered `200 OK` with an `error` code other than `0`. Carries it as `code`. |
 
 All seven extend `DocumentServerError`. The last five carry the `response` they were read
 from; its body has already been consumed by the time the error is built, which is why a

@@ -139,6 +139,34 @@ Posts to `/docbuilder`.
 
 ---
 
+### docbuilderFromFile()
+
+```ts
+docbuilderFromFile(
+   request,
+   file,
+   token?,
+   options?
+): Promise<Response>;
+```
+
+Posts to `/docbuilder/from-file`, the script sent along with the request.
+
+#### Parameters
+
+| Parameter  | Type                                                      |
+| ---------- | --------------------------------------------------------- |
+| `request`  | [`BuildFileRequest`](../type-aliases/BuildFileRequest.md) |
+| `file`     | `Blob`                                                    |
+| `token?`   | `string`                                                  |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)       |
+
+#### Returns
+
+`Promise`\<`Response`\>
+
+---
+
 ### getConfig()
 
 ```ts

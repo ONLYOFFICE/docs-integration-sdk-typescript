@@ -11,7 +11,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `DocumentServerClient`, a typed client of the document server built on the standard
   `fetch`: `healthcheck()`, `getConfig()`, `getFormats()`, `convert()`,
-  `convertFromFile()`, `command()`, `docbuilder()` and `getFile()`.
+  `convertFromFile()`, `command()`, `docbuilder()`, `docbuilderFromFile()` and `getFile()`.
 - `DocumentServerRawClient`, on `client.raw`, which hands back the untouched `Response`.
 - Per-request options: an abort signal, a timeout and headers of the request's own.
 - `DocumentServerError` and its subclasses for HTTP, network, timeout and parse failures

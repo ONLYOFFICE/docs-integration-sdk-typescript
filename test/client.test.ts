@@ -10,6 +10,7 @@ import {
   DocumentServerParseError,
   DocumentServerTimeoutError,
   splitFileUrl,
+  type BuildFileRequest,
   type BuilderRequest,
   type BuilderResponse,
   type ClientOptions,
@@ -1435,6 +1436,201 @@ describe("convertFromFile", () => {
       status: 502,
       body: "Bad Gateway",
     });
+  });
+});
+
+describe("raw.docbuilderFromFile", () => {
+  const script = new Uint8Array([0x62, 0x75, 0x69, 0x6c]);
+
+  /** Reads the form back off a recorded call. */
+  function formOf(call: RecordedCall | undefined): FormData {
+    return call?.init?.body as FormData;
+  }
+
+  it("posts the request to /docbuilder/from-file", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toBe("https://docs.example.com/docbuilder/from-file");
+    expect(calls[0]?.init?.method).toBe("POST");
+  });
+
+  it("keeps the path prefix of the base URL", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://example.com/office/",
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(calls[0]?.url).toBe("https://example.com/office/docbuilder/from-file");
+  });
+
+  it("sends the request as the JSON of a params part, the script after it", async () => {
+    const { fetch, calls } = spyFetch();
+    const request: BuildFileRequest = { async: true, argument: { name: "Contract" } };
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile(request, new Blob([script]));
+
+    const form = formOf(calls[0]);
+
+    expect([...form.keys()]).toEqual(["params", "file"]);
+    expect(JSON.parse(form.get("params") as string)).toEqual(request);
+  });
+
+  it("sends an empty request as an empty params part", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(formOf(calls[0]).get("params")).toBe("{}");
+  });
+
+  it("sends the script under its own name", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({}, new File([script], "report.docbuilder"));
+
+    const sent = formOf(calls[0]).get("file") as File;
+
+    expect(sent.name).toBe("report.docbuilder");
+    await expect(sent.arrayBuffer().then((b) => new Uint8Array(b))).resolves.toEqual(script);
+  });
+
+  it("names a script that has no name of its own script.docbuilder", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect((formOf(calls[0]).get("file") as File).name).toBe("script.docbuilder");
+  });
+
+  it("leaves the content type of the form to fetch", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      headers: { "Content-Type": "application/json", "x-tenant": "acme" },
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(headerOf(calls[0], "content-type")).toBeNull();
+    expect(headerOf(calls[0], "x-tenant")).toBe("acme");
+  });
+
+  it("sends the token in an authorization header, and none without one", async () => {
+    const { fetch, calls } = spyFetch();
+    const client = new DocumentServerClient({ baseUrl: "https://docs.example.com", fetch });
+
+    await client.raw.docbuilderFromFile({}, new Blob([script]), "header.token");
+    await client.raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(headerOf(calls[0], "authorization")).toBe("Bearer header.token");
+    expect(headerOf(calls[1], "authorization")).toBeNull();
+  });
+
+  it("sends a token of the body within the params", async () => {
+    const { fetch, calls } = spyFetch();
+
+    await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({ token: "body.token" }, new Blob([script]));
+
+    const form = formOf(calls[0]);
+
+    expect(JSON.parse(form.get("params") as string)).toEqual({ token: "body.token" });
+    expect(form.has("token")).toBe(false);
+  });
+
+  it("times out on a build that never answers", async () => {
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 5,
+      fetch: hangingFetch,
+    });
+
+    await expect(client.raw.docbuilderFromFile({}, new Blob([script]))).rejects.toThrow(
+      DocumentServerTimeoutError,
+    );
+  });
+
+  it("hands back a failing response instead of throwing", async () => {
+    const { fetch } = spyFetch(() => new Response("Bad Request", { status: 400 }));
+
+    const response = await new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch,
+    }).raw.docbuilderFromFile({}, new Blob([script]));
+
+    expect(response.status).toBe(400);
+  });
+});
+
+describe("docbuilderFromFile", () => {
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("parses a finished build", async () => {
+    const body: BuilderResponse = {
+      key: "bld_1b0f090d89e47d44",
+      end: true,
+      urls: { "output.docx": "https://docs.example.com/output.docx" },
+    };
+
+    await expect(
+      client(() => Response.json(body)).docbuilderFromFile({}, new Blob(["script"])),
+    ).resolves.toEqual(body);
+  });
+
+  it("returns the key of a build that is still running", async () => {
+    const body: BuilderResponse = { key: "bld_1b0f090d89e47d44", end: false };
+
+    await expect(
+      client(() => Response.json(body)).docbuilderFromFile({ async: true }, new Blob(["script"])),
+    ).resolves.toEqual(body);
+  });
+
+  it("throws on an error code the service answered 200 with", async () => {
+    const failing = client(() => Response.json({ error: -3 }));
+
+    await expect(failing.docbuilderFromFile({}, new Blob(["script"]))).rejects.toThrow(
+      BuilderError,
+    );
+    await expect(failing.docbuilderFromFile({}, new Blob(["script"]))).rejects.toMatchObject({
+      kind: "builder",
+      code: -3,
+    });
+  });
+
+  it("throws on a failing status", async () => {
+    await expect(
+      client(() => new Response("Bad Request", { status: 400 })).docbuilderFromFile(
+        {},
+        new Blob(["script"]),
+      ),
+    ).rejects.toMatchObject({ kind: "http", status: 400, body: "Bad Request" });
   });
 });
 

@@ -173,6 +173,40 @@ Runs the builder script the server downloads from `url`.
 
 ---
 
+### docbuilderFromFile()
+
+```ts
+docbuilderFromFile(
+   request,
+   file,
+   token?,
+   options?
+): Promise<BuilderResponse>;
+```
+
+Runs a builder script sent along with the request rather than downloaded from a `url`,
+and answers the way [DocumentServerClient.docbuilder](#docbuilder) does. An `async` build is
+asked after by the key it answered, with `docbuilder({ key })`.
+
+#### Parameters
+
+| Parameter  | Type                                                      |
+| ---------- | --------------------------------------------------------- |
+| `request`  | [`BuildFileRequest`](../type-aliases/BuildFileRequest.md) |
+| `file`     | `Blob`                                                    |
+| `token?`   | `string`                                                  |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)       |
+
+#### Returns
+
+`Promise`\<[`BuilderResponse`](../interfaces/BuilderResponse.md)\>
+
+#### Throws
+
+[BuilderError](BuilderError.md) when the service answers with an `error` code.
+
+---
+
 ### getConfig()
 
 ```ts
