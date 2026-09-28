@@ -7,6 +7,8 @@ services:
       ALLOW_PRIVATE_IP_ADDRESS: "true"
     ports:
       - "8080:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   fixtures:
     image: nginx:alpine
     volumes:

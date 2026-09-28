@@ -1402,6 +1402,7 @@ test/
   integration/          against a real document server, run by npm run test:integration
     setup.ts            starts the stack and waits for the server to be healthy
     env.ts              the client, the signer and the helpers the tests share
+    host.ts             a server in the test process the document server downloads from
     fixtures/           the files the document server downloads
 docs/
   README.md             generated API reference: the modules
@@ -1436,14 +1437,22 @@ tests cover what can be checked without an editor open: the server configuration
 conversion by url and from a file, the command service, the document builder, downloading the
 results, and tokens signed in the body and in a header.
 
+They also check the other side of the tokens: a server started in the test process serves
+files the document server downloads, and `verifyHeader()` reads the token that download comes
+signed with. The document server reaches that server as `host.docker.internal`, which
+`extra_hosts` maps to the host on Linux as well. And they check that `getFormats()` names no
+type or action `FormatType` and `FormatAction` do not know, so a newer server that adds one
+fails the run, and that a timeout and an unreachable server reject with the errors of the SDK.
+
 The run is tuned by environment variables:
 
-| Variable          | Default              | Does                                                        |
-| ----------------- | -------------------- | ----------------------------------------------------------- |
-| `DOCS_URL`        | —                    | a document server already running; the stack is not started |
-| `DOCS_JWT_SECRET` | `integration-secret` | the secret of that server                                   |
-| `FIXTURES_URL`    | `http://fixtures`    | where that server downloads the fixtures from               |
-| `DOCS_KEEP`       | —                    | leaves the stack running after the tests, for the next run  |
+| Variable          | Default                       | Does                                                         |
+| ----------------- | ----------------------------- | ------------------------------------------------------------ |
+| `DOCS_URL`        | —                             | a document server already running; the stack is not started  |
+| `DOCS_JWT_SECRET` | `integration-secret`          | the secret of that server                                    |
+| `FIXTURES_URL`    | `http://fixtures`             | where that server downloads the fixtures from                |
+| `HOST_URL`        | `http://host.docker.internal` | where that server reaches the test process, without the port |
+| `DOCS_KEEP`       | —                             | leaves the stack running after the tests, for the next run   |
 
 Without `DOCS_URL` the tests reach the server at `http://localhost:8080`, so the port has to
 be free.
