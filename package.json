@@ -3,6 +3,22 @@
   "version": "0.1.0",
   "description": "TypeScript SDK for integrating ONLYOFFICE Docs editors",
   "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/issues",
+    "email": "support@onlyoffice.com"
+  },
+  "homepage": "https://www.onlyoffice.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ONLYOFFICE/docs-integration-sdk-typescript.git"
+  },
+  "author": "Ascensio System SIA <integration@onlyoffice.com> (https://www.onlyoffice.com)",
+  "maintainers": [
+    "Ascensio System SIA <integration@onlyoffice.com> (https://www.onlyoffice.com)"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "sideEffects": false,
   "engines": {
