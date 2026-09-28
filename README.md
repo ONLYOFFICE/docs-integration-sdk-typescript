@@ -1427,6 +1427,16 @@ npm run check:exports  # the built subpaths share every export with the root
 npm run docs           # typedoc -> docs (markdown API reference)
 ```
 
+### License header
+
+Every source file opens with the Apache 2.0 header of Ascensio System SIA, which
+`eslint-plugin-license-header` checks. The header is written out in `eslint.config.js` rather
+than kept in a file of its own, and its year is the current one, so the first lint of a new
+year fails on every file until `npm run lint:fix` rewrites the headers. The module entries,
+`src/*/index.ts`, close it with `@license Apache-2.0`: TypeDoc passes over a comment tagged so
+and reads the `@module` comment after it, where it would otherwise take the header for the
+description of the module.
+
 ### Integration tests
 
 `npm run test:integration` runs the tests under `test/integration/` against a real document
