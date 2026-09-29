@@ -1,0 +1,21 @@
+import { defineConfig, globalIgnores } from "eslint/config";
+import tseslint from "typescript-eslint";
+
+export default defineConfig([
+  globalIgnores(["dist/**", "coverage/**", "node_modules/**"]),
+  tseslint.configs.strictTypeChecked,
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["*.js"],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    },
+  },
+]);
