@@ -195,7 +195,6 @@ export class DocumentServerRawClient {
     }
 
     if (spec.form !== undefined) {
-      // fetch writes the content type of a form itself, boundary included
       headers.delete("content-type");
     }
 

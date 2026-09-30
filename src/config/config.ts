@@ -300,7 +300,6 @@ function checkEditorUrls(editor: Mutable): void {
 
     const logo = customization["logo"];
 
-    // An empty or null url makes the logo not clickable.
     if (isRecord(logo) && logo["url"] !== "" && logo["url"] !== null) {
       checkOptionalUrl(logo, "url", "editorConfig.customization.logo.url");
     }
