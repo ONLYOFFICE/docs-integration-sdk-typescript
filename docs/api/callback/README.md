@@ -5,6 +5,10 @@
 What the document server posts to the callback URL, checked against its token and told
 apart by what it reports. Imported from `@onlyoffice/docs-integration-sdk/callback`.
 
+## See
+
+[Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+
 ## Classes
 
 | Class                                                       | Description                                                                                                                                                                                                                                                                                                                                                                                      |

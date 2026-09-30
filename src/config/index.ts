@@ -18,9 +18,10 @@
  */
 
 /**
- * The config an editor is opened with, validated and signed. Imported from
- * `@onlyoffice/docs-integration-sdk/config`.
+ * The config an editor is opened with, validated and signed, and the document key it needs.
+ * Imported from `@onlyoffice/docs-integration-sdk/config`.
  *
+ * @see [Opening an editor](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md)
  * @module config
  */
 

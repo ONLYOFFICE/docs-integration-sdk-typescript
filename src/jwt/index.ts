@@ -21,6 +21,7 @@
  * Signing and checking the tokens the document server exchanges. Imported from
  * `@onlyoffice/docs-integration-sdk/jwt`.
  *
+ * @see [JWT](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/jwt.md)
  * @module jwt
  */
 
