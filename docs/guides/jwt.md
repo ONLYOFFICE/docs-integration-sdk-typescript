@@ -88,8 +88,10 @@ The document server looks for the claim at the top level of the token only, not 
 trusted:
 
 ```ts
+import { type CallbackBody, JwtError } from "@onlyoffice/docs-integration-sdk";
+
 try {
-  const claims = await jwt.verify<CallbackPayload>(token);
+  const claims = await jwt.verify<CallbackBody>(token);
 } catch (error) {
   if (JwtError.is(error)) {
     // 403: error.kind says which check refused it
