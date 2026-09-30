@@ -222,22 +222,40 @@ export class DocumentServerRawClient {
     }
   }
 
-  /** Gets `/healthcheck`, whose body is `true` when the server is up. */
+  /**
+   * Gets `/healthcheck`, whose body is `true` when the server is up.
+   *
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
+   */
   async healthcheck(options?: RequestOptions): Promise<Response> {
     return await this.#request("/healthcheck", { method: "GET" }, options);
   }
 
-  /** Gets `/meta/config`, where the document server describes itself. */
+  /**
+   * Gets `/meta/config`, where the document server describes itself.
+   *
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
+   */
   async getConfig(options?: RequestOptions): Promise<Response> {
     return await this.#request("/meta/config", { method: "GET" }, options);
   }
 
-  /** Gets `/meta/formats`, the file formats the document server knows. */
+  /**
+   * Gets `/meta/formats`, the file formats the document server knows.
+   *
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
+   */
   async getFormats(options?: RequestOptions): Promise<Response> {
     return await this.#request("/meta/formats", { method: "GET" }, options);
   }
 
-  /** Posts `request` as JSON to `/converter`, with its `key` as the `shardkey` query parameter. */
+  /**
+   * Posts `request` as JSON to `/converter`, with its `key` as the `shardkey` query parameter.
+   *
+   * @param request The conversion parameters.
+   * @param token A token for the authorization header. Without it, no authorization header is sent.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
+   */
   async convert(
     request: ConvertRequest,
     token?: string,
@@ -254,6 +272,11 @@ export class DocumentServerRawClient {
    * Posts `request` and the document as `multipart/form-data` to `/converter/from-file`, with
    * its `key`, when given, as the `shardkey` query parameter. On a 2xx the body is the
    * converted file, or JSON while an `async` conversion runs.
+   *
+   * @param request The conversion parameters, without `url`.
+   * @param file The document.
+   * @param token A token for the authorization header. Without it, no authorization header is sent.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    */
   async convertFromFile(
     request: ConvertFileRequest,
@@ -279,6 +302,10 @@ export class DocumentServerRawClient {
   /**
    * Posts `request` as JSON to `/command`, with its `key` as the `shardkey` query parameter.
    * `getForgottenList`, `license` and `version` have no key and are sent without it.
+   *
+   * @param request The command and its parameters.
+   * @param token A token for the authorization header. Without it, no authorization header is sent.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    */
   async command(
     request: CommandRequest,
@@ -297,6 +324,10 @@ export class DocumentServerRawClient {
   /**
    * Posts `request` as JSON to `/docbuilder`, with its `key`, when given, as the `shardkey`
    * query parameter.
+   *
+   * @param request The script URL and its `argument`, or the key of a build to collect.
+   * @param token A token for the authorization header. Without it, no authorization header is sent.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    */
   async docbuilder(
     request: BuilderRequest,
@@ -315,6 +346,11 @@ export class DocumentServerRawClient {
   /**
    * Posts `request` and the script as `multipart/form-data` to `/docbuilder/from-file`,
    * without a `shardkey`: the service creates the key.
+   *
+   * @param request The `argument` of the script, `async` and `token`.
+   * @param file The script.
+   * @param token A token for the authorization header. Without it, no authorization header is sent.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    */
   async docbuilderFromFile(
     request: BuildFileRequest,
@@ -336,6 +372,10 @@ export class DocumentServerRawClient {
   /**
    * Gets a file the document server keeps, by the path and the query
    * {@link splitFileUrl} returns. Sends no token. On a 2xx the body is the file, unread.
+   *
+   * @param path The path of the file, relative to `baseUrl`.
+   * @param query The query the document server signed the URL with.
+   * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    */
   async getFile(
     path: string,

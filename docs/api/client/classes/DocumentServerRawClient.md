@@ -70,11 +70,11 @@ Posts `request` as JSON to `/command`, with its `key` as the `shardkey` query pa
 
 #### Parameters
 
-| Parameter  | Type                                                  |
-| ---------- | ----------------------------------------------------- |
-| `request`  | [`CommandRequest`](../type-aliases/CommandRequest.md) |
-| `token?`   | `string`                                              |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)   |
+| Parameter  | Type                                                  | Description                                                                        |
+| ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `request`  | [`CommandRequest`](../type-aliases/CommandRequest.md) | The command and its parameters.                                                    |
+| `token?`   | `string`                                              | A token for the authorization header. Without it, no authorization header is sent. |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)   | Overrides for this call: a `signal`, a `timeoutMs` and `headers`.                  |
 
 #### Returns
 
@@ -96,11 +96,11 @@ Posts `request` as JSON to `/converter`, with its `key` as the `shardkey` query 
 
 #### Parameters
 
-| Parameter  | Type                                                |
-| ---------- | --------------------------------------------------- |
-| `request`  | [`ConvertRequest`](../interfaces/ConvertRequest.md) |
-| `token?`   | `string`                                            |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) |
+| Parameter  | Type                                                | Description                                                                        |
+| ---------- | --------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `request`  | [`ConvertRequest`](../interfaces/ConvertRequest.md) | The conversion parameters.                                                         |
+| `token?`   | `string`                                            | A token for the authorization header. Without it, no authorization header is sent. |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) | Overrides for this call: a `signal`, a `timeoutMs` and `headers`.                  |
 
 #### Returns
 
@@ -125,12 +125,12 @@ converted file, or JSON while an `async` conversion runs.
 
 #### Parameters
 
-| Parameter  | Type                                                          |
-| ---------- | ------------------------------------------------------------- |
-| `request`  | [`ConvertFileRequest`](../type-aliases/ConvertFileRequest.md) |
-| `file`     | `Blob`                                                        |
-| `token?`   | `string`                                                      |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)           |
+| Parameter  | Type                                                          | Description                                                                        |
+| ---------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `request`  | [`ConvertFileRequest`](../type-aliases/ConvertFileRequest.md) | The conversion parameters, without `url`.                                          |
+| `file`     | `Blob`                                                        | The document.                                                                      |
+| `token?`   | `string`                                                      | A token for the authorization header. Without it, no authorization header is sent. |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)           | Overrides for this call: a `signal`, a `timeoutMs` and `headers`.                  |
 
 #### Returns
 
@@ -153,11 +153,11 @@ query parameter.
 
 #### Parameters
 
-| Parameter  | Type                                                  |
-| ---------- | ----------------------------------------------------- |
-| `request`  | [`BuilderRequest`](../type-aliases/BuilderRequest.md) |
-| `token?`   | `string`                                              |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)   |
+| Parameter  | Type                                                  | Description                                                                        |
+| ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `request`  | [`BuilderRequest`](../type-aliases/BuilderRequest.md) | The script URL and its `argument`, or the key of a build to collect.               |
+| `token?`   | `string`                                              | A token for the authorization header. Without it, no authorization header is sent. |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)   | Overrides for this call: a `signal`, a `timeoutMs` and `headers`.                  |
 
 #### Returns
 
@@ -181,12 +181,12 @@ without a `shardkey`: the service creates the key.
 
 #### Parameters
 
-| Parameter  | Type                                                      |
-| ---------- | --------------------------------------------------------- |
-| `request`  | [`BuildFileRequest`](../type-aliases/BuildFileRequest.md) |
-| `file`     | `Blob`                                                    |
-| `token?`   | `string`                                                  |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)       |
+| Parameter  | Type                                                      | Description                                                                        |
+| ---------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `request`  | [`BuildFileRequest`](../type-aliases/BuildFileRequest.md) | The `argument` of the script, `async` and `token`.                                 |
+| `file`     | `Blob`                                                    | The script.                                                                        |
+| `token?`   | `string`                                                  | A token for the authorization header. Without it, no authorization header is sent. |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md)       | Overrides for this call: a `signal`, a `timeoutMs` and `headers`.                  |
 
 #### Returns
 
@@ -204,9 +204,9 @@ Gets `/meta/config`, where the document server describes itself.
 
 #### Parameters
 
-| Parameter  | Type                                                |
-| ---------- | --------------------------------------------------- |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) |
+| Parameter  | Type                                                | Description                                                       |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) | Overrides for this call: a `signal`, a `timeoutMs` and `headers`. |
 
 #### Returns
 
@@ -229,11 +229,11 @@ Gets a file the document server keeps, by the path and the query
 
 #### Parameters
 
-| Parameter  | Type                                                |
-| ---------- | --------------------------------------------------- |
-| `path`     | `string`                                            |
-| `query?`   | `Readonly`\<`Record`\<`string`, `string`\>\>        |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) |
+| Parameter  | Type                                                | Description                                                       |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `path`     | `string`                                            | The path of the file, relative to `baseUrl`.                      |
+| `query?`   | `Readonly`\<`Record`\<`string`, `string`\>\>        | The query the document server signed the URL with.                |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) | Overrides for this call: a `signal`, a `timeoutMs` and `headers`. |
 
 #### Returns
 
@@ -251,9 +251,9 @@ Gets `/meta/formats`, the file formats the document server knows.
 
 #### Parameters
 
-| Parameter  | Type                                                |
-| ---------- | --------------------------------------------------- |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) |
+| Parameter  | Type                                                | Description                                                       |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) | Overrides for this call: a `signal`, a `timeoutMs` and `headers`. |
 
 #### Returns
 
@@ -271,9 +271,9 @@ Gets `/healthcheck`, whose body is `true` when the server is up.
 
 #### Parameters
 
-| Parameter  | Type                                                |
-| ---------- | --------------------------------------------------- |
-| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) |
+| Parameter  | Type                                                | Description                                                       |
+| ---------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `options?` | [`RequestOptions`](../interfaces/RequestOptions.md) | Overrides for this call: a `signal`, a `timeoutMs` and `headers`. |
 
 #### Returns
 
