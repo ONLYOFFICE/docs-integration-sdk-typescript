@@ -160,7 +160,7 @@ function header(headers: CallbackHeaders | undefined, name: string): string | un
   }
 
   if (isHeaders(headers)) {
-    return headers.get(name) ?? undefined;
+    return headers.get(name)?.split(", ")[0];
   }
 
   const wanted = name.toLowerCase();

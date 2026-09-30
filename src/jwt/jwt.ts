@@ -257,7 +257,7 @@ function isHeaders(headers: JwtHeaders): headers is Headers {
 
 function headerValue(headers: JwtHeaders, name: string): string | undefined {
   if (isHeaders(headers)) {
-    return headers.get(name) ?? undefined;
+    return headers.get(name)?.split(", ")[0];
   }
 
   const wanted = name.toLowerCase();

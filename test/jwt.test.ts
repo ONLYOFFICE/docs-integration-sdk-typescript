@@ -613,6 +613,18 @@ describe("verifyHeader", () => {
     );
   });
 
+  it("reads the first of a header given twice", async () => {
+    const token = await jwt.sign({ payload });
+    const headers = new Headers();
+    headers.append("Authorization", `Bearer ${token}`);
+    headers.append("Authorization", "Bearer other");
+
+    await expect(jwt.verifyHeader(headers)).resolves.toEqual(payload);
+    await expect(
+      jwt.verifyHeader({ authorization: [`Bearer ${token}`, "Bearer other"] }),
+    ).resolves.toEqual(payload);
+  });
+
   it("reads a header and a prefix of the server's own", async () => {
     const headers = { "x-docs-token": `Token ${await jwt.sign({ payload })}` };
 

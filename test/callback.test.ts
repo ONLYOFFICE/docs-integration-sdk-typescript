@@ -239,6 +239,16 @@ describe("DocumentServerCallback.parse, the token in the header", () => {
     expect(event.kind).toBe("save");
   });
 
+  it("reads the first of a header appended twice to the Headers of fetch", async () => {
+    const token = await jwt.sign({ payload: save });
+    const headers = new Headers();
+    headers.append("Authorization", `Bearer ${token}`);
+    headers.append("Authorization", "Bearer other");
+    const event = await parse({ body: save, headers });
+
+    expect(event.kind).toBe("save");
+  });
+
   it("takes a header and a prefix of its own", async () => {
     const token = await jwt.sign({ payload: save });
     const { event } = await DocumentServerCallback.parse(
