@@ -1,0 +1,36 @@
+name: Licenses
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, develop]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/licenses.yml"
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/licenses.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  licenses:
+    name: Dependency licenses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Get project license
+        id: license
+        run: echo "license=$(node -p "require('./package.json').license")" >> "$GITHUB_OUTPUT"
+      - uses: ONLYOFFICE/check-licenses@v1
+        with:
+          project_license: ${{ steps.license.outputs.license }}
