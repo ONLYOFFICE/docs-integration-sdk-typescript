@@ -101,44 +101,59 @@ export interface CallbackBody {
 
 /** Status `1`: a user connected or disconnected. `actions` says which. */
 export interface CallbackEditing extends CallbackBody {
+  /** `"editing"`, the discriminant of {@link CallbackEvent}. */
   kind: "editing";
+  /** Always `1`. */
   status: 1;
 }
 
 /** Status `2`: the last editor closed and the document changed. Download `url` and store it. */
 export interface CallbackSave extends CallbackBody {
+  /** `"save"`, the discriminant of {@link CallbackEvent}. */
   kind: "save";
+  /** Always `2`. */
   status: 2;
+  /** Where the document is downloaded from. Always given. */
   url: string;
 }
 
 /** Status `3`: the document server failed to build the document. `url` may be missing. */
 export interface CallbackSaveError extends CallbackBody {
+  /** `"save-error"`, the discriminant of {@link CallbackEvent}. */
   kind: "save-error";
+  /** Always `3`. */
   status: 3;
 }
 
 /** Status `4`: the last editor closed and nothing changed. */
 export interface CallbackClosed extends CallbackBody {
+  /** `"closed"`, the discriminant of {@link CallbackEvent}. */
   kind: "closed";
+  /** Always `4`. */
   status: 4;
 }
 
 /** Status `6`: the document was saved while it is edited. Download `url` and store a version. */
 export interface CallbackForcesave extends CallbackBody {
+  /** `"forcesave"`, the discriminant of {@link CallbackEvent}. */
   kind: "forcesave";
+  /** Always `6`. */
   status: 6;
+  /** Where the document is downloaded from. Always given. */
   url: string;
 }
 
 /** Status `7`: the save on status `6` failed. */
 export interface CallbackForcesaveError extends CallbackBody {
+  /** `"forcesave-error"`, the discriminant of {@link CallbackEvent}. */
   kind: "forcesave-error";
+  /** Always `7`. */
   status: 7;
 }
 
 /** A status this SDK doesn't know yet. Read `status`. */
 export interface CallbackUnknown extends CallbackBody {
+  /** `"unknown"`, the discriminant of {@link CallbackEvent}. */
   kind: "unknown";
 }
 
@@ -157,5 +172,6 @@ export type CallbackEventKind = CallbackEvent["kind"];
 
 /** The reply to a callback: `0` handled, `1` not handled. */
 export interface CallbackReply {
+  /** `0` when the callback was handled, `1` when it was not. */
   readonly error: 0 | 1;
 }
