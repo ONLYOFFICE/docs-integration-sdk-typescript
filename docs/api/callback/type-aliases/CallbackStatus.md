@@ -16,3 +16,7 @@ What happened to the document:
 - `7`: that save failed.
 
 Any other number is a status this SDK doesn't know yet.
+
+## See
+
+[Document statuses](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#possible-document-statuses-and-their-description)

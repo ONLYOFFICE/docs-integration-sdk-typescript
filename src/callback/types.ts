@@ -27,6 +27,8 @@
  * - `7`: that save failed.
  *
  * Any other number is a status this SDK doesn't know yet.
+ *
+ * @see [Document statuses](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#possible-document-statuses-and-their-description)
  */
 export type CallbackStatus = 1 | 2 | 3 | 4 | 6 | 7 | (number & {});
 
@@ -37,6 +39,8 @@ export type CallbackStatus = 1 | 2 | 3 | 4 | 6 | 7 | (number & {});
  * - `1`: the save button;
  * - `2`: the autosave timer in the document server settings;
  * - `3`: a submitted form, whose data is at `formsdataurl`.
+ *
+ * @see [forcesavetype](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype)
  */
 export type ForcesaveType = 0 | 1 | 2 | 3 | (number & {});
 
@@ -59,7 +63,11 @@ export interface CallbackHistory {
   serverVersion: string;
 }
 
-/** Body of a request the document server posts to the callback URL. */
+/**
+ * Body of a request the document server posts to the callback URL.
+ *
+ * @see [Callback handler](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/)
+ */
 export interface CallbackBody {
   /** Key of the document, as the editor config gave it. */
   key: string;

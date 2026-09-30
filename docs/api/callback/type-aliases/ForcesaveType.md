@@ -12,3 +12,7 @@ What started a save on status `6`:
 - `1`: the save button;
 - `2`: the autosave timer in the document server settings;
 - `3`: a submitted form, whose data is at `formsdataurl`.
+
+## See
+
+[forcesavetype](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype)

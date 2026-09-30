@@ -4,6 +4,10 @@
 
 The body of a request to `/converter`, the conversion service.
 
+## See
+
+[Conversion API request](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/)
+
 ## Properties
 
 | Property                                                     | Type                                              | Description                                                                                                                                                                                            |

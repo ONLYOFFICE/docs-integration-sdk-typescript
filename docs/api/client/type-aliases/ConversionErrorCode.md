@@ -21,3 +21,7 @@ Why a conversion failed:
 
 A code the service doesn't document stays a plain number, so keep a `default` branch in a
 `switch` over it.
+
+## See
+
+[Conversion API error codes](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/error-codes/)

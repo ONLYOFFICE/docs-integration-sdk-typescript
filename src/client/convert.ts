@@ -166,7 +166,11 @@ export interface Watermark {
   width?: number;
 }
 
-/** The body of a request to `/converter`, the conversion service. */
+/**
+ * The body of a request to `/converter`, the conversion service.
+ *
+ * @see [Conversion API request](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/)
+ */
 export interface ConvertRequest {
   /**
    * Return as soon as the conversion is queued instead of waiting for it. Repeat the
@@ -260,6 +264,8 @@ export type ConvertFileResult =
  *
  * A code the service doesn't document stays a plain number, so keep a `default` branch in a
  * `switch` over it.
+ *
+ * @see [Conversion API error codes](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/error-codes/)
  */
 export type ConversionErrorCode = -1 | -2 | -3 | -4 | -5 | -6 | -7 | -8 | -9 | -10 | (number & {});
 

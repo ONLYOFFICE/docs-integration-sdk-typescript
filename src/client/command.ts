@@ -108,6 +108,8 @@ export interface VersionCommand extends Command {
 /**
  * The body of a request to `/command`, the command service: one of the commands, told apart by
  * `c`. Each command is checked against its own parameters.
+ *
+ * @see [Command service](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/)
  */
 export type CommandRequest =
   | DeleteForgottenCommand
@@ -186,6 +188,8 @@ export interface LicenseQuota {
  *
  * A code the service doesn't document stays a plain number, so keep a `default` branch in a
  * `switch` over it.
+ *
+ * @see [Command service error codes](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#possible-error-codes-and-their-description)
  */
 export type CommandErrorCode = 0 | 1 | 2 | 3 | 4 | 5 | 6 | (number & {});
 

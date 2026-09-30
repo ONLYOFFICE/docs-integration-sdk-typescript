@@ -4,6 +4,10 @@
 
 Body of a request the document server posts to the callback URL.
 
+## See
+
+[Callback handler](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/)
+
 ## Extended by
 
 - [`CallbackEditing`](CallbackEditing.md)

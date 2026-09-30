@@ -52,6 +52,8 @@ export interface BuildResultRequest extends Builder {
 /**
  * The body of a request to `/docbuilder`: {@link BuildRequest} starts a build,
  * {@link BuildResultRequest} collects an `async` one.
+ *
+ * @see [Document Builder API](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/)
  */
 export type BuilderRequest = BuildRequest | BuildResultRequest;
 
