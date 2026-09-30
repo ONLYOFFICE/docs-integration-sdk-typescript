@@ -101,10 +101,10 @@ Returns whether the editors can do `action` with an extension.
 
 #### Parameters
 
-| Parameter   | Type                                              |
-| ----------- | ------------------------------------------------- |
-| `extension` | `string`                                          |
-| `action`    | [`FormatAction`](../type-aliases/FormatAction.md) |
+| Parameter   | Type                                              | Description                                                                 |
+| ----------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| `extension` | `string`                                          | An extension, with or without the dot, or a file name. Matched in any case. |
+| `action`    | [`FormatAction`](../type-aliases/FormatAction.md) | The action, such as `"edit"`.                                               |
 
 #### Returns
 
@@ -122,9 +122,9 @@ Returns what the editors can do with an extension. Empty when no editor opens it
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -143,9 +143,9 @@ conversion takes them. Empty when the server doesn't convert it.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -220,9 +220,9 @@ Returns the formats served under a MIME type, matched in any case.
 
 #### Parameters
 
-| Parameter | Type     |
-| --------- | -------- |
-| `mime`    | `string` |
+| Parameter | Type     | Description                               |
+| --------- | -------- | ----------------------------------------- |
+| `mime`    | `string` | A MIME type, such as `"application/pdf"`. |
 
 #### Returns
 
@@ -240,9 +240,9 @@ Returns the formats one editor opens, or, for `""`, those that only come out of 
 
 #### Parameters
 
-| Parameter | Type                                          |
-| --------- | --------------------------------------------- |
-| `type`    | [`FormatType`](../type-aliases/FormatType.md) |
+| Parameter | Type                                          | Description                            |
+| --------- | --------------------------------------------- | -------------------------------------- |
+| `type`    | [`FormatType`](../type-aliases/FormatType.md) | The editor, such as `"word"`, or `""`. |
 
 #### Returns
 
@@ -260,9 +260,9 @@ Returns the MIME types an extension is served under.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -300,9 +300,9 @@ Returns whether the editors convert it on open, like the legacy `doc`: action `"
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -320,9 +320,9 @@ Returns whether the editors open it for commenting: action `"comment"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -341,10 +341,10 @@ extension.
 
 #### Parameters
 
-| Parameter | Type     |
-| --------- | -------- |
-| `from`    | `string` |
-| `to`      | `string` |
+| Parameter | Type     | Description                                |
+| --------- | -------- | ------------------------------------------ |
+| `from`    | `string` | The extension or file name converted from. |
+| `to`      | `string` | The extension converted to.                |
 
 #### Returns
 
@@ -362,9 +362,9 @@ Returns whether the editors edit it and save it in its own format: action `"edit
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -382,9 +382,9 @@ Returns whether the editors open it behind a password: action `"encrypt"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -402,9 +402,9 @@ Returns whether it is a form the editors fill in: action `"fill"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -418,13 +418,14 @@ Returns whether it is a form the editors fill in: action `"fill"`.
 isLossyEditable(extension): boolean;
 ```
 
-Returns whether editing it loses what the format can't store, like `rtf`: action `"lossy-edit"`.
+Returns whether editing it loses what the format can't store, like `rtf`: action
+`"lossy-edit"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -443,9 +444,9 @@ Its actions are not checked.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -463,9 +464,9 @@ Returns whether the editors open it for reviewing: action `"review"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -483,9 +484,9 @@ Returns whether the editors open the extension for viewing: action `"view"`.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
