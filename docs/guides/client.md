@@ -165,7 +165,7 @@ so `{ "X-Tenant": "globex" }` replaces a configured `x-tenant` instead of adding
 
 ## The raw client
 
-`client.raw` has the same eight endpoints. Each returns the untouched `Response` and never throws
+`client.raw` has the same nine endpoints. Each returns the untouched `Response` and never throws
 on what the document server answers. A request that gets no answer at all still rejects with
 `DocumentServerNetworkError` or `DocumentServerTimeoutError`:
 
@@ -185,9 +185,13 @@ The typed client sends its requests through this same instance, with the same op
 deadline and `fetch`, so you can mix the two freely. `client.options` and `client.raw.options`
 are the same frozen object.
 
-`getFile()` and `convertFromFile()` differ the least: on a 2xx both return the `Response` unread,
-since a file is a stream. They differ only on a failing status: the typed one rejects, the raw
-one returns the response.
+`getFile()` differs the least: on a 2xx both return the `Response` unread, since a file is a
+stream. They differ only on a failing status: the typed one rejects, the raw one returns the
+response.
+
+The typed `convertFromFile()` also gives the converted file unread, as `result.file`, but reads
+a JSON answer: it returns the progress of an `async` conversion, and rejects with a
+`ConversionError` on an `error` code. The raw one returns every answer as it came.
 
 ## Modules
 

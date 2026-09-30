@@ -17,7 +17,7 @@ when the document server reports a failure.
 | `DocumentServerTimeoutError` | `"timeout"`    | The deadline passed before the answer was read. Has `timeoutMs` and `cause`.                                      |
 | `DocumentServerHttpError`    | `"http"`       | The status is outside 2xx. Has `status` and the beginning of the `body`.                                          |
 | `DocumentServerParseError`   | `"parse"`      | A 2xx body is not the JSON the endpoint promises. Has the `body`, and the parse error as `cause`.                 |
-| `ConversionError`            | `"conversion"` | `/converter` answered `200 OK` with an `error` code other than `0`. Has it as `code`.                             |
+| `ConversionError`            | `"conversion"` | `/converter` or `/converter/from-file` answered `200 OK` with an `error` code other than `0`. Has it as `code`.   |
 | `CommandError`               | `"command"`    | `/command` answered with an `error` other than `0` and `4`. Has it as `code`.                                     |
 | `BuilderError`               | `"builder"`    | `/docbuilder` or `/docbuilder/from-file` answered `200 OK` with an `error` code other than `0`. Has it as `code`. |
 

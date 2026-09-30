@@ -101,14 +101,16 @@ part of either signed payload. It is always sent; versions before Docs 8.1 ignor
 reach, or one that isn't stored anywhere yet. It answers with the converted file:
 
 ```ts
-import { openAsBlob } from "node:fs";
+import { createWriteStream, openAsBlob } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 const result = await client.convertFromFile(
   { filetype: "docx", key, outputtype: "pdf", title: "Contract.docx" },
   await openAsBlob("contract.docx"),
 );
 
-if (result.endConvert) {
+if (result.endConvert && result.file.body !== null) {
   await pipeline(Readable.fromWeb(result.file.body), createWriteStream("Contract.pdf"));
 }
 ```

@@ -60,7 +60,13 @@ The configured `headers` and `fetch` apply as usual. The `Response` is returned 
 can stream a large file instead of buffering it:
 
 ```ts
-await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+
+if (file.body !== null) {
+  await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+}
 ```
 
 A status outside 2xx rejects with a `DocumentServerHttpError` before you get the body. So an
