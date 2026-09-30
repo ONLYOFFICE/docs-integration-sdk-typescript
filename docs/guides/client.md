@@ -97,7 +97,7 @@ the constructor refuses it.
 
 ### authorizationHeader and authorizationPrefix
 
-They match the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
+They match the `token.inbox.header` and `token.inbox.prefix` settings of the document server.
 [`getConfig()`](formats.md#server-configuration) returns them as `authorization`. They are used
 only when a method gets a header token.
 
