@@ -2186,6 +2186,34 @@ describe("a request that gets no answer", () => {
     });
   });
 
+  it("keeps a body whose end arrives as the deadline runs out", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValueOnce(0);
+
+    now.mockReturnValue(10_000);
+
+    const client = new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 1_000,
+      fetch: spyFetch(
+        () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode('{"error":0}'));
+                controller.close();
+              },
+            }),
+          ),
+      ).fetch,
+    });
+
+    try {
+      await expect(client.command(info)).resolves.toEqual({ error: 0 });
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it("keeps the reason of a caller who cancelled", async () => {
     const reason = new Error("cancelled by the caller");
     const client = new DocumentServerClient({

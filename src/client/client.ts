@@ -114,7 +114,7 @@ async function readBody(
     while (!reached(text, bytes, limit)) {
       const { done, value } = await reader.read();
 
-      if (Date.now() >= end) {
+      if (!done && Date.now() >= end) {
         fail(timeoutError());
       }
 
