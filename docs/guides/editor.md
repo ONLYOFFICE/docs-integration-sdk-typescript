@@ -183,7 +183,7 @@ How it works:
   same parts always give the same key, also after a restart.
 - A number and its string form count as the same part.
 - A part that is neither a string nor a finite number, such as `undefined` or `NaN`, is refused.
-  Otherwise every revision would get the same key.
+  Otherwise every revision would get the same key. No parts, or only empty ones, are refused too.
 
 Choosing the parts:
 
