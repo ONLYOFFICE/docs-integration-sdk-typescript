@@ -122,7 +122,11 @@ export type CommandRequest =
   | MetaCommand
   | VersionCommand;
 
-/** Name of a command the service accepts. */
+/**
+ * Name of a command the service accepts.
+ *
+ * @see [Command types](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#command-types)
+ */
 export type CommandType = CommandRequest["c"];
 
 /** Terms of the license the document server runs under. */

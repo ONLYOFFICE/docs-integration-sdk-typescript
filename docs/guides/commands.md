@@ -9,7 +9,7 @@ const result = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
 result.users; // ["6d5a81d0", "78e1e841"]
 ```
 
-The SDK types all nine commands. Their parameters and answers are described in the
+The SDK types all nine [commands][command-types]. Their parameters and answers are described in the
 documentation of each:
 
 | Command                                    | Does                                        |
@@ -75,6 +75,7 @@ The `shardkey` query parameter is added for commands with a `key`. It is left ou
 `getForgottenList`, `license` and `version`, which are about the server, not a document.
 
 [command-service]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/
+[command-types]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#command-types
 [cmd-deleteforgotten]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/deleteforgotten/
 [cmd-drop]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/drop/
 [cmd-forcesave]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/forcesave/
