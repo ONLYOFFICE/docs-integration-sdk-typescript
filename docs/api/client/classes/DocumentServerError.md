@@ -2,8 +2,30 @@
 
 # Class: DocumentServerError
 
-Every failure of a call to the document server that the SDK turns into a rejection: a
-failure the server reports, an answer that is not the one promised, or no answer at all.
+The base class of every error a client call rejects with: a failure the document server
+reports, an answer that is not the promised one, or no answer at all.
+
+## Example
+
+```ts
+try {
+  await client.convert(request);
+} catch (error) {
+  if (ConversionError.is(error) && error.code === -5) {
+    return askForThePassword();
+  }
+
+  if (DocumentServerHttpError.is(error) && error.status >= 500) {
+    return retryLater();
+  }
+
+  throw error;
+}
+```
+
+## See
+
+[Errors](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/errors.md)
 
 ## Extends
 
@@ -53,11 +75,11 @@ Error.constructor;
 
 ## Properties
 
-| Property                                  | Modifier   | Type                                                                    | Description                                                                                                                                                                                                                                                   |
-| ----------------------------------------- | ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-kind"></a> `kind`         | `readonly` | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | -                                                                                                                                                                                                                                                             |
-| <a id="property-response"></a> `response` | `readonly` | `Response` \| `undefined`                                               | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did.                                                                                           |
-| <a id="property-url"></a> `url`           | `readonly` | `string`                                                                | Where the request went, the query left out: a download link carries its signature there. Read off the response when there is one, redirects followed. Empty when it is not known, as from a `fetch` of your own that answers with a `Response` built by hand. |
+| Property                                  | Modifier   | Type                                                                    | Description                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ---------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-kind"></a> `kind`         | `readonly` | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | Which failure the error stands for.                                                                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `Response` \| `undefined`                                               | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-url"></a> `url`           | `readonly` | `string`                                                                | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
 
@@ -67,7 +89,8 @@ Error.constructor;
 static is(value): value is AnyDocumentServerError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is any of the client errors, also one thrown by a second copy of
+the package, which `instanceof` misses. Narrows to [AnyDocumentServerError](../type-aliases/AnyDocumentServerError.md).
 
 #### Parameters
 

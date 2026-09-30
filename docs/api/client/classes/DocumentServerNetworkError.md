@@ -2,8 +2,11 @@
 
 # Class: DocumentServerNetworkError
 
-No answer came: the document server could not be reached, or the connection broke before
-its answer had been read. The error `fetch` raised is the `cause`.
+No answer came: the document server can't be reached, or the connection broke before the
+answer was read, the body included.
+
+The error `fetch` threw is the `cause`, such as `TypeError: fetch failed`. The message adds
+the system error code under it, such as `ECONNREFUSED`, or else that error's message.
 
 ## Extends
 
@@ -34,11 +37,11 @@ new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 
 ## Properties
 
-| Property                                  | Modifier   | Type        | Description                                                                                                                                                                                                                                                   |
-| ----------------------------------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-kind"></a> `kind`         | `readonly` | `"network"` | -                                                                                                                                                                                                                                                             |
-| <a id="property-response"></a> `response` | `readonly` | `undefined` | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did.                                                                                           |
-| <a id="property-url"></a> `url`           | `readonly` | `string`    | Where the request went, the query left out: a download link carries its signature there. Read off the response when there is one, redirects followed. Empty when it is not known, as from a `fetch` of your own that answers with a `Response` built by hand. |
+| Property                                  | Modifier   | Type        | Description                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-kind"></a> `kind`         | `readonly` | `"network"` | Which failure the error stands for.                                                                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `undefined` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-url"></a> `url`           | `readonly` | `string`    | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
 
@@ -48,7 +51,7 @@ new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 static is(value): value is DocumentServerNetworkError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of the package.
 
 #### Parameters
 

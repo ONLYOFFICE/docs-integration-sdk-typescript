@@ -13,4 +13,6 @@ type AnyDocumentServerError =
   | DocumentServerTimeoutError;
 ```
 
-Every error the SDK throws of its own accord.
+Every error a client call rejects with, apart from the reason of a cancelled `signal`.
+[DocumentServerError.is](../classes/DocumentServerError.md#is) narrows to it, so a `switch` over `kind` gives each branch
+the fields of its error.

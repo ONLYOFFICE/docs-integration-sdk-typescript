@@ -2,7 +2,8 @@
 
 # Class: DocumentServerHttpError
 
-The document server answered with a status outside the 2xx range.
+The document server answered with a status outside the 2xx range. The message names the
+status, the URL and the beginning of the body.
 
 ## Extends
 
@@ -33,13 +34,13 @@ new DocumentServerHttpError(response, body): DocumentServerHttpError;
 
 ## Properties
 
-| Property                                  | Modifier   | Type       | Description                                                                                                                                                                                                                                                   |
-| ----------------------------------------- | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-body"></a> `body`         | `readonly` | `string`   | Beginning of the response body, as far as it could be read.                                                                                                                                                                                                   |
-| <a id="property-kind"></a> `kind`         | `readonly` | `"http"`   | -                                                                                                                                                                                                                                                             |
-| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from. Its body has already been consumed. Absent from a network failure and a timeout, which may have come before any response did.                                                                                           |
-| <a id="property-status"></a> `status`     | `readonly` | `number`   | -                                                                                                                                                                                                                                                             |
-| <a id="property-url"></a> `url`           | `readonly` | `string`   | Where the request went, the query left out: a download link carries its signature there. Read off the response when there is one, redirects followed. Empty when it is not known, as from a `fetch` of your own that answers with a `Response` built by hand. |
+| Property                                  | Modifier   | Type       | Description                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-body"></a> `body`         | `readonly` | `string`   | The first 512 characters of the response body, trimmed. Empty when it couldn't be read.                                                                                                                                                               |
+| <a id="property-kind"></a> `kind`         | `readonly` | `"http"`   | Which failure the error stands for.                                                                                                                                                                                                                   |
+| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-status"></a> `status`     | `readonly` | `number`   | The status of the response.                                                                                                                                                                                                                           |
+| <a id="property-url"></a> `url`           | `readonly` | `string`   | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
 
@@ -49,7 +50,7 @@ new DocumentServerHttpError(response, body): DocumentServerHttpError;
 static is(value): value is DocumentServerHttpError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the package.
 
 #### Parameters
 
