@@ -32,8 +32,8 @@ export type CallbackErrorKind = "body" | "signature" | "token" | "unhandled";
 /**
  * Thrown by {@link DocumentServerCallback.parse}, {@link DocumentServerCallback.fromRequest}
  * and the {@link DocumentServerCallback} constructor when a request is not a valid callback.
- * Such a request did not come from the document server: reply with an error status, `400` or
- * `403`, not with `fail`, which invites it again.
+ * Such a request did not come from the document server: reply with `400` or `403`, not with
+ * `fail`.
  *
  * {@link DocumentServerCallback.handle} passes one of kind `"unhandled"` to `onError`.
  */

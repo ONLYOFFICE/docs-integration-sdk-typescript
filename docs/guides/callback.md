@@ -32,19 +32,15 @@ export async function POST(request: Request): Promise<Response> {
   const { event } = callback;
 
   if (event.key !== (await buildDocumentKey(instanceId, file.id, file.version))) {
-    if (event.kind === "save" && (await storage.hasVersionSavedFrom(file.id, event.key))) {
-      return Response.json(DocumentServerCallback.ok);
-    }
-
     return new Response(null, { status: 403 });
   }
 
   const reply = await callback.handle({
-    save: async ({ key, url }) => {
+    save: async ({ url }) => {
       const { path, query } = splitFileUrl(url, publicUrl);
       const download = await client.getFile(path, query);
 
-      await storage.saveVersion(file.id, download.body, { savedFrom: key });
+      await storage.saveVersion(file.id, download.body);
     },
   });
 
@@ -76,7 +72,9 @@ app.post("/callback", express.json(), async (req, res) => {
     { verifier: inbox },
   );
 
-  res.json(await callback.handle(handlers));
+  const reply = await callback.handle(handlers);
+
+  res.json(reply);
 });
 ```
 
@@ -133,35 +131,23 @@ The token signs the body, not the URL the callback was posted to. Someone could 
 callback for one file to the URL of another. So before storing anything, compare `event.key`
 with the key of the file's current revision, as the [complete handler](#a-complete-handler) does.
 
-**The save on status `2` can come twice.** If `{"error":0}` never reaches the document server
-(the connection broke, the request timed out), it posts the same `2` again, with the key of the
-revision the file has just moved on from. If you refuse it, it is posted again and again until
-the document server gives up, although nothing is lost.
-
-To handle this:
-
-1. With each version stored on `2`, record the key it was saved from.
-2. When a `2` comes with such a recorded key, answer `ok` instead of refusing it.
-
-> [!WARNING]
-> Don't simply accept the key that came before the current one. The revision may have changed some
-> other way, for example a new version uploaded while the document was open. That session would
-> then be answered `ok` and its changes dropped.
-
 ## Reply to the document server
 
-The document server treats `{"error":0}` as "the callback is handled" and posts the callback
-again on any other answer.
+```ts
+const reply = await callback.handle(handlers);
+
+return Response.json(reply);
+```
 
 `handle()` runs the handler for the event and returns:
 
-- `DocumentServerCallback.ok` when the handler finished;
-- `DocumentServerCallback.fail` when the handler threw or rejected, so the document server
-  retries.
+- `DocumentServerCallback.ok`, `{"error":0}`, when the handler finished;
+- `DocumentServerCallback.fail`, `{"error":1}`, when the handler threw or rejected.
+
+The [callback handler documentation][callback-handler] requires `{"error":0}`.
 
 > [!IMPORTANT]
-> After `ok`, the document server lets go of the document. Store the file before your handler
-> returns.
+> On any reply other than `{"error":0}`, the document editor shows an error message.
 
 `onError` is called with the failure before the reply is returned:
 
@@ -173,12 +159,12 @@ await callback.handle(handlers, {
 
 Handlers:
 
-- **`save` is required.** The types refuse handlers without it: a document not stored on `2`
-  is lost.
+- **`save` is required.** The types refuse handlers without it: status `2` carries the edited
+  document to store.
 - **`forcesave` is optional**, for an integration that never forces a save. A status `6` without
   a `forcesave` handler is answered with `fail`, and `onError` gets a `CallbackError` of kind
-  `"unhandled"`. The document server posts it again, so the missing handler shows up in your log
-  instead of as a lost version.
+  `"unhandled"`, so the missing handler shows up in your log instead of as a version silently
+  not stored.
 - **Any other kind** without a handler is answered with `ok`.
 
 ## Invalid requests
@@ -197,7 +183,7 @@ A fourth kind, `"unhandled"`, never comes from `parse()` or `fromRequest()`. It 
 `handle()` passes to `onError` for a `6` without a `forcesave` handler.
 
 Such a request did not come from the document server, or not in a shape it sends. Answer it with
-an error status rather than with `fail`, which would only invite it again:
+`400` or `403`, not with `fail`:
 
 ```ts
 try {

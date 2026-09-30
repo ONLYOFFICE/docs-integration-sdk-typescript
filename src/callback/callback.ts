@@ -97,7 +97,7 @@ export interface CallbackOptions {
 export interface CallbackHandlers {
   /**
    * Status `2`: the last editor closed and the document changed. Download `url` and store the
-   * document. Required: a document not stored here is lost.
+   * document. Required.
    */
   save: (event: CallbackSave) => Promise<void> | void;
   /** Status `1`: a user connected or disconnected. Without a handler, answered `ok`. */
@@ -252,8 +252,8 @@ function toEvent(body: unknown): CallbackEvent {
  * the request, {@link DocumentServerCallback.event} says what happened, and
  * {@link DocumentServerCallback.handle} runs your handler and builds the reply.
  *
- * The document server treats `{"error":0}` as "handled" and posts the callback again on any
- * other reply. So store the document on status `2` and `6` before you reply.
+ * The document server expects the reply `{"error":0}`; on any other reply, the document editor
+ * shows an error message.
  *
  * @example
  * ```ts
@@ -276,7 +276,7 @@ function toEvent(body: unknown): CallbackEvent {
 export class DocumentServerCallback {
   /** The reply `{ error: 0 }`: the callback is handled. */
   static readonly ok: CallbackReply = OK;
-  /** The reply `{ error: 1 }`: the document server posts the callback again. */
+  /** The reply `{ error: 1 }`: the callback is not handled. */
   static readonly fail: CallbackReply = FAIL;
 
   /** What the document server reports: the callback body plus `kind`, frozen. */

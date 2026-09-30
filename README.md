@@ -108,12 +108,13 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-`handle()` answers `{ error: 0 }` once your handler has finished, and `{ error: 1 }` if it
-threw, so the document server tries again.
+`handle()` returns `ok` (`{ error: 0 }`) once your handler has finished, and `fail` (`{ error: 1 }`)
+if it threw. See
+[Reply to the document server](docs/guides/callback.md#reply-to-the-document-server).
 
 > [!IMPORTANT]
-> Before going to production, check the callback's document key against the file and handle a
-> save posted twice. See [Check the document key](docs/guides/callback.md#check-the-document-key).
+> Before going to production, check the callback's document key against the file. See
+> [Check the document key](docs/guides/callback.md#check-the-document-key).
 
 ## Guides
 

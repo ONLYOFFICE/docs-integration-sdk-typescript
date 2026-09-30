@@ -2,7 +2,7 @@
 
 # Interface: CallbackReply
 
-The reply to a callback: `0` handled, `1` to be posted again.
+The reply to a callback: `0` handled, `1` not handled.
 
 ## Properties
 

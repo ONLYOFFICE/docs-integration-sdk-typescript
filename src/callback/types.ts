@@ -155,7 +155,7 @@ export type CallbackEvent =
 /** The kind of an event, the discriminant of {@link CallbackEvent}. */
 export type CallbackEventKind = CallbackEvent["kind"];
 
-/** The reply to a callback: `0` handled, `1` to be posted again. */
+/** The reply to a callback: `0` handled, `1` not handled. */
 export interface CallbackReply {
   readonly error: 0 | 1;
 }

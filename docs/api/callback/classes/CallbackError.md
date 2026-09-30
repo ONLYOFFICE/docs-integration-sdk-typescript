@@ -4,8 +4,8 @@
 
 Thrown by [DocumentServerCallback.parse](DocumentServerCallback.md#parse), [DocumentServerCallback.fromRequest](DocumentServerCallback.md#fromrequest)
 and the [DocumentServerCallback](DocumentServerCallback.md) constructor when a request is not a valid callback.
-Such a request did not come from the document server: reply with an error status, `400` or
-`403`, not with `fail`, which invites it again.
+Such a request did not come from the document server: reply with `400` or `403`, not with
+`fail`.
 
 [DocumentServerCallback.handle](DocumentServerCallback.md#handle) passes one of kind `"unhandled"` to `onError`.
 

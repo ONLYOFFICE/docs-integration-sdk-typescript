@@ -8,8 +8,8 @@ A callback the document server posted to `callbackUrl`, checked against its toke
 the request, [DocumentServerCallback.event](#property-event) says what happened, and
 [DocumentServerCallback.handle](#handle) runs your handler and builds the reply.
 
-The document server treats `{"error":0}` as "handled" and posts the callback again on any
-other reply. So store the document on status `2` and `6` before you reply.
+The document server expects the reply `{"error":0}`; on any other reply, the document editor
+shows an error message.
 
 ## Example
 
@@ -64,7 +64,7 @@ or `6`.
 | Property                            | Modifier   | Type                                                | Default value | Description                                                              |
 | ----------------------------------- | ---------- | --------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
 | <a id="property-event"></a> `event` | `readonly` | [`CallbackEvent`](../type-aliases/CallbackEvent.md) | `undefined`   | What the document server reports: the callback body plus `kind`, frozen. |
-| <a id="property-fail"></a> `fail`   | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `FAIL`        | The reply `{ error: 1 }`: the document server posts the callback again.  |
+| <a id="property-fail"></a> `fail`   | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `FAIL`        | The reply `{ error: 1 }`: the callback is not handled.                   |
 | <a id="property-ok"></a> `ok`       | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `OK`          | The reply `{ error: 0 }`: the callback is handled.                       |
 
 ## Methods

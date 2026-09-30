@@ -196,7 +196,7 @@ A session keeps its key until it closes, and everyone who joins it must get that
 version stored on a force save (status `6`) is a copy. The revision, and the key built from it,
 moves on only with the save on status `2`.
 
-To check a callback's key and to deal with a save posted twice, see
+To check a callback's key, see
 [Handling callbacks](callback.md#check-the-document-key).
 
 ## Validation errors
