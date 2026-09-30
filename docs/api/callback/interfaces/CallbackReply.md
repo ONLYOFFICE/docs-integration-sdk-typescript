@@ -2,7 +2,7 @@
 
 # Interface: CallbackReply
 
-Body of the answer the document server expects: `0` taken, anything else to be retried.
+The reply to a callback: `0` handled, `1` to be posted again.
 
 ## Properties
 

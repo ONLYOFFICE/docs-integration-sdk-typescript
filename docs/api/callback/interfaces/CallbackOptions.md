@@ -2,12 +2,12 @@
 
 # Interface: CallbackOptions
 
-How a callback is checked.
+How [DocumentServerCallback.parse](../classes/DocumentServerCallback.md#parse) checks a callback.
 
 ## Properties
 
-| Property                                                         | Type                                                | Description                                                                                                                                                                                     |
-| ---------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string`                                            | Header the token is sent in. Default: `"Authorization"`.                                                                                                                                        |
-| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string`                                            | Written before the token in that header. Default: `"Bearer "`.                                                                                                                                  |
-| <a id="property-verifier"></a> `verifier`                        | [`CallbackVerifier`](CallbackVerifier.md) \| `null` | Checks the token the document server signed the callback with. `null` takes an unsigned callback, for a document server with no secret; a token it carries is then ignored rather than trusted. |
+| Property                                                         | Type                                                | Description                                                                                                                                                                                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string`                                            | The header a token is read from. Default: `"Authorization"`.                                                                                                                                                                                           |
+| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string`                                            | What comes before the token in that header. Default: `"Bearer "`.                                                                                                                                                                                      |
+| <a id="property-verifier"></a> `verifier`                        | [`CallbackVerifier`](CallbackVerifier.md) \| `null` | Checks the token of the callback. Required, so the check can't be turned off by forgetting an option. `null` accepts unsigned callbacks, for a document server without a JWT secret. A token the callback carries is then neither checked nor trusted. |

@@ -2,11 +2,11 @@
 
 # Interface: CallbackHistory
 
-The changes the saved document carries, as the editor's `refreshHistory` takes them.
+The changes of the saved document, in the shape the editor's `refreshHistory` takes.
 
 ## Properties
 
-| Property                                            | Type                              |
-| --------------------------------------------------- | --------------------------------- |
-| <a id="property-changes"></a> `changes`             | `Record`\<`string`, `unknown`\>[] |
-| <a id="property-serverversion"></a> `serverVersion` | `string`                          |
+| Property                                            | Type                              | Description                                        |
+| --------------------------------------------------- | --------------------------------- | -------------------------------------------------- |
+| <a id="property-changes"></a> `changes`             | `Record`\<`string`, `unknown`\>[] | The changes, one entry for each.                   |
+| <a id="property-serverversion"></a> `serverVersion` | `string`                          | The version of the document server that made them. |

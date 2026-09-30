@@ -13,4 +13,4 @@ type CallbackEvent =
   | CallbackUnknown;
 ```
 
-What the document server reports, told apart by `kind`.
+What the document server reports. A `switch` over `kind` narrows it.

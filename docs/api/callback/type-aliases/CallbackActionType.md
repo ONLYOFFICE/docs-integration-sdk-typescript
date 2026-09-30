@@ -6,4 +6,4 @@
 type CallbackActionType = 0 | 1 | 2 | (number & {});
 ```
 
-What a user did: `0` disconnected, `1` connected, `2` asked for a save.
+What a user did: `0` disconnected, `1` connected, `2` requested a save.

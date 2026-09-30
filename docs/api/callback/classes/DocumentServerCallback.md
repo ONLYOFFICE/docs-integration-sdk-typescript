@@ -2,12 +2,35 @@
 
 # Class: DocumentServerCallback
 
-A request the document server posted to the callback URL: checked against its token,
-and told apart by what it reports.
+A callback the document server posted to `callbackUrl`, checked against its token.
 
-The document server takes `{"error":0}` for an answer that the callback is dealt with,
-and posts it again on anything else. A document saved on `2` or `6` is to be stored
-before the answer, then, and [DocumentServerCallback.handle](#handle) answers so.
+[DocumentServerCallback.fromRequest](#fromrequest) or [DocumentServerCallback.parse](#parse) checks
+the request, [DocumentServerCallback.event](#property-event) says what happened, and
+[DocumentServerCallback.handle](#handle) runs your handler and builds the reply.
+
+The document server treats `{"error":0}` as "handled" and posts the callback again on any
+other reply. So store the document on status `2` and `6` before you reply.
+
+## Example
+
+```ts
+export async function POST(request: Request): Promise<Response> {
+  const callback = await DocumentServerCallback.fromRequest(request, { verifier: jwt });
+
+  const reply = await callback.handle({
+    save: async ({ url }) => {
+      const { path, query } = splitFileUrl(url, publicUrl);
+      await storage.saveNewVersion(fileId, (await client.getFile(path, query)).body);
+    },
+  });
+
+  return Response.json(reply);
+}
+```
+
+## See
+
+[Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
 
 ## Constructors
 
@@ -17,14 +40,14 @@ before the answer, then, and [DocumentServerCallback.handle](#handle) answers so
 new DocumentServerCallback(body): DocumentServerCallback;
 ```
 
-A callback out of a body already trusted. The body is not checked against a token:
-[DocumentServerCallback.parse](#parse) is what does that.
+Reads a callback body you already trust, without checking a token. To check the token,
+use [DocumentServerCallback.parse](#parse) or [DocumentServerCallback.fromRequest](#fromrequest).
 
 #### Parameters
 
-| Parameter | Type      |
-| --------- | --------- |
-| `body`    | `unknown` |
+| Parameter | Type      | Description                |
+| --------- | --------- | -------------------------- |
+| `body`    | `unknown` | The callback body, parsed. |
 
 #### Returns
 
@@ -32,16 +55,17 @@ A callback out of a body already trusted. The body is not checked against a toke
 
 #### Throws
 
-[CallbackError](CallbackError.md) when the body is not an object, or carries no key, an
-integer status, or the url a save comes with.
+[CallbackError](CallbackError.md) of kind `"body"` when the body is not an object, `key` is
+not a non-empty string, `status` is not an integer, or `url` is not a string on status `2`
+or `6`.
 
 ## Properties
 
-| Property                            | Modifier   | Type                                                | Default value | Description                                         |
-| ----------------------------------- | ---------- | --------------------------------------------------- | ------------- | --------------------------------------------------- |
-| <a id="property-event"></a> `event` | `readonly` | [`CallbackEvent`](../type-aliases/CallbackEvent.md) | `undefined`   | What the document server reports, frozen.           |
-| <a id="property-fail"></a> `fail`   | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `FAIL`        | The answer that the callback is to be posted again. |
-| <a id="property-ok"></a> `ok`       | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `OK`          | The answer that the callback is dealt with.         |
+| Property                            | Modifier   | Type                                                | Default value | Description                                                              |
+| ----------------------------------- | ---------- | --------------------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| <a id="property-event"></a> `event` | `readonly` | [`CallbackEvent`](../type-aliases/CallbackEvent.md) | `undefined`   | What the document server reports: the callback body plus `kind`, frozen. |
+| <a id="property-fail"></a> `fail`   | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `FAIL`        | The reply `{ error: 1 }`: the document server posts the callback again.  |
+| <a id="property-ok"></a> `ok`       | `readonly` | [`CallbackReply`](../interfaces/CallbackReply.md)   | `OK`          | The reply `{ error: 0 }`: the callback is handled.                       |
 
 ## Methods
 
@@ -51,19 +75,23 @@ integer status, or the url a save comes with.
 static fromRequest(request, options): Promise<DocumentServerCallback>;
 ```
 
-[DocumentServerCallback.parse](#parse) over a `Request` of fetch, as Next.js, Hono, Deno
-and the edge runtimes hand it over. The body is read.
+Reads the body of a fetch `Request`, as Next.js, Hono, Deno and edge runtimes give it, and
+checks it like [DocumentServerCallback.parse](#parse).
 
 #### Parameters
 
-| Parameter | Type                                                  |
-| --------- | ----------------------------------------------------- |
-| `request` | `Request`                                             |
-| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) |
+| Parameter | Type                                                  | Description                                            |
+| --------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `request` | `Request`                                             | The request posted to `callbackUrl`. Its body is read. |
+| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier, and the header the token is read from.   |
 
 #### Returns
 
 `Promise`\<`DocumentServerCallback`\>
+
+#### Throws
+
+[CallbackError](CallbackError.md) whenever [DocumentServerCallback.parse](#parse) would.
 
 ---
 
@@ -73,21 +101,22 @@ and the edge runtimes hand it over. The body is read.
 handle(handlers, options?): Promise<CallbackReply>;
 ```
 
-Runs the handler of the event and answers the way the document server expects:
-[DocumentServerCallback.ok](#property-ok) once the handler is done, and
-[DocumentServerCallback.fail](#property-fail) when it failed, so the document server posts the
-callback again.
+Runs the handler for [DocumentServerCallback.event](#property-event) and returns the reply to send:
 
-A kind with no handler is answered with `ok`. `save` has to have one, since a document
-left unstored on it is lost, and `forcesave` without one is answered with `fail`, a
-[CallbackError](CallbackError.md) of kind `unhandled` told to `onError`.
+- [DocumentServerCallback.ok](#property-ok) when the handler finished, or when the kind has no
+  handler, except `forcesave`;
+- [DocumentServerCallback.fail](#property-fail) when the handler threw or rejected, or when a
+  `forcesave` event has no handler. `onError` is called first; for a missing `forcesave`
+  handler it gets a [CallbackError](CallbackError.md) of kind `"unhandled"`.
+
+Never rejects: every failure becomes the reply `fail`.
 
 #### Parameters
 
-| Parameter  | Type                                                    |
-| ---------- | ------------------------------------------------------- |
-| `handlers` | [`CallbackHandlers`](../interfaces/CallbackHandlers.md) |
-| `options?` | [`HandleOptions`](../interfaces/HandleOptions.md)       |
+| Parameter  | Type                                                    | Description                                                |
+| ---------- | ------------------------------------------------------- | ---------------------------------------------------------- |
+| `handlers` | [`CallbackHandlers`](../interfaces/CallbackHandlers.md) | The handlers, one for each event kind. `save` is required. |
+| `options?` | [`HandleOptions`](../interfaces/HandleOptions.md)       | `onError`, to log a failure.                               |
 
 #### Returns
 
@@ -101,19 +130,24 @@ left unstored on it is lost, and `forcesave` without one is answered with `fail`
 static parse(input, options): Promise<DocumentServerCallback>;
 ```
 
-Checks a callback against its token and reads what it reports.
+Checks the token of a callback and reads its body. For a framework that parses the body
+itself, such as Express with `express.json()`.
 
-A token in the body is checked first, one in the header if the body carries none. Once
-the token is checked, what it carries is the callback, and the unsigned body is left
-aside: in the body the token signs the callback itself, in the header it signs it as
-`{ payload: … }`.
+Where the token is looked for:
+
+1. `token` in the body, when it is a string. It signs the callback itself.
+2. Otherwise the header named by `authorizationHeader`, after `authorizationPrefix`. It
+   signs the callback as `{ payload: … }`.
+
+Once the token is checked, the callback is what the token carries, and the unsigned body
+is ignored.
 
 #### Parameters
 
-| Parameter | Type                                                  |
-| --------- | ----------------------------------------------------- |
-| `input`   | [`CallbackInput`](../interfaces/CallbackInput.md)     |
-| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) |
+| Parameter | Type                                                  | Description                                          |
+| --------- | ----------------------------------------------------- | ---------------------------------------------------- |
+| `input`   | [`CallbackInput`](../interfaces/CallbackInput.md)     | The body and the headers of the request.             |
+| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier, and the header the token is read from. |
 
 #### Returns
 
@@ -121,5 +155,11 @@ aside: in the body the token signs the callback itself, in the header it signs i
 
 #### Throws
 
-[CallbackError](CallbackError.md) when the body is not a callback, no token is found and a
-verifier requires one, or the verifier refuses it.
+[CallbackError](CallbackError.md) of kind:
+
+- `"body"` when the body is a string or bytes that are not JSON, when a header token
+  carries no `payload` object, or when the callback fails the checks of the
+  constructor;
+- `"token"` when `verifier` is set and there is no token: no string `token` in the body,
+  and the header is missing, has another prefix or holds only the prefix;
+- `"signature"` when the verifier rejects the token. Its error is the `cause`.

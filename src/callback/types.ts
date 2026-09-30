@@ -17,31 +17,45 @@
  */
 
 /**
- * What the document server reports of a document: `1` being edited, `2` ready to be saved,
- * `3` failed to be saved, `4` closed with no changes, `6` saved while being edited, `7`
- * failed to be saved while being edited.
+ * What happened to the document:
+ *
+ * - `1`: a user connected or disconnected;
+ * - `2`: the last editor closed and the document changed;
+ * - `3`: the document server failed to build the document;
+ * - `4`: the last editor closed and nothing changed;
+ * - `6`: the document was saved while it is edited;
+ * - `7`: that save failed.
+ *
+ * Any other number is a status this SDK doesn't know yet.
  */
 export type CallbackStatus = 1 | 2 | 3 | 4 | 6 | 7 | (number & {});
 
 /**
- * What set a save off while the document was edited: `0` a command, `1` the save button,
- * `2` a timer, `3` a submitted form.
+ * What started a save on status `6`:
+ *
+ * - `0`: the `forcesave` command;
+ * - `1`: the save button;
+ * - `2`: the autosave timer in the document server settings;
+ * - `3`: a submitted form, whose data is at `formsdataurl`.
  */
 export type ForcesaveType = 0 | 1 | 2 | 3 | (number & {});
 
-/** What a user did: `0` disconnected, `1` connected, `2` asked for a save. */
+/** What a user did: `0` disconnected, `1` connected, `2` requested a save. */
 export type CallbackActionType = 0 | 1 | 2 | (number & {});
 
 /** Something a user did to the document. */
 export interface CallbackAction {
+  /** What the user did. */
   type: CallbackActionType;
   /** Identifier of the user, as the editor config named them. */
   userid: string;
 }
 
-/** The changes the saved document carries, as the editor's `refreshHistory` takes them. */
+/** The changes of the saved document, in the shape the editor's `refreshHistory` takes. */
 export interface CallbackHistory {
+  /** The changes, one entry for each. */
   changes: Record<string, unknown>[];
+  /** The version of the document server that made them. */
   serverVersion: string;
 }
 
@@ -49,6 +63,7 @@ export interface CallbackHistory {
 export interface CallbackBody {
   /** Key of the document, as the editor config gave it. */
   key: string;
+  /** What happened to the document. */
   status: CallbackStatus;
   /** Where the document is downloaded from. Given with `2`, `3`, `6` and `7`. */
   url?: string;
@@ -56,14 +71,17 @@ export interface CallbackBody {
   filetype?: string;
   /** Where the archive of the changes is downloaded from. */
   changesurl?: string;
+  /** The changes of the saved document. */
   history?: CallbackHistory;
   /** Identifiers of the users who have the document open. */
   users?: string[];
+  /** What the users did. */
   actions?: CallbackAction[];
   /** When the document was last saved, as an ISO 8601 date. */
   lastsave?: string;
   /** Whether the document is saved with no change since the last save. */
   notmodified?: boolean;
+  /** What started the save, on status `6` and `7`. */
   forcesavetype?: ForcesaveType;
   /** Where the data of a submitted form is downloaded from, as JSON. */
   formsdataurl?: string;
@@ -73,50 +91,50 @@ export interface CallbackBody {
   token?: string;
 }
 
-/** The document is being edited: a user connected or disconnected. */
+/** Status `1`: a user connected or disconnected. `actions` says which. */
 export interface CallbackEditing extends CallbackBody {
   kind: "editing";
   status: 1;
 }
 
-/** Every editor is closed and the document changed: download it from `url` and store it. */
+/** Status `2`: the last editor closed and the document changed. Download `url` and store it. */
 export interface CallbackSave extends CallbackBody {
   kind: "save";
   status: 2;
   url: string;
 }
 
-/** The document server failed to build the document to be saved. */
+/** Status `3`: the document server failed to build the document. `url` may be missing. */
 export interface CallbackSaveError extends CallbackBody {
   kind: "save-error";
   status: 3;
 }
 
-/** Every editor is closed and nothing changed. */
+/** Status `4`: the last editor closed and nothing changed. */
 export interface CallbackClosed extends CallbackBody {
   kind: "closed";
   status: 4;
 }
 
-/** The document was saved while being edited: download it from `url` and store it. */
+/** Status `6`: the document was saved while it is edited. Download `url` and store a version. */
 export interface CallbackForcesave extends CallbackBody {
   kind: "forcesave";
   status: 6;
   url: string;
 }
 
-/** The document server failed to build the document saved while being edited. */
+/** Status `7`: the save on status `6` failed. */
 export interface CallbackForcesaveError extends CallbackBody {
   kind: "forcesave-error";
   status: 7;
 }
 
-/** A status this SDK does not know yet. */
+/** A status this SDK doesn't know yet. Read `status`. */
 export interface CallbackUnknown extends CallbackBody {
   kind: "unknown";
 }
 
-/** What the document server reports, told apart by `kind`. */
+/** What the document server reports. A `switch` over `kind` narrows it. */
 export type CallbackEvent =
   | CallbackClosed
   | CallbackEditing
@@ -126,10 +144,10 @@ export type CallbackEvent =
   | CallbackSaveError
   | CallbackUnknown;
 
-/** Which of the events it is, and the discriminant of {@link CallbackEvent}. */
+/** The kind of an event, the discriminant of {@link CallbackEvent}. */
 export type CallbackEventKind = CallbackEvent["kind"];
 
-/** Body of the answer the document server expects: `0` taken, anything else to be retried. */
+/** The reply to a callback: `0` handled, `1` to be posted again. */
 export interface CallbackReply {
   readonly error: 0 | 1;
 }

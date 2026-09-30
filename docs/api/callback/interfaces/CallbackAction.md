@@ -8,5 +8,5 @@ Something a user did to the document.
 
 | Property                              | Type                                                          | Description                                              |
 | ------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
-| <a id="property-type"></a> `type`     | [`CallbackActionType`](../type-aliases/CallbackActionType.md) | -                                                        |
+| <a id="property-type"></a> `type`     | [`CallbackActionType`](../type-aliases/CallbackActionType.md) | What the user did.                                       |
 | <a id="property-userid"></a> `userid` | `string`                                                      | Identifier of the user, as the editor config named them. |

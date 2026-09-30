@@ -6,5 +6,9 @@
 type ForcesaveType = 0 | 1 | 2 | 3 | (number & {});
 ```
 
-What set a save off while the document was edited: `0` a command, `1` the save button,
-`2` a timer, `3` a submitted form.
+What started a save on status `6`:
+
+- `0`: the `forcesave` command;
+- `1`: the save button;
+- `2`: the autosave timer in the document server settings;
+- `3`: a submitted form, whose data is at `formsdataurl`.

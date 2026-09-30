@@ -6,4 +6,4 @@
 type CallbackEventKind = CallbackEvent["kind"];
 ```
 
-Which of the events it is, and the discriminant of [CallbackEvent](CallbackEvent.md).
+The kind of an event, the discriminant of [CallbackEvent](CallbackEvent.md).

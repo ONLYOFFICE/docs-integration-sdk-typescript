@@ -2,10 +2,10 @@
 
 # Interface: HandleOptions
 
-Overrides of how [DocumentServerCallback.handle](../classes/DocumentServerCallback.md#handle) answers.
+Options of [DocumentServerCallback.handle](../classes/DocumentServerCallback.md#handle).
 
 ## Properties
 
-| Property                                 | Type                         | Description                                                                                                                                            |
-| ---------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <a id="property-onerror"></a> `onError?` | (`error`, `event`) => `void` | Told of the error a handler failed with, before the callback is answered with `1`. An error it throws itself is swallowed, so the answer is still `1`. |
+| Property                                 | Type                         | Description                                                                                                                                                   |
+| ---------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-onerror"></a> `onError?` | (`error`, `event`) => `void` | Called with the error a handler failed with, before the reply `fail` is returned. An error `onError` throws itself is ignored, and the reply is still `fail`. |

@@ -2,8 +2,8 @@
 
 # Interface: CallbackVerifier
 
-What checks the token of a callback: [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md) or
-a verifier of your own.
+Checks the token of a callback. [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md) implements
+it; any object with `verify()` works.
 
 ## Methods
 
@@ -13,7 +13,7 @@ a verifier of your own.
 verify(token): Promise<unknown>;
 ```
 
-Answers with what the token carries, or rejects when it cannot be trusted.
+Resolves to the claims of the token, or rejects when the token can't be trusted.
 
 #### Parameters
 

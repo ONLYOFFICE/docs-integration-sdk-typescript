@@ -2,10 +2,12 @@
 
 # Class: CallbackError
 
-A callback that could not be taken: a body that is not one, a token missing where one is
-required, or a token the verifier refused, which is then the `cause`. Or, as
-[DocumentServerCallback.handle](DocumentServerCallback.md#handle) tells `onError`, a document saved on `6` with no
-handler to store it.
+Thrown by [DocumentServerCallback.parse](DocumentServerCallback.md#parse), [DocumentServerCallback.fromRequest](DocumentServerCallback.md#fromrequest)
+and the [DocumentServerCallback](DocumentServerCallback.md) constructor when a request is not a valid callback.
+Such a request did not come from the document server: reply with an error status, `400` or
+`403`, not with `fail`, which invites it again.
+
+[DocumentServerCallback.handle](DocumentServerCallback.md#handle) passes one of kind `"unhandled"` to `onError`.
 
 ## Extends
 
@@ -43,9 +45,9 @@ Error.constructor;
 
 ## Properties
 
-| Property                          | Modifier   | Type                                                        | Description                               |
-| --------------------------------- | ---------- | ----------------------------------------------------------- | ----------------------------------------- |
-| <a id="property-kind"></a> `kind` | `readonly` | [`CallbackErrorKind`](../type-aliases/CallbackErrorKind.md) | Which of the checks refused the callback. |
+| Property                          | Modifier   | Type                                                        | Description                                                                               |
+| --------------------------------- | ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| <a id="property-kind"></a> `kind` | `readonly` | [`CallbackErrorKind`](../type-aliases/CallbackErrorKind.md) | Which check refused the callback. For `"signature"`, the verifier's error is the `cause`. |
 
 ## Methods
 
@@ -55,7 +57,8 @@ Error.constructor;
 static is(value): value is CallbackError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is a `CallbackError`, also one thrown by a second copy of the
+package, which `instanceof` misses.
 
 #### Parameters
 
