@@ -180,7 +180,8 @@ Handlers:
 | `"token"`     | A verifier is set and the callback carries no token.                 |
 | `"signature"` | The verifier rejected the token. Its error is the `cause`.           |
 
-The exact conditions are in the [`parse()` reference](../api/callback/classes/DocumentServerCallback.md#parse).
+The exact conditions are in the
+[`parse()` reference](../api/callback/classes/DocumentServerCallback.md#parse).
 
 A fourth kind, `"unhandled"`, never comes from `parse()` or `fromRequest()`. It is what
 `handle()` passes to `onError` for a `6` without a `forcesave` handler.

@@ -68,15 +68,15 @@ new DocumentServerClient({ baseUrl: "htp://docs.example.com" });
 aborts a connection that never opens (about 10 s) or a response that is silent for 5 minutes. A
 hung server would hold the call almost forever, hence the 30 s default.
 
-**What it covers.** The deadline covers the whole exchange, including reading the body. That
-fits endpoints with a small JSON answer. It doesn't fit `getFile()`, whose body can be of any
-size: a slow download would fail halfway. So for `getFile()` and `convertFromFile()`, which answers
-with the converted file, the deadline stops once the response arrives, and the body can take as long as it needs. What the typed client reads itself
-still has a deadline: the beginning of an error body, and a JSON answer of `convertFromFile()`,
-get a `timeoutMs` of their own once the response arrives. A `signal` of your own stays active
-the whole time, and is the way to cancel a download. A download that stalls mid-body is not cut
-short by the SDK: on Node undici ends it after 5 minutes of silence; elsewhere only a `signal`
-does.
+**What it covers.** The deadline covers the whole exchange, including reading the body. That fits
+endpoints with a small JSON answer. It doesn't fit `getFile()`, whose body can be of any size: a
+slow download would fail halfway. So for `getFile()` and `convertFromFile()`, which answers with the
+converted file, the deadline stops once the response arrives, and the body can take as long as it
+needs. What the typed client reads itself still has a deadline: the beginning of an error body, and
+a JSON answer of `convertFromFile()`, get a `timeoutMs` of their own once the response arrives. A
+`signal` of your own stays active the whole time, and is the way to cancel a download. A download
+that stalls mid-body is not cut short by the SDK: on Node undici ends it after 5 minutes of silence;
+elsewhere only a `signal` does.
 
 **Errors.** A request that runs out of time rejects with a `DocumentServerTimeoutError`, with the
 deadline as `timeoutMs` and the abort `DOMException` as `cause`. An unreachable server rejects

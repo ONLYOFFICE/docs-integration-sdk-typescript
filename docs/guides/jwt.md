@@ -114,7 +114,8 @@ try {
 | `"premature"` | `nbf` is in the future             |
 | `"missing"`   | the header carries no token        |
 
-The exact conditions are in the [`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
+The exact conditions are in the
+[`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
 
 How the check works:
 
