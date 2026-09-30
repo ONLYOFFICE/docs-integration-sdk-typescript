@@ -76,8 +76,9 @@ formats.getConversions("xlsx"); // ["csv", "ods", "pdf", …]
 formats.getFormatsByMime("application/pdf"); // [{ name: "pdf", … }]
 ```
 
-Extensions are matched case-insensitively, with or without the dot. A file name is read up to
-its last dot. So `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the same lookup.
+Extensions are matched case-insensitively, with or without the dot. Of a file name, only what
+follows the last dot counts. So `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the
+same lookup.
 
 | Method                       | Returns                                                                   |
 | ---------------------------- | ------------------------------------------------------------------------- |
