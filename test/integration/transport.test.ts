@@ -40,7 +40,7 @@ describe("a request that gets no answer", () => {
     expect(error).toMatchObject({
       kind: "timeout",
       timeoutMs: 1,
-      url: "http://localhost:8080/converter",
+      url: `${client.options.baseUrl}/converter`,
     });
   });
 
