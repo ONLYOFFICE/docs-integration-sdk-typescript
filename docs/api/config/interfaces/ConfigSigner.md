@@ -2,8 +2,8 @@
 
 # Interface: ConfigSigner
 
-What signs a config: [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md) or any signer of your
-own.
+Signs a config. [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md) implements it; any object
+with `sign()` works, such as a signer backed by a key vault.
 
 ## Methods
 
@@ -13,7 +13,7 @@ own.
 sign(payload): Promise<string>;
 ```
 
-Signs the payload into a token.
+Signs the payload and resolves to the token.
 
 #### Parameters
 

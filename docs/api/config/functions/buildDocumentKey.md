@@ -6,31 +6,41 @@
 function buildDocumentKey(...parts): Promise<string>;
 ```
 
-Builds a document key out of the parts that identify a revision of a file, such as the
-instance of your system, the identifier of the file in your storage and its version.
+Builds a document key from the parts that identify one revision of a file, such as the
+instance of your system, the file ID and the version.
 
-The key is the SHA-256 of the parts, in base64url: 43 characters the document server
-accepts, whatever the parts are made of and however long they are. Two lists of parts
-that differ in any way — `["a_b", "c"]` and `["a", "b_c"]` included — never come out the
-same key, and the same parts always do. A number and the string it is written as count
-as the same part.
+The key is the SHA-256 of the parts in base64url: 43 characters the document server
+accepts, however long the parts are. Different parts always give different keys, including
+`("a_b", "c")` and `("a", "b_c")`. The same parts always give the same key. A number and its
+string form count as the same part.
 
-The key stands for one revision, not for one file: a document the editors saved is a new
-revision and takes a new key, or the server hands back the one it has cached. So one of
-the parts has to change with every write — a version counter, an etag, a hash of the
-content — and the key tells nothing of the file it was built from.
+A key stands for one revision, not for the file: the document server serves a document from
+its cache when it sees a key it knows. So one part must change with every write of the file,
+such as a version counter, an etag or a content hash.
 
 ## Parameters
 
-| Parameter  | Type                              |
-| ---------- | --------------------------------- |
-| ...`parts` | readonly (`string` \| `number`)[] |
+| Parameter  | Type                              | Description                           |
+| ---------- | --------------------------------- | ------------------------------------- |
+| ...`parts` | readonly (`string` \| `number`)[] | The parts, strings or finite numbers. |
 
 ## Returns
 
 `Promise`\<`string`\>
 
+The key, 43 characters of base64url.
+
+## Example
+
+```ts
+const key = await buildDocumentKey(instanceId, file.id, file.version);
+```
+
 ## Throws
 
 when no part is given, every part is empty, or a part is neither a
-string nor a finite number.
+string nor a finite number, such as `undefined` or `NaN`.
+
+## See
+
+[Document keys](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md#document-keys)

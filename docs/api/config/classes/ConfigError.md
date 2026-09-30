@@ -2,8 +2,8 @@
 
 # Class: ConfigError
 
-A config that could not be built: a field the document server would reject (`invalid`),
-or a file whose format no editor of the server opens (`unsupported`).
+Thrown by the [DocumentServerConfig](DocumentServerConfig.md) constructor when the config can't be built. The
+constructor lists every check.
 
 ## Extends
 
@@ -43,10 +43,10 @@ Error.constructor;
 
 ## Properties
 
-| Property                            | Modifier   | Type                                                    | Description                                            |
-| ----------------------------------- | ---------- | ------------------------------------------------------- | ------------------------------------------------------ |
-| <a id="property-field"></a> `field` | `readonly` | `string`                                                | Path of the field refused, such as `"document.title"`. |
-| <a id="property-kind"></a> `kind`   | `readonly` | [`ConfigErrorKind`](../type-aliases/ConfigErrorKind.md) | Which of the checks refused the config.                |
+| Property                            | Modifier   | Type                                                    | Description                                                                                   |
+| ----------------------------------- | ---------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| <a id="property-field"></a> `field` | `readonly` | `string`                                                | The path of the refused field, such as `"document.title"`, or `"config"` for the whole input. |
+| <a id="property-kind"></a> `kind`   | `readonly` | [`ConfigErrorKind`](../type-aliases/ConfigErrorKind.md) | Which check refused the config.                                                               |
 
 ## Methods
 
@@ -56,7 +56,8 @@ Error.constructor;
 static is(value): value is ConfigError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is a `ConfigError`, also one thrown by a second copy of the
+package, which `instanceof` misses.
 
 #### Parameters
 

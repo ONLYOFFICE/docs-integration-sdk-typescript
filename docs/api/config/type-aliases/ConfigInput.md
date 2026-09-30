@@ -11,11 +11,12 @@ type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "token"> &
 };
 ```
 
-Everything your system knows of the editor it opens: the file, the permissions it grants
-and the whole `editorConfig`. What the document server decides — `documentType`,
-`document.fileType` — is derived by [DocumentServerConfig](../classes/DocumentServerConfig.md), so the type leaves no
-room for it, and neither for the `token`, which only [DocumentServerConfig.sign](../classes/DocumentServerConfig.md#sign)
-writes.
+The input of [DocumentServerConfig](../classes/DocumentServerConfig.md): the file, the permissions on it and the whole
+`editorConfig`.
+
+Four fields can't be given: `documentType` and `document.fileType` are derived from the
+format, [DocumentServerConfig.sign](../classes/DocumentServerConfig.md#sign) writes `token`, and `events` are added in the
+browser.
 
 ## Type Declaration
 

@@ -6,8 +6,6 @@
 type SignableConfig = Omit<Config, "events">;
 ```
 
-A config without the `events` section, which is what is serialized and signed.
-
-The events are functions the browser calls, so they neither survive `JSON.stringify`
-nor belong in a token. They are attached to the config in the browser, where the editor
-is constructed, rather than here.
+A config without `events`: what is serialized and signed. Events are functions, so they
+don't survive `JSON.stringify` and can't be signed. Add them in the browser, where the editor
+is created.

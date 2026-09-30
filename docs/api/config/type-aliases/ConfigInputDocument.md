@@ -15,15 +15,15 @@ type ConfigInputDocument = Omit<
 };
 ```
 
-The file as your storage knows it. `fileType` is read off `title` by
-[DocumentServerConfig](../classes/DocumentServerConfig.md), so the type leaves no room for it.
+The file as your storage knows it. [DocumentServerConfig](../classes/DocumentServerConfig.md) derives `fileType` from
+`title`, so it can't be given.
 
 ## Type Declaration
 
-| Name          | Type                                                  | Description                                                                                        |
-| ------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `fileType?`   | `never`                                               | -                                                                                                  |
-| `key`         | `string`                                              | Identifier of this revision of the file. See [buildDocumentKey](../functions/buildDocumentKey.md). |
-| `permissions` | [`ConfigInputPermissions`](ConfigInputPermissions.md) | -                                                                                                  |
-| `title`       | `string`                                              | Name of the file, extension included, which the editor shows and downloads it under.               |
-| `url`         | `string`                                              | Absolute URL the document server downloads the file from.                                          |
+| Name          | Type                                                  | Description                                                                                               |
+| ------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `fileType?`   | `never`                                               | -                                                                                                         |
+| `key`         | `string`                                              | Identifies this revision of the file. Build it with [buildDocumentKey](../functions/buildDocumentKey.md). |
+| `permissions` | [`ConfigInputPermissions`](ConfigInputPermissions.md) | -                                                                                                         |
+| `title`       | `string`                                              | Name of the file, extension included, which the editor shows and downloads it under.                      |
+| `url`         | `string`                                              | Absolute URL the document server downloads the file from.                                                 |

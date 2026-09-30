@@ -2,8 +2,8 @@
 
 # Interface: StrictConfig
 
-A config carrying what the document server requires of it, which is what
-[DocumentServerConfig](../classes/DocumentServerConfig.md) builds out of a [ConfigInput](../type-aliases/ConfigInput.md).
+The config [DocumentServerConfig](../classes/DocumentServerConfig.md) builds from a [ConfigInput](../type-aliases/ConfigInput.md), with `document`
+and `documentType` always set.
 
 ## Extends
 

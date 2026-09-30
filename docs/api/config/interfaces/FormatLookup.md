@@ -2,8 +2,8 @@
 
 # Interface: FormatLookup
 
-What finds the format of a file:
-[DocumentServerFormats](../../formats/classes/DocumentServerFormats.md) or a lookup of your own.
+Finds the format of a file. [DocumentServerFormats](../../formats/classes/DocumentServerFormats.md)
+implements it; any object with `getFormat()` works.
 
 ## Methods
 
@@ -13,13 +13,13 @@ What finds the format of a file:
 getFormat(extension): ConfigFormat | undefined;
 ```
 
-The format an extension names, or `undefined` for one the server does not know.
+Returns the format of an extension, or `undefined` when the document server doesn't know it.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                         |
+| ----------- | -------- | ------------------------------------------------------------------- |
+| `extension` | `string` | The extension, in lower case and without the dot, such as `"docx"`. |
 
 #### Returns
 

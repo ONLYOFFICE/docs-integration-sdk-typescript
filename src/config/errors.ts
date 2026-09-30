@@ -18,17 +18,22 @@
 
 const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.config-error");
 
-/** Why a config was refused, and the discriminant of {@link ConfigError}. */
+/**
+ * Why a config was refused, the discriminant of {@link ConfigError}:
+ *
+ * - `"unsupported"`: no editor of the document server opens the format of the file;
+ * - `"invalid"`: a field is missing, or has a value the document server would reject.
+ */
 export type ConfigErrorKind = "invalid" | "unsupported";
 
 /**
- * A config that could not be built: a field the document server would reject (`invalid`),
- * or a file whose format no editor of the server opens (`unsupported`).
+ * Thrown by the {@link DocumentServerConfig} constructor when the config can't be built. The
+ * constructor lists every check.
  */
 export class ConfigError extends Error {
-  /** Which of the checks refused the config. */
+  /** Which check refused the config. */
   readonly kind: ConfigErrorKind;
-  /** Path of the field refused, such as `"document.title"`. */
+  /** The path of the refused field, such as `"document.title"`, or `"config"` for the whole input. */
   readonly field: string;
 
   constructor(kind: ConfigErrorKind, field: string, message: string, options?: ErrorOptions) {
@@ -43,7 +48,10 @@ export class ConfigError extends Error {
     return true;
   }
 
-  /** Recognizes an error of this SDK, a second copy of the package included. */
+  /**
+   * Returns whether `value` is a `ConfigError`, also one thrown by a second copy of the
+   * package, which `instanceof` misses.
+   */
   static is(value: unknown): value is ConfigError {
     return typeof value === "object" && value !== null && BRAND in value;
   }

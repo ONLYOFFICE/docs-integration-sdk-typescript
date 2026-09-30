@@ -2,12 +2,11 @@
 
 # Interface: ConfigFormat
 
-What the config takes of a format: the part of a [Format](../../formats/interfaces/Format.md) of
-`/meta/formats` it is built out of.
+The part of a [Format](../../formats/interfaces/Format.md) the config is built from.
 
 ## Properties
 
-| Property                                | Modifier   | Type                | Description                                                                     |
-| --------------------------------------- | ---------- | ------------------- | ------------------------------------------------------------------------------- |
-| <a id="property-actions"></a> `actions` | `readonly` | readonly `string`[] | What the editors can do with it.                                                |
-| <a id="property-type"></a> `type`       | `readonly` | `string`            | Editor it opens in, which becomes `documentType`, or the empty string for none. |
+| Property                                | Modifier   | Type                | Description                                                                                     |
+| --------------------------------------- | ---------- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| <a id="property-actions"></a> `actions` | `readonly` | readonly `string`[] | What the editors can do with the format, as `/meta/formats` names it: `edit`, `fill` and so on. |
+| <a id="property-type"></a> `type`       | `readonly` | `string`            | The editor the format opens in, which becomes `documentType`. Empty when no editor opens it.    |

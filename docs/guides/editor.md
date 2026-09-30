@@ -206,27 +206,27 @@ To check a callback's key and to deal with a save posted twice, see
 ## Validation errors
 
 The constructor throws a `ConfigError`. `field` names the refused path, for example
-`"document.title"`. `kind` is one of:
+`"document.title"`, and `kind` says why:
 
-- `"unsupported"`: the document server doesn't know the format, or knows it but opens it in no
-  editor (for example `png`).
-- `"invalid"`: anything else:
-  - `title` has no extension;
-  - `key` is empty, longer than 128 characters, or has characters other than `0-9`, `a-z`,
-    `A-Z`, `-`, `.`, `_` and `=`;
-  - `permissions` has no boolean `edit`, or a permission from the [table](#permissions) isn't a
-    boolean;
-  - `mode` is not `"edit"` or `"view"`;
-  - `callbackUrl` is missing where it is [required](#callback-url-and-mode);
-  - `user` has no `id`, or the `id` is longer than 128 characters;
-  - a URL is not an absolute `http` or `https` URL. Checked: `document.url`, the kept
-    `callbackUrl`, `createUrl`, `mergeFolderUrl`, `saveAsUrl`, `sharingSettingsUrl`, the `url`
-    of `recent` and `templates`, `customization.goback`, `customization.feedback`,
-    `customization.logo` and the URLs of `embedded`. An empty `url` of `customization.logo` is
-    allowed: it makes the logo not clickable.
+- `"unsupported"`: no editor of the document server opens the format, for example `png`;
+- `"invalid"`: a field is missing or has a value the document server would reject, such as a
+  `title` without an extension or a `key` longer than 128 characters.
 
-`ConfigError.is(error)` recognizes the error, also when it comes from a second copy of the
-package.
+```ts
+try {
+  config = new DocumentServerConfig(input, formats);
+} catch (error) {
+  if (ConfigError.is(error) && error.kind === "unsupported") {
+    return offerDownload(file);
+  }
+
+  throw error;
+}
+```
+
+The full list of checks is in the
+[constructor reference](../api/config/classes/DocumentServerConfig.md#constructor).
+`ConfigError.is()` also recognizes an error from a second copy of the package.
 
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
 [config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user

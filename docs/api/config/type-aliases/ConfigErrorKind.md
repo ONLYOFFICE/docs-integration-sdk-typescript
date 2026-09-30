@@ -6,4 +6,7 @@
 type ConfigErrorKind = "invalid" | "unsupported";
 ```
 
-Why a config was refused, and the discriminant of [ConfigError](../classes/ConfigError.md).
+Why a config was refused, the discriminant of [ConfigError](../classes/ConfigError.md):
+
+- `"unsupported"`: no editor of the document server opens the format of the file;
+- `"invalid"`: a field is missing, or has a value the document server would reject.

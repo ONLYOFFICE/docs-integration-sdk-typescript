@@ -8,8 +8,8 @@ type ConfigInputPermissions = Omit<ConfigPermissions, "edit"> & {
 };
 ```
 
-What your system grants on the file. `edit` is required: whether the file may be
-changed is a decision of your system, not a default of the editor.
+The permissions your system grants on the file. `edit` is required: the SDK has no default
+for whether a file may be changed.
 
 ## Type Declaration
 
