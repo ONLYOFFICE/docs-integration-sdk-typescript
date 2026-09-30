@@ -16,11 +16,11 @@
  *
  */
 
-/** Path and query of a file the document server keeps, as `getFile()` takes them. */
+/** The path and the query of a file, as {@link DocumentServerClient.getFile} takes them. */
 export interface FileLocation {
-  /** Path of the file, relative to the address the document server is reached at. */
+  /** The path of the file, relative to the address the client reaches the server at. */
   path: string;
-  /** Query the document server signed the location with, such as `md5` and `expires`. */
+  /** The query the document server signed the URL with, such as `md5` and `expires`. */
   query: Record<string, string>;
 }
 
@@ -33,19 +33,31 @@ function parseUrl(url: string | URL, name: string): URL {
 }
 
 /**
- * Splits a location the document server handed out — `url` in a callback, `fileUrl` in a
- * conversion response, `url` in the answer to `getForgotten` — into the path and the query
- * {@link DocumentServerClient.getFile} takes.
+ * Splits a file URL the document server handed out into the path and the query
+ * {@link DocumentServerClient.getFile} takes. Such URLs are `url` of a callback, `fileUrl` of
+ * a conversion and `url` of the `getForgotten` command.
  *
- * The document server writes these locations against the address it is published at,
- * `publicUrl`, while the client may reach it at another one, with another host and another
- * path. So the path of `publicUrl` is taken off the front of the location, and what is left
- * is relative to the server itself, whichever address the client is configured with. The
- * host of the location is dropped: it is the public one, or one only the server can reach,
- * such as the `localhost` of a container. A location whose path does not start with that of
- * `publicUrl` is kept whole.
+ * The URL points to the public address of the document server, while the client may reach it
+ * at another host and path. So:
  *
+ * - the host is dropped: the client sends the path to its own `baseUrl`;
+ * - the path of `publicUrl` is removed from the front of the path. A path that doesn't start
+ *   with it is kept whole, such as one under the `localhost` of a container.
+ *
+ * @example
+ * ```ts
+ * splitFileUrl(
+ *   "https://docs.example.com/office/cache/files/key/output.pdf?md5=Zm9v&expires=1735689600",
+ *   "https://docs.example.com/office",
+ * );
+ * // { path: "/cache/files/key/output.pdf", query: { md5: "Zm9v", expires: "1735689600" } }
+ * ```
+ *
+ * @param fileUrl The URL the document server handed out.
+ * @param publicUrl The public address of the document server, the one editors load `api.js`
+ * from.
  * @throws {TypeError} when `fileUrl` or `publicUrl` is not an absolute URL.
+ * @see [Downloading files](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/files.md)
  */
 export function splitFileUrl(fileUrl: string | URL, publicUrl: string | URL): FileLocation {
   const location = parseUrl(fileUrl, "fileUrl");

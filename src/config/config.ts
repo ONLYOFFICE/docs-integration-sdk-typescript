@@ -57,32 +57,33 @@ const EMBEDDED_URLS = ["embedUrl", "fullscreenUrl", "saveUrl", "shareUrl"] as co
 
 type Mutable = Record<string, unknown>;
 
-/**
- * What the config takes of a format: the part of a {@link formats!Format | Format} of
- * `/meta/formats` it is built out of.
- */
+/** The part of a {@link formats!Format | Format} the config is built from. */
 export interface ConfigFormat {
-  /** What the editors can do with it. */
+  /** What the editors can do with the format, as `/meta/formats` names it: `edit`, `fill` and so on. */
   readonly actions: readonly string[];
-  /** Editor it opens in, which becomes `documentType`, or the empty string for none. */
+  /** The editor the format opens in, which becomes `documentType`. Empty when no editor opens it. */
   readonly type: string;
 }
 
 /**
- * What finds the format of a file:
- * {@link formats!DocumentServerFormats | DocumentServerFormats} or a lookup of your own.
+ * Finds the format of a file. {@link formats!DocumentServerFormats | DocumentServerFormats}
+ * implements it; any object with `getFormat()` works.
  */
 export interface FormatLookup {
-  /** The format an extension names, or `undefined` for one the server does not know. */
+  /**
+   * Returns the format of an extension, or `undefined` when the document server doesn't know it.
+   *
+   * @param extension The extension, in lower case and without the dot, such as `"docx"`.
+   */
   getFormat(extension: string): ConfigFormat | undefined;
 }
 
 /**
- * What signs a config: {@link jwt!DocumentServerJwt | DocumentServerJwt} or any signer of your
- * own.
+ * Signs a config. {@link jwt!DocumentServerJwt | DocumentServerJwt} implements it; any object
+ * with `sign()` works, such as a signer backed by a key vault.
  */
 export interface ConfigSigner {
-  /** Signs the payload into a token. */
+  /** Signs the payload and resolves to the token. */
   sign(payload: object): Promise<string>;
 }
 
@@ -315,33 +316,84 @@ function checkEditorUrls(editor: Mutable): void {
 }
 
 /**
- * The config the editor is opened with, built out of what your system knows of the file
- * and the formats of the document server: validated, completed and signed with the secret
- * the document server is configured with.
+ * The config an editor is opened with. Build it on your server, where the JWT secret is, and
+ * pass the result to `DocsAPI.DocEditor` in the browser.
  *
- * What your system knows goes in — the file, the permissions it grants, the whole
- * `editorConfig`. What the document server decides is derived, over whatever was given:
+ * The constructor validates the input and completes it from the format of the file:
  *
- * - `document.fileType` is the extension `title` ends in;
- * - `documentType` is the editor the server opens that format in;
- * - a permission the format does not allow — `edit`, `review`, `comment`, `fillForms`,
- *   `modifyFilter` — is lowered to `false`;
- * - `callbackUrl` is kept only in `edit` mode for a user who may change the document, and
- *   required there; anywhere else it is cut, `customization.forcesave` along with it.
+ * - `document.fileType` is set to the extension of `title`, in lower case;
+ * - `documentType` is set to the editor that opens the format;
+ * - a permission the format doesn't allow is set to `false`: `edit` needs the action `edit` or
+ *   `lossy-edit`, `review` needs `review`, `comment` needs `comment`, `fillForms` needs `fill`,
+ *   `modifyFilter` needs `customfilter`. Other permissions are kept as given;
+ * - `editorConfig.callbackUrl` is kept only in `edit` mode, the default, for a user who can
+ *   change the document: one whose `edit`, `review`, `comment` or `fillForms` is `true` after
+ *   the step above. There it is required. Otherwise it is removed, and
+ *   `editorConfig.customization.forcesave` with it.
  *
- * `mode` is left as it was given. The editor takes its config in the browser, so the
- * config travels as JSON — which is why the `events` of the editor API are no part of it.
+ * `editorConfig.mode` is kept as given. The config has no `events`: they are functions, so add
+ * them in the browser.
+ *
+ * @example
+ * ```ts
+ * const config = new DocumentServerConfig(
+ *   {
+ *     document: {
+ *       key: await buildDocumentKey(file.id, file.version),
+ *       title: "Report.docx",
+ *       url: "https://storage.example.com/report.docx",
+ *       permissions: { edit: true },
+ *     },
+ *     editorConfig: {
+ *       callbackUrl: "https://app.example.com/callback?fileId=17",
+ *       user: { id: "u-17", name: "Anna Schmidt" },
+ *     },
+ *   },
+ *   formats,
+ * );
+ *
+ * const signed = await config.sign(jwt);
+ * ```
+ *
+ * @see [Opening an editor](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md)
  */
 export class DocumentServerConfig {
-  /** The effective config: validated, completed, and frozen through and through. */
+  /** The config the constructor built: validated, completed and deeply frozen. */
   readonly config: Readonly<StrictConfig>;
 
   /**
-   * @param input What your system knows of the editor it opens.
-   * @param formats The formats of the document server, or a lookup of your own.
+   * Validates the input and builds the config. The input is copied, so later changes to it have
+   * no effect.
    *
-   * @throws {@link ConfigError} `unsupported` when no editor of the server opens the format
-   * of the file, and `invalid` when a field is missing or would be rejected by the server.
+   * @param input The file, the permissions on it and the whole `editorConfig`.
+   * @param formats The formats of the document server:
+   * {@link "formats"!DocumentServerFormats | DocumentServerFormats} or any {@link FormatLookup}.
+   *
+   * @throws {@link ConfigError} of kind `"unsupported"`, with `field` `"document.title"`, when
+   * the document server doesn't know the format of the file or opens it in no editor, such as
+   * `png`.
+   *
+   * @throws {@link ConfigError} of kind `"invalid"`, with `field` naming the path, when:
+   *
+   * - the input can't be copied with `structuredClone`, such as one holding a function
+   *   (`field` is `"config"`);
+   * - the input, `document`, `document.permissions`, `editorConfig` or `editorConfig.user` is
+   *   not an object;
+   * - `document.key` is not a string, is empty, is longer than 128 characters, or has
+   *   characters other than `0-9`, `a-z`, `A-Z`, `-`, `.`, `_` and `=`;
+   * - `document.title` is not a string or has no extension;
+   * - `document.permissions.edit` is not a boolean, or `comment`, `fillForms`, `modifyFilter`
+   *   or `review` is given and is not a boolean;
+   * - `editorConfig.mode` is given and is neither `"edit"` nor `"view"`;
+   * - `editorConfig.callbackUrl` is missing where it is kept;
+   * - `editorConfig.user.id` is not a string, is empty or is longer than 128 characters;
+   * - a URL is not a string holding an absolute `http` or `https` URL. Checked are
+   *   `document.url` and the kept `editorConfig.callbackUrl`, and, when given, `createUrl`,
+   *   `mergeFolderUrl`, `saveAsUrl`, `sharingSettingsUrl`, the `url` of each item of `recent`
+   *   and `templates`, `customization.feedback.url`, `customization.goback.url`,
+   *   `customization.logo.url`, and `embedUrl`, `fullscreenUrl`, `saveUrl` and `shareUrl` of
+   *   `embedded`. An empty or `null` `customization.logo.url` is allowed: it makes the logo
+   *   not clickable.
    */
   constructor(input: ConfigInput, formats: FormatLookup) {
     assertRecord(input, "config");
@@ -383,11 +435,14 @@ export class DocumentServerConfig {
   }
 
   /**
-   * The config with a `token` signed over it, which is what the editor is handed once the
-   * document server has a secret.
+   * Returns a copy of the config with a `token` field. The editor needs it once the document
+   * server has a JWT secret.
    *
-   * The token covers the whole config apart from itself, so a config that already carries
-   * one is signed anew rather than signed over its own token.
+   * The token covers the whole config except `token`, so a config that already has a token is
+   * signed again from scratch.
+   *
+   * @param signer {@link jwt!DocumentServerJwt | DocumentServerJwt} or any {@link ConfigSigner}.
+   * @returns The signed config, frozen.
    */
   async sign(signer: ConfigSigner): Promise<Readonly<StrictConfig>> {
     const payload: StrictConfig = { ...this.config };
@@ -397,7 +452,7 @@ export class DocumentServerConfig {
     return Object.freeze({ ...payload, token: await signer.sign(payload) });
   }
 
-  /** The config itself, so that `JSON.stringify` of the instance writes it out. */
+  /** Returns {@link DocumentServerConfig.config}, so `JSON.stringify(instance)` writes the config. */
   toJSON(): Readonly<StrictConfig> {
     return this.config;
   }

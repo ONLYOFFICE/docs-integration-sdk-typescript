@@ -18,16 +18,28 @@
 
 const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.jwt-error");
 
-/** Why a token was refused, and the discriminant of {@link JwtError}. */
+/**
+ * Why a token was refused, the discriminant of {@link JwtError}:
+ *
+ * - `"malformed"`: not a valid JWT;
+ * - `"algorithm"`: the token names another algorithm than the configured one;
+ * - `"signature"`: the signature doesn't match the secret;
+ * - `"expired"`: `exp` has passed;
+ * - `"premature"`: `nbf` has not come yet;
+ * - `"missing"`: the request header carries no token.
+ */
 export type JwtErrorKind =
   "algorithm" | "expired" | "malformed" | "missing" | "premature" | "signature";
 
 /**
- * A token that could not be trusted: missing where one is required, malformed, signed with
- * another algorithm or another secret, expired, or not valid yet.
+ * Thrown by {@link DocumentServerJwt.verify} and {@link DocumentServerJwt.verifyHeader} when a
+ * token can't be trusted. Reply to such a request with `403`.
+ *
+ * Separate from the client errors: `JwtError.is()` and `DocumentServerError.is()` never both
+ * return `true`.
  */
 export class JwtError extends Error {
-  /** Which of the checks refused the token. */
+  /** Which check refused the token. */
   readonly kind: JwtErrorKind;
 
   constructor(kind: JwtErrorKind, message: string, options?: ErrorOptions) {
@@ -41,7 +53,10 @@ export class JwtError extends Error {
     return true;
   }
 
-  /** Recognizes an error of this SDK, a second copy of the package included. */
+  /**
+   * Returns whether `value` is a `JwtError`, also one thrown by a second copy of the package,
+   * which `instanceof` misses.
+   */
   static is(value: unknown): value is JwtError {
     return typeof value === "object" && value !== null && BRAND in value;
   }

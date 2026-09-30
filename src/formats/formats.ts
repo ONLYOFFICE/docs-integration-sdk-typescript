@@ -17,12 +17,23 @@
  */
 
 /**
- * Editor a format opens in, or the empty string for one that is only ever produced by a
- * conversion, such as an image.
+ * The editor a format opens in, which is `documentType` of the editor config. Empty for a
+ * format that only comes out of a conversion, such as an image.
  */
 export type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word" | (string & {});
 
-/** Something the editors can do with a format. */
+/**
+ * Something the editors can do with a format:
+ *
+ * - `"view"`, `"edit"`, `"comment"`, `"review"`: open it in that mode;
+ * - `"lossy-edit"`: edit it, losing what the format can't store;
+ * - `"fill"`: fill in a form;
+ * - `"customfilter"`: what the `modifyFilter` permission of the editor config needs;
+ * - `"auto-convert"`: convert it on open, like the legacy `doc`;
+ * - `"encrypt"`: open it behind a password.
+ *
+ * A newer document server may name an action this SDK doesn't know.
+ */
 export type FormatAction =
   | "auto-convert"
   | "comment"
@@ -45,6 +56,7 @@ export interface Format {
   mime: string[];
   /** Extension of the format, without the dot, such as `"docx"`. */
   name: string;
+  /** The editor it opens in, which is `documentType` of the editor config. Empty when none does. */
   type: FormatType;
 }
 
@@ -69,25 +81,42 @@ function opens(format: Format): boolean {
 }
 
 /**
- * The formats of `/meta/formats`, indexed by extension: what each one opens in, what the
- * editors may do with it, what it converts to and what it is served as.
+ * The formats of `/meta/formats`, indexed by extension: the editor each one opens in, what the
+ * editors can do with it, what it converts to and its MIME types.
  *
- * The list changes with the version of the document server and with its licence, so it is
- * read from the server rather than carried here. One instance stands for one such answer;
- * get a fresh list to see a format the server has since learned.
+ * Every method takes an extension with or without the dot, or a whole file name, and matches
+ * it in any case: `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the same lookup. An
+ * extension the server doesn't know gives `undefined`, `false` or an empty list.
+ *
+ * The list depends on the version and the license of the document server. An instance holds
+ * one answer and sends no requests, so it works as well with a list you cached. Fetch the list
+ * again to see a format the server has learned since.
+ *
+ * @example
+ * ```ts
+ * const formats = new DocumentServerFormats(await client.getFormats());
+ *
+ * formats.getDocumentType("report.docx"); // "word"
+ * formats.isEditable("docx"); // true
+ * formats.isConvertibleTo("docx", "pdf"); // true
+ * ```
+ *
+ * @see [Server configuration and formats](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/formats.md)
  */
 export class DocumentServerFormats {
-  /** Every format of the list, in the order the server gave them, and frozen. */
+  /** Every format of the list, in the server's order, frozen. */
   readonly all: readonly Format[];
 
   readonly #byExtension: ReadonlyMap<string, Format>;
   readonly #byMime: ReadonlyMap<string, readonly Format[]>;
 
   /**
-   * @param formats The answer of
-   * {@link client!DocumentServerClient.getFormats | DocumentServerClient.getFormats}.
+   * Indexes the list. When two formats share an extension, the one an editor opens wins over
+   * one no editor opens; otherwise the first one wins.
    *
-   * @throws {TypeError} when it is not an array.
+   * @param formats The answer of
+   * {@link client!DocumentServerClient.getFormats | DocumentServerClient.getFormats()}.
+   * @throws {TypeError} when `formats` is not an array.
    */
   constructor(formats: readonly Format[]) {
     assertArray(formats);
@@ -127,40 +156,51 @@ export class DocumentServerFormats {
     this.#byMime = byMime;
   }
 
-  /** How many extensions the list covers. */
+  /**
+   * How many different extensions the list covers. Can be less than `all.length`, since two
+   * formats may share an extension.
+   */
   get size(): number {
     return this.#byExtension.size;
   }
 
+  /** Iterates over {@link DocumentServerFormats.all}. */
   [Symbol.iterator](): IterableIterator<Format> {
     return this.all[Symbol.iterator]();
   }
 
   /**
-   * The format an extension names, or `undefined` for one the server does not know.
+   * Returns the format of an extension, or `undefined` when the server doesn't know it.
    *
-   * The extension is matched case-insensitively, with or without the leading dot, and a
-   * whole file name is read down to the part behind its last dot.
+   * @param extension An extension, with or without the dot, or a file name. Matched in any
+   * case.
    */
   getFormat(extension: string): Format | undefined {
     return this.#byExtension.get(normalize(extension));
   }
 
-  /** Whether the server knows the extension at all. */
+  /**
+   * Returns whether the server knows the extension.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any
+   * case.
+   */
   hasFormat(extension: string): boolean {
     return this.#byExtension.has(normalize(extension));
   }
 
-  /** Every extension the list covers, without the dots, in the order the server gave them. */
+  /** Returns every extension the list covers, without the dot, in the server's order. */
   getExtensions(): readonly string[] {
     return Object.freeze([...this.#byExtension.keys()]);
   }
 
   /**
-   * The editor an extension opens in, which is the `documentType` the editor config takes.
+   * Returns the editor an extension opens in, which is `documentType` of the editor config.
    *
-   * `undefined` both for an extension the server does not know and for one no editor
-   * opens, such as an image or `zip` that a conversion only ever produces.
+   * @param extension An extension, with or without the dot, or a file name. Matched in any
+   * case.
+   * @returns The editor, or `undefined` both when the server doesn't know the extension and
+   * when no editor opens it, such as an image or `zip`.
    */
   getDocumentType(extension: string): FormatType | undefined {
     const format = this.getFormat(extension);
@@ -168,19 +208,19 @@ export class DocumentServerFormats {
     return format === undefined || format.type === "" ? undefined : format.type;
   }
 
-  /** What the editors may do with an extension. Empty for one they never open. */
+  /** Returns what the editors can do with an extension. Empty when no editor opens it. */
   getActions(extension: string): readonly FormatAction[] {
     return this.getFormat(extension)?.actions ?? NONE;
   }
 
-  /** Whether the editors may do that with an extension. */
+  /** Returns whether the editors can do `action` with an extension. */
   can(extension: string, action: FormatAction): boolean {
     return this.getActions(extension).includes(action);
   }
 
   /**
-   * Whether an editor opens the extension at all, in whatever mode: the format names an
-   * editor in `type`. Its actions are not consulted.
+   * Returns whether any editor opens the extension, in any mode: the format has a `type`.
+   * Its actions are not checked.
    */
   isOpenable(extension: string): boolean {
     const format = this.getFormat(extension);
@@ -188,67 +228,73 @@ export class DocumentServerFormats {
     return format !== undefined && opens(format);
   }
 
+  /** Returns whether the editors open the extension for viewing: action `"view"`. */
   isViewable(extension: string): boolean {
     return this.can(extension, "view");
   }
 
-  /** Whether the editors save it back in its own format, rather than only read it. */
+  /** Returns whether the editors edit it and save it in its own format: action `"edit"`. */
   isEditable(extension: string): boolean {
     return this.can(extension, "edit");
   }
 
-  /** Whether editing it loses what the format cannot carry, the way `rtf` and `odt` do. */
+  /** Returns whether editing it loses what the format can't store, like `rtf`: action `"lossy-edit"`. */
   isLossyEditable(extension: string): boolean {
     return this.can(extension, "lossy-edit");
   }
 
-  /** Whether it is a form the editors fill in rather than edit. */
+  /** Returns whether it is a form the editors fill in: action `"fill"`. */
   isFillable(extension: string): boolean {
     return this.can(extension, "fill");
   }
 
+  /** Returns whether the editors open it for commenting: action `"comment"`. */
   isCommentable(extension: string): boolean {
     return this.can(extension, "comment");
   }
 
+  /** Returns whether the editors open it for reviewing: action `"review"`. */
   isReviewable(extension: string): boolean {
     return this.can(extension, "review");
   }
 
-  /** Whether the editors convert it on the way in, the way they do the legacy `doc`. */
+  /** Returns whether the editors convert it on open, like the legacy `doc`: action `"auto-convert"`. */
   isAutoConvertable(extension: string): boolean {
     return this.can(extension, "auto-convert");
   }
 
-  /** Whether the editors open it behind a password. */
+  /** Returns whether the editors open it behind a password: action `"encrypt"`. */
   isEncryptable(extension: string): boolean {
     return this.can(extension, "encrypt");
   }
 
   /**
-   * The extensions an extension converts to, each without the dot, as the conversion API
-   * takes them in `outputtype`. Empty for a format the server does not convert.
+   * Returns the extensions an extension converts to, without the dot, as `outputtype` of a
+   * conversion takes them. Empty when the server doesn't convert it.
    */
   getConversions(extension: string): readonly string[] {
     return this.getFormat(extension)?.convert ?? NONE;
   }
 
-  /** Whether the conversion API turns `from` into `to`. */
+  /**
+   * Returns whether the conversion API converts `from` into `to`. Both are matched like any
+   * extension.
+   */
   isConvertibleTo(from: string, to: string): boolean {
     return this.getConversions(from).includes(normalize(to));
   }
 
-  /** The MIME types an extension is served under. */
+  /** Returns the MIME types an extension is served under. */
   getMimes(extension: string): readonly string[] {
     return this.getFormat(extension)?.mime ?? NONE;
   }
 
-  /** The formats served under a MIME type, matched case-insensitively. */
+  /** Returns the formats served under a MIME type, matched in any case. */
   getFormatsByMime(mime: string): readonly Format[] {
     return this.#byMime.get(mime.trim().toLowerCase()) ?? NONE;
   }
 
-  /** The formats one editor opens, or, for `""`, those a conversion only ever produces. */
+  /** Returns the formats one editor opens, or, for `""`, those that only come out of a conversion. */
   getFormatsByType(type: FormatType): readonly Format[] {
     return Object.freeze(this.all.filter((format) => format.type === type));
   }

@@ -48,58 +48,81 @@ const OK: CallbackReply = Object.freeze({ error: 0 });
 const FAIL: CallbackReply = Object.freeze({ error: 1 });
 
 /**
- * What checks the token of a callback: {@link jwt!DocumentServerJwt | DocumentServerJwt} or
- * a verifier of your own.
+ * Checks the token of a callback. {@link jwt!DocumentServerJwt | DocumentServerJwt} implements
+ * it; any object with `verify()` works.
  */
 export interface CallbackVerifier {
-  /** Answers with what the token carries, or rejects when it cannot be trusted. */
+  /** Resolves to the claims of the token, or rejects when the token can't be trusted. */
   verify(token: string): Promise<unknown>;
 }
 
-/** Headers of a request, as the `Headers` of fetch or as the plain object of Node. */
+/**
+ * The headers of a request: fetch `Headers` or a plain Node headers object. Names are matched
+ * in any case; of a header given several times, the first value is read.
+ */
 export type CallbackHeaders =
   Headers | Readonly<Record<string, string | readonly string[] | undefined>>;
 
-/** A request to the callback URL, taken apart by the framework that received it. */
+/** A callback request taken apart, for a framework that parses the body itself. */
 export interface CallbackInput {
   /**
-   * The body: parsed already, or as the text or the bytes it came in — a string, a
-   * `Uint8Array` or `Buffer`, or an `ArrayBuffer`.
+   * The body: parsed JSON, or the raw body as a string, a `Uint8Array` (a `Buffer` included) or
+   * an `ArrayBuffer`.
    */
   body: unknown;
+  /** The headers of the request. Needed when the document server signs callbacks in a header. */
   headers?: CallbackHeaders;
 }
 
-/** How a callback is checked. */
+/** How {@link DocumentServerCallback.parse} checks a callback. */
 export interface CallbackOptions {
   /**
-   * Checks the token the document server signed the callback with. `null` takes an
-   * unsigned callback, for a document server with no secret; a token it carries is then
-   * ignored rather than trusted.
+   * Checks the token of the callback. Required, so the check can't be turned off by
+   * forgetting an option.
+   *
+   * `null` accepts unsigned callbacks, for a document server without a JWT secret. A token the
+   * callback carries is then neither checked nor trusted.
    */
   verifier: CallbackVerifier | null;
-  /** Header the token is sent in. Default: `"Authorization"`. */
+  /** The header a token is read from. Default: `"Authorization"`. */
   authorizationHeader?: string;
-  /** Written before the token in that header. Default: `"Bearer "`. */
+  /** What comes before the token in that header. Default: `"Bearer "`. */
   authorizationPrefix?: string;
 }
 
-/** What is done with each event. A kind with no handler is taken as it is. */
+/**
+ * The handlers {@link DocumentServerCallback.handle} runs, one for each event kind. A handler
+ * may return a promise; the reply waits for it.
+ */
 export interface CallbackHandlers {
+  /**
+   * Status `2`: the last editor closed and the document changed. Download `url` and store the
+   * document. Required: a document not stored here is lost.
+   */
   save: (event: CallbackSave) => Promise<void> | void;
+  /** Status `1`: a user connected or disconnected. Without a handler, answered `ok`. */
   editing?: (event: CallbackEditing) => Promise<void> | void;
+  /** Status `3`: the document server failed to build the document. Without a handler, answered `ok`. */
   "save-error"?: (event: CallbackSaveError) => Promise<void> | void;
+  /** Status `4`: the last editor closed and nothing changed. Without a handler, answered `ok`. */
   closed?: (event: CallbackClosed) => Promise<void> | void;
+  /**
+   * Status `6`: the document was saved while it is edited. Download `url` and store a version.
+   * Without a handler, answered `fail`, and `onError` gets a {@link CallbackError} of kind
+   * `"unhandled"`.
+   */
   forcesave?: (event: CallbackForcesave) => Promise<void> | void;
+  /** Status `7`: that save failed. Without a handler, answered `ok`. */
   "forcesave-error"?: (event: CallbackForcesaveError) => Promise<void> | void;
+  /** A status this SDK doesn't know. Without a handler, answered `ok`. */
   unknown?: (event: CallbackUnknown) => Promise<void> | void;
 }
 
-/** Overrides of how {@link DocumentServerCallback.handle} answers. */
+/** Options of {@link DocumentServerCallback.handle}. */
 export interface HandleOptions {
   /**
-   * Told of the error a handler failed with, before the callback is answered with `1`. An
-   * error it throws itself is swallowed, so the answer is still `1`.
+   * Called with the error a handler failed with, before the reply `fail` is returned. An error
+   * `onError` throws itself is ignored, and the reply is still `fail`.
    */
   onError?: (error: unknown, event: CallbackEvent) => void;
 }
@@ -223,43 +246,78 @@ function toEvent(body: unknown): CallbackEvent {
 }
 
 /**
- * A request the document server posted to the callback URL: checked against its token,
- * and told apart by what it reports.
+ * A callback the document server posted to `callbackUrl`, checked against its token.
  *
- * The document server takes `{"error":0}` for an answer that the callback is dealt with,
- * and posts it again on anything else. A document saved on `2` or `6` is to be stored
- * before the answer, then, and {@link DocumentServerCallback.handle} answers so.
+ * {@link DocumentServerCallback.fromRequest} or {@link DocumentServerCallback.parse} checks
+ * the request, {@link DocumentServerCallback.event} says what happened, and
+ * {@link DocumentServerCallback.handle} runs your handler and builds the reply.
+ *
+ * The document server treats `{"error":0}` as "handled" and posts the callback again on any
+ * other reply. So store the document on status `2` and `6` before you reply.
+ *
+ * @example
+ * ```ts
+ * export async function POST(request: Request): Promise<Response> {
+ *   const callback = await DocumentServerCallback.fromRequest(request, { verifier: jwt });
+ *
+ *   const reply = await callback.handle({
+ *     save: async ({ url }) => {
+ *       const { path, query } = splitFileUrl(url, publicUrl);
+ *       await storage.saveNewVersion(fileId, (await client.getFile(path, query)).body);
+ *     },
+ *   });
+ *
+ *   return Response.json(reply);
+ * }
+ * ```
+ *
+ * @see [Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
  */
 export class DocumentServerCallback {
-  /** The answer that the callback is dealt with. */
+  /** The reply `{ error: 0 }`: the callback is handled. */
   static readonly ok: CallbackReply = OK;
-  /** The answer that the callback is to be posted again. */
+  /** The reply `{ error: 1 }`: the document server posts the callback again. */
   static readonly fail: CallbackReply = FAIL;
 
-  /** What the document server reports, frozen. */
+  /** What the document server reports: the callback body plus `kind`, frozen. */
   readonly event: CallbackEvent;
 
   /**
-   * A callback out of a body already trusted. The body is not checked against a token:
-   * {@link DocumentServerCallback.parse} is what does that.
+   * Reads a callback body you already trust, without checking a token. To check the token,
+   * use {@link DocumentServerCallback.parse} or {@link DocumentServerCallback.fromRequest}.
    *
-   * @throws {@link CallbackError} when the body is not an object, or carries no key, an
-   * integer status, or the url a save comes with.
+   * @param body The callback body, parsed.
+   * @throws {@link CallbackError} of kind `"body"` when the body is not an object, `key` is
+   * not a non-empty string, `status` is not an integer, or `url` is not a string on status `2`
+   * or `6`.
    */
   constructor(body: unknown) {
     this.event = toEvent(body);
   }
 
   /**
-   * Checks a callback against its token and reads what it reports.
+   * Checks the token of a callback and reads its body. For a framework that parses the body
+   * itself, such as Express with `express.json()`.
    *
-   * A token in the body is checked first, one in the header if the body carries none. Once
-   * the token is checked, what it carries is the callback, and the unsigned body is left
-   * aside: in the body the token signs the callback itself, in the header it signs it as
-   * `{ payload: … }`.
+   * Where the token is looked for:
    *
-   * @throws {@link CallbackError} when the body is not a callback, no token is found and a
-   * verifier requires one, or the verifier refuses it.
+   * 1. `token` in the body, when it is a string. It signs the callback itself.
+   * 2. Otherwise the header named by `authorizationHeader`, after `authorizationPrefix`. It
+   *    signs the callback as `{ payload: … }`.
+   *
+   * Once the token is checked, the callback is what the token carries, and the unsigned body
+   * is ignored.
+   *
+   * @param input The body and the headers of the request.
+   * @param options The verifier, and the header the token is read from.
+   * @throws {@link CallbackError} of kind:
+   *
+   * - `"body"` when the body is a string or bytes that are not JSON, when a header token
+   *   carries no `payload` object, or when the callback fails the checks of the
+   *   {@link DocumentServerCallback | constructor};
+   * - `"token"` when `verifier` is set and there is no token: no string `token` in the body,
+   *   and the header is missing, has another prefix or holds only the prefix;
+   * - `"signature"` when the verifier rejects the token. Its error is the `cause`.
    */
   static async parse(
     input: CallbackInput,
@@ -269,8 +327,12 @@ export class DocumentServerCallback {
   }
 
   /**
-   * {@link DocumentServerCallback.parse} over a `Request` of fetch, as Next.js, Hono, Deno
-   * and the edge runtimes hand it over. The body is read.
+   * Reads the body of a fetch `Request`, as Next.js, Hono, Deno and edge runtimes give it, and
+   * checks it like {@link DocumentServerCallback.parse}.
+   *
+   * @param request The request posted to `callbackUrl`. Its body is read.
+   * @param options The verifier, and the header the token is read from.
+   * @throws {@link CallbackError} whenever {@link DocumentServerCallback.parse} would.
    */
   static async fromRequest(
     request: Request,
@@ -283,14 +345,18 @@ export class DocumentServerCallback {
   }
 
   /**
-   * Runs the handler of the event and answers the way the document server expects:
-   * {@link DocumentServerCallback.ok} once the handler is done, and
-   * {@link DocumentServerCallback.fail} when it failed, so the document server posts the
-   * callback again.
+   * Runs the handler for {@link DocumentServerCallback.event} and returns the reply to send:
    *
-   * A kind with no handler is answered with `ok`. `save` has to have one, since a document
-   * left unstored on it is lost, and `forcesave` without one is answered with `fail`, a
-   * {@link CallbackError} of kind `unhandled` told to `onError`.
+   * - {@link DocumentServerCallback.ok} when the handler finished, or when the kind has no
+   *   handler, except `forcesave`;
+   * - {@link DocumentServerCallback.fail} when the handler threw or rejected, or when a
+   *   `forcesave` event has no handler. `onError` is called first; for a missing `forcesave`
+   *   handler it gets a {@link CallbackError} of kind `"unhandled"`.
+   *
+   * Never rejects: every failure becomes the reply `fail`.
+   *
+   * @param handlers The handlers, one for each event kind. `save` is required.
+   * @param options `onError`, to log a failure.
    */
   async handle(handlers: CallbackHandlers, options?: HandleOptions): Promise<CallbackReply> {
     const event = this.event;

@@ -57,11 +57,25 @@ function describe(messages: Readonly<Record<number, string>>, code: number): str
   return messages[code] ?? "unrecognized error code";
 }
 
-/** Which failure an error stands for, and the discriminant of the union below. */
+/**
+ * Which failure an error stands for, the discriminant of {@link AnyDocumentServerError}:
+ *
+ * - `"network"`: {@link DocumentServerNetworkError}, no answer came;
+ * - `"timeout"`: {@link DocumentServerTimeoutError}, the deadline passed;
+ * - `"http"`: {@link DocumentServerHttpError}, a status outside the 2xx range;
+ * - `"parse"`: {@link DocumentServerParseError}, a 2xx body that is not the promised JSON;
+ * - `"conversion"`: {@link ConversionError}, an error code of the conversion service;
+ * - `"command"`: {@link CommandError}, an error code of the command service;
+ * - `"builder"`: {@link BuilderError}, an error code of the document builder service.
+ */
 export type DocumentServerErrorKind =
   "builder" | "command" | "conversion" | "http" | "network" | "parse" | "timeout";
 
-/** Every error the SDK throws of its own accord. */
+/**
+ * Every error a client call rejects with, apart from the reason of a cancelled `signal`.
+ * {@link DocumentServerError.is} narrows to it, so a `switch` over `kind` gives each branch
+ * the fields of its error.
+ */
 export type AnyDocumentServerError =
   | BuilderError
   | CommandError
@@ -72,22 +86,42 @@ export type AnyDocumentServerError =
   | DocumentServerTimeoutError;
 
 /**
- * Every failure of a call to the document server that the SDK turns into a rejection: a
- * failure the server reports, an answer that is not the one promised, or no answer at all.
+ * The base class of every error a client call rejects with: a failure the document server
+ * reports, an answer that is not the promised one, or no answer at all.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   await client.convert(request);
+ * } catch (error) {
+ *   if (ConversionError.is(error) && error.code === -5) {
+ *     return askForThePassword();
+ *   }
+ *
+ *   if (DocumentServerHttpError.is(error) && error.status >= 500) {
+ *     return retryLater();
+ *   }
+ *
+ *   throw error;
+ * }
+ * ```
+ *
+ * @see [Errors](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/errors.md)
  */
 export class DocumentServerError extends Error {
+  /** Which failure the error stands for. */
   readonly kind: DocumentServerErrorKind;
 
   /**
-   * The response the error was read from. Its body has already been consumed. Absent from
-   * a network failure and a timeout, which may have come before any response did.
+   * The response the error was read from, with its body already read. `undefined` for a
+   * network error and a timeout, which can happen before any response.
    */
   readonly response: Response | undefined;
 
   /**
-   * Where the request went, the query left out: a download link carries its signature
-   * there. Read off the response when there is one, redirects followed. Empty when it is
-   * not known, as from a `fetch` of your own that answers with a `Response` built by hand.
+   * The URL of the request, without the query, since a download URL carries its signature
+   * there. Taken from the response when there is one, so it is where a redirect ended. Empty
+   * when unknown, such as for a `Response` your own `fetch` built by hand.
    */
   readonly url: string;
 
@@ -109,18 +143,25 @@ export class DocumentServerError extends Error {
     return true;
   }
 
-  /** Recognizes an error of this SDK, a second copy of the package included. */
+  /**
+   * Returns whether `value` is any of the client errors, also one thrown by a second copy of
+   * the package, which `instanceof` misses. Narrows to {@link AnyDocumentServerError}.
+   */
   static is(value: unknown): value is AnyDocumentServerError {
     return typeof value === "object" && value !== null && BRAND in value;
   }
 }
 
-/** The document server answered with a status outside the 2xx range. */
+/**
+ * The document server answered with a status outside the 2xx range. The message names the
+ * status, the URL and the beginning of the body.
+ */
 export class DocumentServerHttpError extends DocumentServerError {
   declare readonly kind: "http";
   declare readonly response: Response;
+  /** The status of the response. */
   readonly status: number;
-  /** Beginning of the response body, as far as it could be read. */
+  /** The first 512 characters of the response body, trimmed. Empty when it couldn't be read. */
   readonly body: string;
 
   constructor(response: Response, body: string) {
@@ -136,16 +177,21 @@ export class DocumentServerHttpError extends DocumentServerError {
     this.body = body;
   }
 
+  /** Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is DocumentServerHttpError {
     return DocumentServerError.is(value) && value.kind === "http";
   }
 }
 
-/** The body of a successful response was not the JSON the endpoint promises. */
+/**
+ * A 2xx body is not the JSON the endpoint promises: not JSON at all, or JSON of another shape.
+ * Expect it even in a healthy integration: a reverse proxy may answer `200 OK` with a page of
+ * its own. For a body that is not JSON, the parse error is the `cause`.
+ */
 export class DocumentServerParseError extends DocumentServerError {
   declare readonly kind: "parse";
   declare readonly response: Response;
-  /** Beginning of the response body, as far as it could be read. */
+  /** The first 512 characters of the response body, trimmed. */
   readonly body: string;
 
   constructor(message: string, response: Response, body: string, options?: ErrorOptions) {
@@ -154,15 +200,23 @@ export class DocumentServerParseError extends DocumentServerError {
     this.body = body;
   }
 
+  /** Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is DocumentServerParseError {
     return DocumentServerError.is(value) && value.kind === "parse";
   }
 }
 
-/** The conversion service reported a failure in a body it answered `200 OK` with. */
+/**
+ * The conversion service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.convert} and {@link DocumentServerClient.convertFromFile}.
+ * The message names the code and what it means.
+ */
 export class ConversionError extends DocumentServerError {
   declare readonly kind: "conversion";
   declare readonly response: Response;
+  /**
+   * The error code, one of {@link ConversionErrorCode}. A code the service doesn't document stays a
+   * plain number, so keep a `default` branch in a `switch` over it.
+   */
   readonly code: ConversionErrorCode;
 
   constructor(code: ConversionErrorCode, response: Response) {
@@ -175,15 +229,23 @@ export class ConversionError extends DocumentServerError {
     this.code = code;
   }
 
+  /** Returns whether `value` is a `ConversionError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is ConversionError {
     return DocumentServerError.is(value) && value.kind === "conversion";
   }
 }
 
-/** The command service reported a failure in a body it answered `200 OK` with. */
+/**
+ * The command service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.command} for any code but `0` and `4`.
+ * The message names the code and what it means.
+ */
 export class CommandError extends DocumentServerError {
   declare readonly kind: "command";
   declare readonly response: Response;
+  /**
+   * The error code, one of {@link CommandErrorCode}. A code the service doesn't document stays a
+   * plain number, so keep a `default` branch in a `switch` over it.
+   */
   readonly code: CommandErrorCode;
 
   constructor(code: CommandErrorCode, response: Response) {
@@ -196,15 +258,24 @@ export class CommandError extends DocumentServerError {
     this.code = code;
   }
 
+  /** Returns whether `value` is a `CommandError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is CommandError {
     return DocumentServerError.is(value) && value.kind === "command";
   }
 }
 
-/** The builder service reported a failure in a body it answered `200 OK` with. */
+/**
+ * The builder service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.docbuilder} and
+ * {@link DocumentServerClient.docbuilderFromFile}.
+ * The message names the code and what it means.
+ */
 export class BuilderError extends DocumentServerError {
   declare readonly kind: "builder";
   declare readonly response: Response;
+  /**
+   * The error code, one of {@link BuilderErrorCode}. A code the service doesn't document stays a
+   * plain number, so keep a `default` branch in a `switch` over it.
+   */
   readonly code: BuilderErrorCode;
 
   constructor(code: BuilderErrorCode, response: Response) {
@@ -217,6 +288,7 @@ export class BuilderError extends DocumentServerError {
     this.code = code;
   }
 
+  /** Returns whether `value` is a `BuilderError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is BuilderError {
     return DocumentServerError.is(value) && value.kind === "builder";
   }
@@ -264,8 +336,11 @@ function reason(cause: unknown): string {
 }
 
 /**
- * No answer came: the document server could not be reached, or the connection broke before
- * its answer had been read. The error `fetch` raised is the `cause`.
+ * No answer came: the document server can't be reached, or the connection broke before the
+ * answer was read, the body included.
+ *
+ * The error `fetch` threw is the `cause`, such as `TypeError: fetch failed`. The message adds
+ * the system error code under it, such as `ECONNREFUSED`, or else that error's message.
  */
 export class DocumentServerNetworkError extends DocumentServerError {
   declare readonly kind: "network";
@@ -281,19 +356,23 @@ export class DocumentServerNetworkError extends DocumentServerError {
     this.name = "DocumentServerNetworkError";
   }
 
+  /** Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is DocumentServerNetworkError {
     return DocumentServerError.is(value) && value.kind === "network";
   }
 }
 
 /**
- * The deadline of the call ran out before the answer had been read. The `DOMException` the
- * abort raised is the `cause`.
+ * The deadline, `timeoutMs`, passed before the answer was read. The `DOMException` named
+ * `"TimeoutError"` is the `cause`.
+ *
+ * A call cancelled with your own `signal` rejects with the reason of that signal instead, a
+ * signal of `AbortSignal.timeout()` included.
  */
 export class DocumentServerTimeoutError extends DocumentServerError {
   declare readonly kind: "timeout";
   declare readonly response: undefined;
-  /** The deadline that ran out, in milliseconds. */
+  /** The deadline that passed, in milliseconds. */
   readonly timeoutMs: number;
 
   constructor(url: string, timeoutMs: number, cause: unknown) {
@@ -307,6 +386,7 @@ export class DocumentServerTimeoutError extends DocumentServerError {
     this.timeoutMs = timeoutMs;
   }
 
+  /** Returns whether `value` is a `DocumentServerTimeoutError`, also one thrown by a second copy of the package. */
   static override is(value: unknown): value is DocumentServerTimeoutError {
     return DocumentServerError.is(value) && value.kind === "timeout";
   }

@@ -27,4 +27,4 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `DocumentServerCallback`, which checks and parses what the document server posts to the
   callback url, dispatches it to a handler for each status and builds the answer.
 - A subpath for each module: `/client`, `/config`, `/formats`, `/jwt` and `/callback`.
-- ESM and CJS builds with type definitions, and a markdown API reference in `docs/`.
+- ESM and CJS builds with type definitions, and a markdown API reference in `docs/api/`.

@@ -30,29 +30,27 @@ export type ConfigPermissions = NonNullable<ConfigDocument["permissions"]>;
 export type ConfigEditor = NonNullable<Config["editorConfig"]>;
 
 /**
- * A config without the `events` section, which is what is serialized and signed.
- *
- * The events are functions the browser calls, so they neither survive `JSON.stringify`
- * nor belong in a token. They are attached to the config in the browser, where the editor
- * is constructed, rather than here.
+ * A config without `events`: what is serialized and signed. Events are functions, so they
+ * don't survive `JSON.stringify` and can't be signed. Add them in the browser, where the editor
+ * is created.
  */
 export type SignableConfig = Omit<Config, "events">;
 
 /**
- * What your system grants on the file. `edit` is required: whether the file may be
- * changed is a decision of your system, not a default of the editor.
+ * The permissions your system grants on the file. `edit` is required: the SDK has no default
+ * for whether a file may be changed.
  */
 export type ConfigInputPermissions = Omit<ConfigPermissions, "edit"> & { edit: boolean };
 
 /**
- * The file as your storage knows it. `fileType` is read off `title` by
- * {@link DocumentServerConfig}, so the type leaves no room for it.
+ * The file as your storage knows it. {@link DocumentServerConfig} derives `fileType` from
+ * `title`, so it can't be given.
  */
 export type ConfigInputDocument = Omit<
   ConfigDocument,
   "fileType" | "key" | "permissions" | "title" | "url"
 > & {
-  /** Identifier of this revision of the file. See {@link buildDocumentKey}. */
+  /** Identifies this revision of the file. Build it with {@link buildDocumentKey}. */
   key: string;
   /** Name of the file, extension included, which the editor shows and downloads it under. */
   title: string;
@@ -63,11 +61,12 @@ export type ConfigInputDocument = Omit<
 };
 
 /**
- * Everything your system knows of the editor it opens: the file, the permissions it grants
- * and the whole `editorConfig`. What the document server decides — `documentType`,
- * `document.fileType` — is derived by {@link DocumentServerConfig}, so the type leaves no
- * room for it, and neither for the `token`, which only {@link DocumentServerConfig.sign}
- * writes.
+ * The input of {@link DocumentServerConfig}: the file, the permissions on it and the whole
+ * `editorConfig`.
+ *
+ * Four fields can't be given: `documentType` and `document.fileType` are derived from the
+ * format, {@link DocumentServerConfig.sign} writes `token`, and `events` are added in the
+ * browser.
  */
 export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "token"> & {
   document: ConfigInputDocument;
@@ -77,8 +76,8 @@ export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "to
 };
 
 /**
- * A config carrying what the document server requires of it, which is what
- * {@link DocumentServerConfig} builds out of a {@link ConfigInput}.
+ * The config {@link DocumentServerConfig} builds from a {@link ConfigInput}, with `document`
+ * and `documentType` always set.
  */
 export interface StrictConfig extends SignableConfig {
   document: ConfigDocument;

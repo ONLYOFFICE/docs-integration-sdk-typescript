@@ -18,17 +18,27 @@
 
 const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.callback-error");
 
-/** Why a callback was refused, and the discriminant of {@link CallbackError}. */
+/**
+ * Why a callback was refused, the discriminant of {@link CallbackError}:
+ *
+ * - `"body"`: the body is not a callback the document server sends;
+ * - `"token"`: a verifier is set and the callback carries no token;
+ * - `"signature"`: the verifier rejected the token;
+ * - `"unhandled"`: a `forcesave` event has no handler. Only passed to `onError` of
+ *   {@link DocumentServerCallback.handle}, never thrown.
+ */
 export type CallbackErrorKind = "body" | "signature" | "token" | "unhandled";
 
 /**
- * A callback that could not be taken: a body that is not one, a token missing where one is
- * required, or a token the verifier refused, which is then the `cause`. Or, as
- * {@link DocumentServerCallback.handle} tells `onError`, a document saved on `6` with no
- * handler to store it.
+ * Thrown by {@link DocumentServerCallback.parse}, {@link DocumentServerCallback.fromRequest}
+ * and the {@link DocumentServerCallback} constructor when a request is not a valid callback.
+ * Such a request did not come from the document server: reply with an error status, `400` or
+ * `403`, not with `fail`, which invites it again.
+ *
+ * {@link DocumentServerCallback.handle} passes one of kind `"unhandled"` to `onError`.
  */
 export class CallbackError extends Error {
-  /** Which of the checks refused the callback. */
+  /** Which check refused the callback. For `"signature"`, the verifier's error is the `cause`. */
   readonly kind: CallbackErrorKind;
 
   constructor(kind: CallbackErrorKind, message: string, options?: ErrorOptions) {
@@ -42,7 +52,10 @@ export class CallbackError extends Error {
     return true;
   }
 
-  /** Recognizes an error of this SDK, a second copy of the package included. */
+  /**
+   * Returns whether `value` is a `CallbackError`, also one thrown by a second copy of the
+   * package, which `instanceof` misses.
+   */
   static is(value: unknown): value is CallbackError {
     return typeof value === "object" && value !== null && BRAND in value;
   }
