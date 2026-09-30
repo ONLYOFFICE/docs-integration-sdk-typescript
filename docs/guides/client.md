@@ -81,8 +81,9 @@ does.
 **Errors.** A request that runs out of time rejects with a `DocumentServerTimeoutError`, with the
 deadline as `timeoutMs` and the abort `DOMException` as `cause`. An unreachable server rejects
 with a `DocumentServerNetworkError` whose `cause` is the `TypeError: fetch failed`; its own
-`cause` is, on Node, an `AggregateError` with a `code` such as `"ECONNREFUSED"`, which the message
-repeats. See [Errors](errors.md#network-failures-and-timeouts).
+`cause` is, on Node, a system error with a `code` such as `"ECONNREFUSED"`, which the message
+repeats, or an `AggregateError` of them when several addresses were tried. See
+[Errors](errors.md#network-failures-and-timeouts).
 
 **Validation.** The value must be a whole number of milliseconds from `1` to `2147483647`, the
 largest delay a timer accepts:
