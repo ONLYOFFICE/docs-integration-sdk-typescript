@@ -2,11 +2,11 @@
 
 # Interface: FileLocation
 
-Path and query of a file the document server keeps, as `getFile()` takes them.
+The path and the query of a file, as [DocumentServerClient.getFile](../classes/DocumentServerClient.md#getfile) takes them.
 
 ## Properties
 
-| Property                            | Type                           | Description                                                                      |
-| ----------------------------------- | ------------------------------ | -------------------------------------------------------------------------------- |
-| <a id="property-path"></a> `path`   | `string`                       | Path of the file, relative to the address the document server is reached at.     |
-| <a id="property-query"></a> `query` | `Record`\<`string`, `string`\> | Query the document server signed the location with, such as `md5` and `expires`. |
+| Property                            | Type                           | Description                                                                     |
+| ----------------------------------- | ------------------------------ | ------------------------------------------------------------------------------- |
+| <a id="property-path"></a> `path`   | `string`                       | The path of the file, relative to the address the client reaches the server at. |
+| <a id="property-query"></a> `query` | `Record`\<`string`, `string`\> | The query the document server signed the URL with, such as `md5` and `expires`. |

@@ -18,29 +18,48 @@
 
 /** Settings of a client, applied to every request it sends. */
 export interface ClientOptions {
-  /** Base URL of the document server, such as `"https://docs.example.com"`. Required. */
+  /**
+   * The address of the document server, such as `"https://docs.example.com"`. Required. An
+   * absolute `http` or `https` URL; a path prefix is kept, a trailing slash, a query and a
+   * fragment are removed.
+   */
   baseUrl: string;
-  /** Deadline for a request, in whole milliseconds from `1` to `2147483647`. Default: `30000`. */
+  /**
+   * The deadline of a request, in whole milliseconds from `1` to `2147483647`. A request that
+   * runs out of time rejects with {@link DocumentServerTimeoutError}. Default: `30000`.
+   */
   timeoutMs?: number;
   /** Headers sent with every request. */
   headers?: Record<string, string>;
-  /** Header a token is sent in. Default: `"Authorization"`. */
+  /**
+   * The header a token is sent in, when a method gets one. Set it to
+   * `authorization.header` of {@link DocumentServerClient.getConfig}. Default: `"Authorization"`.
+   */
   authorizationHeader?: string;
-  /** Written before the token in that header. Default: `"Bearer "`. */
+  /**
+   * What comes before the token in that header, as is: `""` sends a bare token. Set it to
+   * `authorization.prefix` of {@link DocumentServerClient.getConfig}. Default: `"Bearer "`.
+   */
   authorizationPrefix?: string;
   /**
-   * A `fetch` of your own: a proxy, mTLS, retries, logging, mocking. Default: the global
-   * `fetch`, looked up on each call rather than captured at construction.
+   * A `fetch` of your own, for a proxy, mTLS, retries, logging or mocking. Default: the global
+   * `fetch`, looked up on each call, so a `fetch` patched later is still used.
    */
   fetch?: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
-/** Overrides applied to a single request, on top of the client options. */
+/** Overrides for one call, over the client options. */
 export interface RequestOptions {
-  /** Aborts the request. The configured timeout still applies alongside it. */
+  /**
+   * Cancels the call, which then rejects with the reason of the signal, unchanged. The
+   * deadline still applies alongside it.
+   */
   signal?: AbortSignal;
-  /** Deadline for this request, in place of the configured one. */
+  /** The deadline of this call, instead of the configured one. Validated the same way. */
   timeoutMs?: number;
-  /** Headers laid over the configured ones. Names are matched case-insensitively. */
+  /**
+   * Headers laid over all others: the configured ones and those the SDK sets itself. Names are
+   * matched in any case.
+   */
   headers?: Readonly<Record<string, string>>;
 }

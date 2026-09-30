@@ -2,10 +2,26 @@
 
 # Class: DocumentServerRawClient
 
-The same endpoints as [DocumentServerClient](DocumentServerClient.md), each answering with the untouched
-`Response` and none of them throwing on what the document server says. A request that
-gets no answer still rejects, with a [DocumentServerNetworkError](DocumentServerNetworkError.md) or a
-[DocumentServerTimeoutError](DocumentServerTimeoutError.md).
+The same endpoints as [DocumentServerClient](DocumentServerClient.md), returning the untouched `Response`. It
+never rejects on what the document server answers, only when no answer comes: with
+[DocumentServerNetworkError](DocumentServerNetworkError.md), with [DocumentServerTimeoutError](DocumentServerTimeoutError.md), or with the
+reason of your `signal` when you cancel the call.
+
+Every request gets, in this order, each over the one before:
+
+1. the configured `headers`;
+2. the headers the endpoint needs: `content-type` and `accept` set to `application/json`
+   for a JSON body, no `content-type` for a form, whose boundary `fetch` writes, and the
+   authorization header when a token is given;
+3. the `headers` of the call. Names are matched in any case.
+
+The deadline is `timeoutMs`, of the call or of the client. It covers the whole exchange,
+except for [DocumentServerRawClient.getFile](#getfile) and
+[DocumentServerRawClient.convertFromFile](#convertfromfile), where it stops once the response arrives.
+
+## See
+
+[The raw client](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md#the-raw-client)
 
 ## Constructors
 
@@ -17,19 +33,24 @@ new DocumentServerRawClient(options): DocumentServerRawClient;
 
 #### Parameters
 
-| Parameter | Type                                              |
-| --------- | ------------------------------------------------- |
-| `options` | [`ClientOptions`](../interfaces/ClientOptions.md) |
+| Parameter | Type                                              | Description                                                            |
+| --------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `options` | [`ClientOptions`](../interfaces/ClientOptions.md) | The address of the document server, and the defaults of every request. |
 
 #### Returns
 
 `DocumentServerRawClient`
 
+#### Throws
+
+when `baseUrl` is not an absolute `http` or `https` URL, or
+`timeoutMs` is not a whole number from `1` to `2147483647`.
+
 ## Properties
 
-| Property                                | Modifier   | Type                                                                          | Description                                                               |
-| --------------------------------------- | ---------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <a id="property-options"></a> `options` | `readonly` | `Readonly`\<`Required`\<[`ClientOptions`](../interfaces/ClientOptions.md)\>\> | The effective settings: validated, with the defaults applied, and frozen. |
+| Property                                | Modifier   | Type                                                                          | Description                                                   |
+| --------------------------------------- | ---------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| <a id="property-options"></a> `options` | `readonly` | `Readonly`\<`Required`\<[`ClientOptions`](../interfaces/ClientOptions.md)\>\> | The settings in effect: validated, with defaults, and frozen. |
 
 ## Methods
 
@@ -43,7 +64,8 @@ command(
 ): Promise<Response>;
 ```
 
-Posts to `/command`.
+Posts `request` as JSON to `/command`, with its `key` as the `shardkey` query parameter.
+`getForgottenList`, `license` and `version` have no key and are sent without it.
 
 #### Parameters
 
@@ -69,7 +91,7 @@ convert(
 ): Promise<Response>;
 ```
 
-Posts to `/converter`.
+Posts `request` as JSON to `/converter`, with its `key` as the `shardkey` query parameter.
 
 #### Parameters
 
@@ -96,7 +118,9 @@ convertFromFile(
 ): Promise<Response>;
 ```
 
-Posts to `/converter/from-file`, the document sent along with the request.
+Posts `request` and the document as `multipart/form-data` to `/converter/from-file`, with
+its `key`, when given, as the `shardkey` query parameter. On a 2xx the body is the
+converted file, or JSON while an `async` conversion runs.
 
 #### Parameters
 
@@ -123,7 +147,8 @@ docbuilder(
 ): Promise<Response>;
 ```
 
-Posts to `/docbuilder`.
+Posts `request` as JSON to `/docbuilder`, with its `key`, when given, as the `shardkey`
+query parameter.
 
 #### Parameters
 
@@ -150,7 +175,8 @@ docbuilderFromFile(
 ): Promise<Response>;
 ```
 
-Posts to `/docbuilder/from-file`, the script sent along with the request.
+Posts `request` and the script as `multipart/form-data` to `/docbuilder/from-file`,
+without a `shardkey`: the service creates the key.
 
 #### Parameters
 
@@ -197,7 +223,8 @@ getFile(
 ): Promise<Response>;
 ```
 
-Gets a file the document server keeps, by path and query rather than by URL.
+Gets a file the document server keeps, by the path and the query
+[splitFileUrl](../functions/splitFileUrl.md) returns. Sends no token. On a 2xx the body is the file, unread.
 
 #### Parameters
 
@@ -239,7 +266,7 @@ Gets `/meta/formats`, the file formats the document server knows.
 healthcheck(options?): Promise<Response>;
 ```
 
-Gets `/healthcheck`.
+Gets `/healthcheck`, whose body is `true` when the server is up.
 
 #### Parameters
 

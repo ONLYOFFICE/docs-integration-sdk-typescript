@@ -147,15 +147,34 @@ function buildDeadline(timeoutMs: number, options?: RequestOptions): Deadline {
 }
 
 /**
- * The same endpoints as {@link DocumentServerClient}, each answering with the untouched
- * `Response` and none of them throwing on what the document server says. A request that
- * gets no answer still rejects, with a {@link DocumentServerNetworkError} or a
- * {@link DocumentServerTimeoutError}.
+ * The same endpoints as {@link DocumentServerClient}, returning the untouched `Response`. It
+ * never rejects on what the document server answers, only when no answer comes: with
+ * {@link DocumentServerNetworkError}, with {@link DocumentServerTimeoutError}, or with the
+ * reason of your `signal` when you cancel the call.
+ *
+ * Every request gets, in this order, each over the one before:
+ *
+ * 1. the configured `headers`;
+ * 2. the headers the endpoint needs: `content-type` and `accept` set to `application/json`
+ *    for a JSON body, no `content-type` for a form, whose boundary `fetch` writes, and the
+ *    authorization header when a token is given;
+ * 3. the `headers` of the call. Names are matched in any case.
+ *
+ * The deadline is `timeoutMs`, of the call or of the client. It covers the whole exchange,
+ * except for {@link DocumentServerRawClient.getFile} and
+ * {@link DocumentServerRawClient.convertFromFile}, where it stops once the response arrives.
+ *
+ * @see [The raw client](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md#the-raw-client)
  */
 export class DocumentServerRawClient {
-  /** The effective settings: validated, with the defaults applied, and frozen. */
+  /** The settings in effect: validated, with defaults, and frozen. */
   readonly options: Readonly<Required<ClientOptions>>;
 
+  /**
+   * @param options The address of the document server, and the defaults of every request.
+   * @throws {TypeError} when `baseUrl` is not an absolute `http` or `https` URL, or
+   * `timeoutMs` is not a whole number from `1` to `2147483647`.
+   */
   constructor(options: ClientOptions) {
     this.options = Object.freeze({
       baseUrl: normalizeBaseUrl(options.baseUrl),
@@ -209,7 +228,7 @@ export class DocumentServerRawClient {
     }
   }
 
-  /** Gets `/healthcheck`. */
+  /** Gets `/healthcheck`, whose body is `true` when the server is up. */
   async healthcheck(options?: RequestOptions): Promise<Response> {
     return await this.#request("/healthcheck", { method: "GET" }, options);
   }
@@ -224,7 +243,7 @@ export class DocumentServerRawClient {
     return await this.#request("/meta/formats", { method: "GET" }, options);
   }
 
-  /** Posts to `/converter`. */
+  /** Posts `request` as JSON to `/converter`, with its `key` as the `shardkey` query parameter. */
   async convert(
     request: ConvertRequest,
     token?: string,
@@ -237,7 +256,11 @@ export class DocumentServerRawClient {
     );
   }
 
-  /** Posts to `/converter/from-file`, the document sent along with the request. */
+  /**
+   * Posts `request` and the document as `multipart/form-data` to `/converter/from-file`, with
+   * its `key`, when given, as the `shardkey` query parameter. On a 2xx the body is the
+   * converted file, or JSON while an `async` conversion runs.
+   */
   async convertFromFile(
     request: ConvertFileRequest,
     file: Blob,
@@ -259,7 +282,10 @@ export class DocumentServerRawClient {
     );
   }
 
-  /** Posts to `/command`. */
+  /**
+   * Posts `request` as JSON to `/command`, with its `key` as the `shardkey` query parameter.
+   * `getForgottenList`, `license` and `version` have no key and are sent without it.
+   */
   async command(
     request: CommandRequest,
     token?: string,
@@ -274,7 +300,10 @@ export class DocumentServerRawClient {
     );
   }
 
-  /** Posts to `/docbuilder`. */
+  /**
+   * Posts `request` as JSON to `/docbuilder`, with its `key`, when given, as the `shardkey`
+   * query parameter.
+   */
   async docbuilder(
     request: BuilderRequest,
     token?: string,
@@ -289,7 +318,10 @@ export class DocumentServerRawClient {
     );
   }
 
-  /** Posts to `/docbuilder/from-file`, the script sent along with the request. */
+  /**
+   * Posts `request` and the script as `multipart/form-data` to `/docbuilder/from-file`,
+   * without a `shardkey`: the service creates the key.
+   */
   async docbuilderFromFile(
     request: BuildFileRequest,
     file: Blob,
@@ -307,7 +339,10 @@ export class DocumentServerRawClient {
     );
   }
 
-  /** Gets a file the document server keeps, by path and query rather than by URL. */
+  /**
+   * Gets a file the document server keeps, by the path and the query
+   * {@link splitFileUrl} returns. Sends no token. On a 2xx the body is the file, unread.
+   */
   async getFile(
     path: string,
     query?: Readonly<Record<string, string>>,
