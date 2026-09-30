@@ -1,11 +1,23 @@
-# @onlyoffice/docs-integration-sdk
+# Documentation
 
-## Modules
+New here? Start with the [quick start](../README.md#quick-start).
 
-| Module                         | Description                                                                                                                                                                     |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [callback](callback/README.md) | What the document server posts to the callback URL, checked against its token and told apart by what it reports. Imported from `@onlyoffice/docs-integration-sdk/callback`.     |
-| [client](client/README.md)     | The HTTP client of the document server: conversion, commands, the document builder and what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/client`. |
-| [config](config/README.md)     | The config an editor is opened with, validated and signed. Imported from `@onlyoffice/docs-integration-sdk/config`.                                                             |
-| [formats](formats/README.md)   | The formats a document server knows, looked up by extension. Imported from `@onlyoffice/docs-integration-sdk/formats`.                                                          |
-| [jwt](jwt/README.md)           | Signing and checking the tokens the document server exchanges. Imported from `@onlyoffice/docs-integration-sdk/jwt`.                                                            |
+## Guides
+
+| Guide                                                 | Covers                                                        |
+| ----------------------------------------------------- | ------------------------------------------------------------- |
+| [Opening an editor](guides/editor.md)                 | `DocumentServerConfig`, permissions, signing, document keys   |
+| [Handling callbacks](guides/callback.md)              | `DocumentServerCallback`, events, saving, replying            |
+| [JWT](guides/jwt.md)                                  | `DocumentServerJwt`: signing and verifying tokens             |
+| [Converting documents](guides/conversion.md)          | `convert()`, `convertFromFile()`                              |
+| [Commands](guides/commands.md)                        | `command()`: `info`, `forcesave`, `drop` and the rest         |
+| [Document builder](guides/document-builder.md)        | `docbuilder()`, `docbuilderFromFile()`                        |
+| [Downloading files](guides/files.md)                  | `getFile()`, `splitFileUrl()`                                 |
+| [Server configuration and formats](guides/formats.md) | `getConfig()`, `getFormats()`, `DocumentServerFormats`        |
+| [Errors](guides/errors.md)                            | the error classes and how to tell them apart                  |
+| [Client options](guides/client.md)                    | options, per-request options, the raw client, subpath imports |
+
+## API reference
+
+[api/](api/README.md) lists every export, generated from the source with
+[TypeDoc](https://typedoc.org). Look up a single field or method there.

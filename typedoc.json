@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/*/index.ts"],
   "plugin": ["typedoc-plugin-markdown"],
-  "out": "docs",
+  "out": "docs/api",
   "router": "member",
   "readme": "none",
   "excludeExternals": true,

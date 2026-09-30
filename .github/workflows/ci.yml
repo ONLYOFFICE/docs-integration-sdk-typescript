@@ -42,8 +42,8 @@ jobs:
       - name: Check the API reference is up to date
         run: |
           npm run docs
-          git add --intent-to-add docs
-          git diff --exit-code -- docs
+          git add --intent-to-add docs/api
+          git diff --exit-code -- docs/api
 
   test:
     name: Test & build (node ${{ matrix.node }})
