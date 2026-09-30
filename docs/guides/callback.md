@@ -130,6 +130,8 @@ somewhere else never reaches your download.
 The token signs the body, not the URL the callback was posted to. Someone could post a valid
 callback for one file to the URL of another. So before storing anything, compare `event.key`
 with the key of the file's current revision, as the [complete handler](#a-complete-handler) does.
+Build that key from the same parts the editor was opened with: other parts give another key, and
+every callback is refused.
 
 ## Reply to the document server
 

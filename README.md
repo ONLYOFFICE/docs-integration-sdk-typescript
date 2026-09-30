@@ -113,7 +113,8 @@ if it threw. See
 [Reply to the document server](docs/guides/callback.md#reply-to-the-document-server).
 
 > [!IMPORTANT]
-> Before going to production, check the callback's document key against the file. See
+> Before going to production, check the callback's document key against the file, building it
+> with `buildDocumentKey()` from the same parts as in step 2. See
 > [Check the document key](docs/guides/callback.md#check-the-document-key).
 
 ## Guides
