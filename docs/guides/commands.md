@@ -9,17 +9,20 @@ const result = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
 result.users; // ["6d5a81d0", "78e1e841"]
 ```
 
-| Command            | Parameters          | Answers                      | Does                                        |
-| ------------------ | ------------------- | ---------------------------- | ------------------------------------------- |
-| `deleteForgotten`  | `key`               | `key`                        | Removes a forgotten document.               |
-| `drop`             | `key`, `users`      | `key`                        | Disconnects users from co-editing.          |
-| `forcesave`        | `key`, `userdata`   | `key`                        | Saves the document without closing it.      |
-| `getForgotten`     | `key`               | `key`, `url`                 | Returns the URL of a forgotten document.    |
-| `getForgottenList` | —                   | `keys`                       | Lists the forgotten documents.              |
-| `info`             | `key`, `userdata`   | `key`, `users`               | Returns who has the document open.          |
-| `license`          | —                   | `license`, `quota`, `server` | Returns the license and the quota used.     |
-| `meta`             | `key`, `meta.title` | `key`                        | Renames the document in every editor.       |
-| `version`          | —                   | `version`                    | Returns the version of the document server. |
+The SDK types all nine commands. Their parameters and answers are described in the
+documentation of each:
+
+| Command                                    | Does                                        |
+| ------------------------------------------ | ------------------------------------------- |
+| [`deleteForgotten`][cmd-deleteforgotten]   | Removes a forgotten document.               |
+| [`drop`][cmd-drop]                         | Disconnects users from co-editing.          |
+| [`forcesave`][cmd-forcesave]               | Saves the document without closing it.      |
+| [`getForgotten`][cmd-getforgotten]         | Returns the URL of a forgotten document.    |
+| [`getForgottenList`][cmd-getforgottenlist] | Lists the forgotten documents.              |
+| [`info`][cmd-info]                         | Returns who has the document open.          |
+| [`license`][cmd-license]                   | Returns the license and the quota used.     |
+| [`meta`][cmd-meta]                         | Renames the document in every editor.       |
+| [`version`][cmd-version]                   | Returns the version of the document server. |
 
 ## Typed parameters
 
@@ -40,8 +43,8 @@ await client.command({ c: "forcesave", key, userdata: "before-download" });
 The response is one `CommandResponse` type, because the body doesn't say which command it
 answers. Only `error` is always present, `0` on success. The rest depends on the command.
 
-A non-zero `error` rejects with a `CommandError`. The codes, `0` to `6`, are listed on
-`CommandErrorCode`.
+A non-zero `error` rejects with a `CommandError`. The codes, `0` to `6`, are typed as
+`CommandErrorCode` and described in the [documentation][command-errors].
 
 **`4` is the exception.** It means nothing changed since the last save. For `forcesave` that is
 an outcome, not a failure, so it is returned on the result instead of thrown:
@@ -72,3 +75,13 @@ The `shardkey` query parameter is added for commands with a `key`. It is left ou
 `getForgottenList`, `license` and `version`, which are about the server, not a document.
 
 [command-service]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/
+[cmd-deleteforgotten]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/deleteforgotten/
+[cmd-drop]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/drop/
+[cmd-forcesave]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/forcesave/
+[cmd-getforgotten]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgotten/
+[cmd-getforgottenlist]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgottenlist/
+[cmd-info]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/info/
+[cmd-license]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/license/
+[cmd-meta]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/meta/
+[cmd-version]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/version/
+[command-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#possible-error-codes-and-their-description

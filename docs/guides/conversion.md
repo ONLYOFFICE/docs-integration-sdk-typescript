@@ -25,19 +25,8 @@ result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
 
 To download the result, see [Downloading files](files.md).
 
-`ConvertRequest` supports every documented parameter, each typed and documented:
-
-| Parameter               | Use                                                      |
-| ----------------------- | -------------------------------------------------------- |
-| `thumbnail`             | settings of an image output: BMP, GIF, JPG or PNG        |
-| `spreadsheetLayout`     | a spreadsheet printed to PDF                             |
-| `pdf`                   | PDF output settings, `pdf.form` for a fillable form      |
-| `watermark`             | a watermark stamped onto a PDF or image output           |
-| `documentLayout`        | a form printed to PDF or to an image                     |
-| `documentRenderer`      | how a PDF, XPS or OXPS source is read                    |
-| `password`              | the password of a protected source                       |
-| `region`                | the locale of currency and date formats in a spreadsheet |
-| `delimiter`, `codePage` | the separator and encoding of a CSV or TXT source        |
+`ConvertRequest` types every parameter of the [request][conversion-request]: thumbnails,
+spreadsheet layout, PDF and form output, watermarks, passwords, CSV options and the rest:
 
 ```ts
 await client.convert({
@@ -56,9 +45,9 @@ await client.convert({
 ```
 
 **Errors.** The service answers `200 OK` whether the conversion succeeded or failed. On failure
-the body has an `error` code from `-1` to `-10` (`-5` wrong password, `-8` invalid token and so
-on). The SDK rejects with a `ConversionError` that holds it as `code`. The codes are listed on
-`ConversionErrorCode`. See [Errors](errors.md).
+the body has an `error` code from `-1` to `-10`, described in the
+[documentation][conversion-errors]. The SDK rejects with a `ConversionError` that holds it as
+`code`, typed as `ConversionErrorCode`. See [Errors](errors.md).
 
 **Headers.** `Accept: application/json` is sent for you; without it the service answers in XML.
 A `content-type` in the configured `headers` is replaced, not merged.
@@ -159,3 +148,5 @@ await client.convertFromFile(request, file, await jwt.signHeader(request, signOp
 > answers `404`, which rejects with a `DocumentServerHttpError`.
 
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
+[conversion-request]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/
+[conversion-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/error-codes/

@@ -83,33 +83,26 @@ app.post("/callback", express.json(), async (req, res) => {
 ## Events
 
 `callback.event` is the request body with the field names the document server uses, plus a
-`kind` field:
+`kind` field for its `status`. What each status and field means is described in the
+[callback handler documentation][callback-handler].
 
-| `status` | `kind`              | What happened                                           | What to do                          |
-| -------- | ------------------- | ------------------------------------------------------- | ----------------------------------- |
-| `1`      | `"editing"`         | A user connected or disconnected; `actions` says which. | Nothing, or track who is editing.   |
-| `2`      | `"save"`            | The last editor closed and the document changed.        | Download `url` and store it.        |
-| `3`      | `"save-error"`      | The document server failed to build the document.       | Report it; `url` may be missing.    |
-| `4`      | `"closed"`          | The last editor closed and nothing changed.             | Nothing.                            |
-| `6`      | `"forcesave"`       | A save was requested while the document is edited.      | Download `url` and store a version. |
-| `7`      | `"forcesave-error"` | That save failed.                                       | Report it.                          |
-| other    | `"unknown"`         | A status this SDK doesn't know yet.                     | Look at `status`.                   |
+| `status` | `kind`              | What to do                          |
+| -------- | ------------------- | ----------------------------------- |
+| `1`      | `"editing"`         | Nothing, or track who is editing.   |
+| `2`      | `"save"`            | Download `url` and store it.        |
+| `3`      | `"save-error"`      | Report it; `url` may be missing.    |
+| `4`      | `"closed"`          | Nothing.                            |
+| `6`      | `"forcesave"`       | Download `url` and store a version. |
+| `7`      | `"forcesave-error"` | Report it.                          |
+| other    | `"unknown"`         | Look at `status`.                   |
 
 A `switch` over `kind` narrows the type. `url` is a `string` on `save` and `forcesave` (a
 callback with one of these statuses and no `url` is refused) and optional on the rest.
 
-`forcesavetype` says what requested a force save:
-
-| `forcesavetype` | Source                                             |
-| --------------- | -------------------------------------------------- |
-| `0`             | the `forcesave` [command](commands.md)             |
-| `1`             | the save button                                    |
-| `2`             | the autosave timer in the document server settings |
-| `3`             | a submitted form; its data is at `formsdataurl`    |
-
 > [!NOTE]
 > Status `6` can come even if the editor config never enables `customization.forcesave`: from the
 > `forcesave` command, a submitted form or the autosave timer of the document server.
+> [`forcesavetype`][callback-forcesavetype] says which.
 
 ## Check the token
 
@@ -217,3 +210,6 @@ try {
   throw error;
 }
 ```
+
+[callback-handler]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/
+[callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype

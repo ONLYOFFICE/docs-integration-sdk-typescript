@@ -165,13 +165,9 @@ yours, for example as `Response.json(signed)`, and create the editor from it:
 
 ## Document keys
 
-A key identifies **one revision** of a file, not the file:
-
-- The document server serves a document from its cache when it sees a key it knows. A saved
-  document needs a new key.
-- Two files, or two revisions of one file, must never share a key.
-- Everybody who opens the same revision must get the same key. Otherwise they don't meet in one
-  editing session.
+A key identifies **one revision** of a file, not the file: a saved document needs a new key,
+and everybody who opens the same revision must get the same key to meet in one editing session.
+The rules are in the [documentation][config-document-key].
 
 `buildDocumentKey()` builds a key from the parts that identify a revision in your storage:
 
@@ -230,4 +226,5 @@ The full list of checks is in the
 
 [config-api]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/
 [config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user
+[config-document-key]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types

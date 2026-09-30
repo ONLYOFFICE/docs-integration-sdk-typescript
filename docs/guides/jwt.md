@@ -37,7 +37,8 @@ configured with.
 ## Body token and header token
 
 The conversion, command and builder services accept a token in one of two places, signed over
-different payloads:
+different payloads. Both are described in the [signature documentation][signature], which
+recommends the body:
 
 | Where  | Signed over                  | Method                    |
 | ------ | ---------------------------- | ------------------------- |
@@ -182,3 +183,5 @@ await client.convert(request, await inbox.signHeader(request));
 ```
 
 A server with one secret everywhere, the common case, needs one signer.
+
+[signature]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/
