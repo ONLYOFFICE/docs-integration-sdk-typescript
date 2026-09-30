@@ -10,9 +10,9 @@ Renames the document in every editor that has it open.
 
 ## Properties
 
-| Property                             | Type                              | Description                                                                 |
-| ------------------------------------ | --------------------------------- | --------------------------------------------------------------------------- |
-| <a id="property-c"></a> `c`          | `"meta"`                          | -                                                                           |
-| <a id="property-key"></a> `key`      | `string`                          | Identifier of the document.                                                 |
-| <a id="property-meta"></a> `meta`    | [`DocumentMeta`](DocumentMeta.md) | -                                                                           |
-| <a id="property-token"></a> `token?` | `string`                          | JWT signature of this body. Required once the document server has a secret. |
+| Property                             | Type                              | Description                                                                                                                                                                                            |
+| ------------------------------------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-c"></a> `c`          | `"meta"`                          | The command.                                                                                                                                                                                           |
+| <a id="property-key"></a> `key`      | `string`                          | Identifier of the document.                                                                                                                                                                            |
+| <a id="property-meta"></a> `meta`    | [`DocumentMeta`](DocumentMeta.md) | The new metadata.                                                                                                                                                                                      |
+| <a id="property-token"></a> `token?` | `string`                          | A token signed over this body, from [DocumentServerJwt.sign()](../../jwt/classes/DocumentServerJwt.md#sign). Required once the document server has a JWT secret, unless the token is sent in a header. |

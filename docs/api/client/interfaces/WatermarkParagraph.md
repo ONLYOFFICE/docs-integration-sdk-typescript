@@ -10,5 +10,5 @@ A line of watermark text.
 | ------------------------------------------------ | ----------------------------------------- | --------------------------------------------------------------------- |
 | <a id="property-align"></a> `align?`             | `0` \| `1` \| `2` \| `3`                  | Horizontal alignment: `0` right, `1` left, `2` center, `3` justified. |
 | <a id="property-fill"></a> `fill?`               | [`RgbColor`](../type-aliases/RgbColor.md) | Highlight of the paragraph, in RGB.                                   |
-| <a id="property-linespacing"></a> `linespacing?` | `number`                                  | -                                                                     |
-| <a id="property-runs"></a> `runs?`               | [`WatermarkRun`](WatermarkRun.md)[]       | -                                                                     |
+| <a id="property-linespacing"></a> `linespacing?` | `number`                                  | Line spacing of the paragraph.                                        |
+| <a id="property-runs"></a> `runs?`               | [`WatermarkRun`](WatermarkRun.md)[]       | The pieces of text of the paragraph, each with its own style.         |

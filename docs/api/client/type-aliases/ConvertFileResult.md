@@ -14,8 +14,8 @@ type ConvertFileResult =
     };
 ```
 
-What a conversion of a document sent along with the request answers: the converted file,
-or, while an `async` one is still running, how far it has got.
+What [DocumentServerClient.convertFromFile](../classes/DocumentServerClient.md#convertfromfile) returns: the converted file, or, while an
+`async` conversion runs, its progress. Check `endConvert` to tell them apart.
 
 ## Union Members
 

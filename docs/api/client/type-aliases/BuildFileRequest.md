@@ -6,4 +6,7 @@
 type BuildFileRequest = Omit<BuildRequest, "key" | "url">;
 ```
 
-Starts a build of a script sent along with the request rather than downloaded from a `url`.
+The parameters of [DocumentServerClient.docbuilderFromFile](../classes/DocumentServerClient.md#docbuilderfromfile): those of
+[BuildRequest](../interfaces/BuildRequest.md) without `url`, since the script is sent in the request, and without
+`key`, since the service creates one and answers `-3` to a request that has its own. A
+`token` must carry `operation: "docbuilder"`.

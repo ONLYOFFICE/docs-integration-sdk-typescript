@@ -27,7 +27,9 @@ export type TextAssociation = "blockChar" | "blockLine" | "plainLine" | "plainPa
 
 /** Layout of a form printed to PDF or to an image. */
 export interface DocumentLayout {
+  /** Draw the placeholders of the form fields. */
   drawPlaceHolders?: boolean;
+  /** Highlight the form fields. */
   drawFormHighlight?: boolean;
   /** Render as if printed, DOCX to PDF only. Default: `false`. */
   isPrint?: boolean;
@@ -81,9 +83,11 @@ export interface SpreadsheetLayout {
   headings?: boolean;
   /** Convert the whole sheet rather than its print area. Default: `true`. */
   ignorePrintArea?: boolean;
+  /** Page margins. */
   margins?: PageMargins;
-  /** Default: `"portrait"`. */
+  /** Page orientation. Default: `"portrait"`. */
   orientation?: "landscape" | "portrait";
+  /** Page size. */
   pageSize?: PageSize;
   /** Scale of the output, in percent. Default: `100`. */
   scale?: number;
@@ -106,6 +110,7 @@ export interface Thumbnail {
 
 /** A styled piece of watermark text. */
 export interface WatermarkRun {
+  /** Bold text. */
   bold?: boolean;
   /** Highlight of the text, in RGB. */
   fill?: RgbColor;
@@ -113,10 +118,13 @@ export interface WatermarkRun {
   "font-family"?: string;
   /** Font size in points. */
   "font-size"?: string | number;
+  /** Italic text. */
   italic?: boolean;
+  /** Struck-out text. */
   strikeout?: boolean;
   /** The text itself. `<%br%>` starts a new line. */
   text?: string;
+  /** Underlined text. */
   underline?: boolean;
 }
 
@@ -126,7 +134,9 @@ export interface WatermarkParagraph {
   align?: 0 | 1 | 2 | 3;
   /** Highlight of the paragraph, in RGB. */
   fill?: RgbColor;
+  /** Line spacing of the paragraph. */
   linespacing?: number;
+  /** The pieces of text of the paragraph, each with its own style. */
   runs?: WatermarkRun[];
 }
 
@@ -140,6 +150,7 @@ export interface Watermark {
   height?: number;
   /** Margins around the text, in millimeters. */
   margins?: readonly number[];
+  /** The lines of text of the watermark. */
   paragraphs?: WatermarkParagraph[];
   /** Rotation angle in degrees. */
   rotate?: number;
@@ -155,7 +166,7 @@ export interface Watermark {
   width?: number;
 }
 
-/** Body of a request to the conversion service. */
+/** The body of a request to `/converter`, the conversion service. */
 export interface ConvertRequest {
   /**
    * Return as soon as the conversion is queued instead of waiting for it. Repeat the
@@ -169,7 +180,9 @@ export interface ConvertRequest {
   codePage?: number;
   /** Column separator of a CSV source document. */
   delimiter?: CsvDelimiter;
+  /** Layout of a form printed to PDF or to an image. */
   documentLayout?: DocumentLayout;
+  /** How a PDF, XPS or OXPS source document is read. */
   documentRenderer?: DocumentRenderer;
   /** Extension of the source document, without the dot. */
   filetype: string;
@@ -179,37 +192,45 @@ export interface ConvertRequest {
   outputtype: string;
   /** Password of a protected source document. The converted file has none. */
   password?: string;
+  /** PDF output settings. */
   pdf?: PdfOptions;
   /** Locale for the currency and date formats of a spreadsheet. Default: `"en-US"`. */
   region?: string;
+  /** Layout of a spreadsheet converted to PDF or to an image. */
   spreadsheetLayout?: SpreadsheetLayout;
+  /** Settings of an image output: BMP, GIF, JPG or PNG. */
   thumbnail?: Thumbnail;
   /** Name of the converted file, extension included. */
   title?: string;
-  /** JWT signature of this body. Required once the document server has a secret. */
+  /**
+   * A token signed over this body, from {@link jwt!DocumentServerJwt.sign | DocumentServerJwt.sign()}.
+   * Required once the document server has a JWT secret, unless the token is sent in a header.
+   */
   token?: string;
   /** Absolute URL the document server downloads the source document from. */
   url: string;
+  /** A watermark stamped onto a PDF or image output. */
   watermark?: Watermark;
 }
 
 /**
- * Body of a request to convert a document sent along with it, rather than one the
- * document server downloads from `url`.
+ * The parameters of {@link DocumentServerClient.convertFromFile}: those of
+ * {@link ConvertRequest} without `url`, since the document is sent in the request.
  *
- * `title` names the converted file, which the answer carries in its `Content-Disposition`.
+ * `title` names the converted file, which the answer carries in `Content-Disposition`. A
+ * `token` must carry `operation: "converter"`.
  */
 export type ConvertFileRequest = Omit<ConvertRequest, "key" | "url"> & {
   /**
-   * Identifier of the source document. The service makes one up when it is left out, which
-   * leaves an `async` conversion nothing to be asked for again by.
+   * Identifier of the source document. Without it, the service makes one up for each request,
+   * so give one for an `async` conversion you repeat.
    */
   key?: string;
 };
 
 /**
- * What a conversion of a document sent along with the request answers: the converted file,
- * or, while an `async` one is still running, how far it has got.
+ * What {@link DocumentServerClient.convertFromFile} returns: the converted file, or, while an
+ * `async` conversion runs, its progress. Check `endConvert` to tell them apart.
  */
 export type ConvertFileResult =
   | {
@@ -237,20 +258,19 @@ export type ConvertFileResult =
  * - `-9` the output format is ambiguous and has to be named explicitly
  * - `-10` size limit exceeded
  *
- * A code the service does not document stays a number of its own rather than being forced
- * into the union, so a `switch` over it is never exhaustive.
+ * A code the service doesn't document stays a plain number, so keep a `default` branch in a
+ * `switch` over it.
  */
 export type ConversionErrorCode = -1 | -2 | -3 | -4 | -5 | -6 | -7 | -8 | -9 | -10 | (number & {});
 
 /**
- * Body of a response from the conversion service.
- *
- * Either the conversion reports its progress or it reports an `error`, so a body that
- * carries a code carries nothing else.
+ * The body of a response from `/converter`: the progress of the conversion, or an `error`
+ * code and nothing else. {@link DocumentServerClient.convert} throws on the code.
  */
 export interface ConvertResponse {
-  /** Whether the conversion has finished. */
+  /** Whether the conversion has finished. `fileUrl` comes with it. */
   endConvert?: boolean;
+  /** The error code, on a failed conversion. See {@link ConversionErrorCode}. */
   error?: ConversionErrorCode;
   /** Extension of the converted file. */
   fileType?: string;

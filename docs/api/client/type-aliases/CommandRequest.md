@@ -15,4 +15,5 @@ type CommandRequest =
   | VersionCommand;
 ```
 
-Body of a request to the command service.
+The body of a request to `/command`, the command service: one of the commands, told apart by
+`c`. Each command is checked against its own parameters.

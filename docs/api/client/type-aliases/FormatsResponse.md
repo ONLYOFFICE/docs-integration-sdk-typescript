@@ -6,4 +6,4 @@
 type FormatsResponse = Format[];
 ```
 
-Body of a response from the formats endpoint: every format the document server knows.
+The body of a response from `/meta/formats`: every format the document server knows.

@@ -12,7 +12,7 @@ Watermark stamped onto a PDF or image output.
 | <a id="property-fill"></a> `fill?`                 | `string` \| [`RgbColor`](../type-aliases/RgbColor.md) | Fill color in RGB, or the URL of an image — a `data:` URL included. |
 | <a id="property-height"></a> `height?`             | `number`                                              | Height in millimeters.                                              |
 | <a id="property-margins"></a> `margins?`           | readonly `number`[]                                   | Margins around the text, in millimeters.                            |
-| <a id="property-paragraphs"></a> `paragraphs?`     | [`WatermarkParagraph`](WatermarkParagraph.md)[]       | -                                                                   |
+| <a id="property-paragraphs"></a> `paragraphs?`     | [`WatermarkParagraph`](WatermarkParagraph.md)[]       | The lines of text of the watermark.                                 |
 | <a id="property-rotate"></a> `rotate?`             | `number`                                              | Rotation angle in degrees.                                          |
 | <a id="property-stroke"></a> `stroke?`             | [`RgbColor`](../type-aliases/RgbColor.md)             | Stroke color in RGB.                                                |
 | <a id="property-stroke-width"></a> `stroke-width?` | `number`                                              | Stroke width in millimeters.                                        |

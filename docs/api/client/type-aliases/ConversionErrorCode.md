@@ -19,5 +19,5 @@ Why a conversion failed:
 - `-9` the output format is ambiguous and has to be named explicitly
 - `-10` size limit exceeded
 
-A code the service does not document stays a number of its own rather than being forced
-into the union, so a `switch` over it is never exhaustive.
+A code the service doesn't document stays a plain number, so keep a `default` branch in a
+`switch` over it.

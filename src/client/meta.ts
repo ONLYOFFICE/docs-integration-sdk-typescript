@@ -28,13 +28,16 @@ export interface ConfigAuthorization {
 export interface ConfigUrls {
   /** Script that loads the editor API, such as `"/web-apps/apps/api/documents/api.js"`. */
   api: string;
+  /** The command service, `"/command"`. */
   command: string;
+  /** The conversion service, `"/converter"`. */
   converter: string;
   /**
    * The conversion of a document sent along with the request, `"/converter/from-file"`.
    * Absent on a document server that has none.
    */
   converterFromFile?: string;
+  /** The document builder service, `"/docbuilder"`. */
   docbuilder: string;
   /**
    * The builder of a script sent along with the request, `"/docbuilder/from-file"`.
@@ -49,12 +52,18 @@ export interface ConfigLimits {
   maxFileSize: number;
 }
 
-/** Body of a response from the configuration endpoint. */
+/** The body of a response from `/meta/config`. */
 export interface ConfigResponse {
+  /**
+   * Where the server expects a token. Set `authorizationHeader` and `authorizationPrefix` of
+   * the client to it.
+   */
   authorization: ConfigAuthorization;
   /** Language tags the editor interface is translated into, such as `"pt-PT"`. */
   langs: string[];
+  /** The bounds the server enforces. */
   limits: ConfigLimits;
+  /** The paths of its endpoints. */
   urls: ConfigUrls;
 }
 
@@ -87,8 +96,9 @@ export interface Format {
   mime: string[];
   /** Extension of the format, without the dot, such as `"docx"`. */
   name: string;
+  /** The editor it opens in, which is `documentType` of the editor config. Empty when none does. */
   type: FormatType;
 }
 
-/** Body of a response from the formats endpoint: every format the document server knows. */
+/** The body of a response from `/meta/formats`: every format the document server knows. */
 export type FormatsResponse = Format[];

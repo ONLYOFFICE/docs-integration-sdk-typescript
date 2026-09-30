@@ -15,5 +15,5 @@ Why a build failed:
 - `-6` error while accessing the generation result database
 - `-8` invalid token
 
-A code the service does not document stays a number of its own rather than being forced
-into the union, so a `switch` over it is never exhaustive.
+A code the service doesn't document stays a plain number, so keep a `default` branch in a
+`switch` over it.

@@ -26,12 +26,16 @@ interface Builder {
    * with the key it answered until `end` turns `true`. Default: `false`.
    */
   async?: boolean;
-  /** JWT signature of this body. Required once the document server has a secret. */
+  /**
+   * A token signed over this body, from {@link jwt!DocumentServerJwt.sign | DocumentServerJwt.sign()}.
+   * Required once the document server has a JWT secret, unless the token is sent in a header.
+   */
   token?: string;
 }
 
 /** Starts a build: the document server downloads the script and runs it. */
 export interface BuildRequest extends Builder {
+  /** Values for the script, read through its `Argument` global. */
   argument?: BuilderArgument;
   /** Identifier of the build. The service mints one of its own when it is left out. */
   key?: string;
@@ -45,10 +49,18 @@ export interface BuildResultRequest extends Builder {
   key: string;
 }
 
-/** Body of a request to the builder service. */
+/**
+ * The body of a request to `/docbuilder`: {@link BuildRequest} starts a build,
+ * {@link BuildResultRequest} collects an `async` one.
+ */
 export type BuilderRequest = BuildRequest | BuildResultRequest;
 
-/** Starts a build of a script sent along with the request rather than downloaded from a `url`. */
+/**
+ * The parameters of {@link DocumentServerClient.docbuilderFromFile}: those of
+ * {@link BuildRequest} without `url`, since the script is sent in the request, and without
+ * `key`, since the service creates one and answers `-3` to a request that has its own. A
+ * `token` must carry `operation: "docbuilder"`.
+ */
 export type BuildFileRequest = Omit<BuildRequest, "key" | "url">;
 
 /**
@@ -61,20 +73,19 @@ export type BuildFileRequest = Omit<BuildRequest, "key" | "url">;
  * - `-6` error while accessing the generation result database
  * - `-8` invalid token
  *
- * A code the service does not document stays a number of its own rather than being forced
- * into the union, so a `switch` over it is never exhaustive.
+ * A code the service doesn't document stays a plain number, so keep a `default` branch in a
+ * `switch` over it.
  */
 export type BuilderErrorCode = -1 | -2 | -3 | -4 | -6 | -8 | (number & {});
 
 /**
- * Body of a response from the builder service.
- *
- * Either the build reports its state or it reports an `error`, so a body that carries a
- * code carries nothing else.
+ * The body of a response from `/docbuilder` and `/docbuilder/from-file`: the state of the
+ * build, or an `error` code and nothing else. The client throws on the code.
  */
 export interface BuilderResponse {
   /** Whether the build has finished. `urls` arrives along with it. */
   end?: boolean;
+  /** The error code, on a failed build. See {@link BuilderErrorCode}. */
   error?: BuilderErrorCode;
   /** Identifier of the build, to be sent back in every request that follows. */
   key?: string;

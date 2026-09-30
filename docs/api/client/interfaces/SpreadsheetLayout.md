@@ -15,7 +15,7 @@ At most 1500 pages are produced in a single conversion.
 | <a id="property-gridlines"></a> `gridLines?`             | `boolean`                       | Keep the grid lines. Default: `false`.                                         |
 | <a id="property-headings"></a> `headings?`               | `boolean`                       | Keep the row and column headings. Default: `false`.                            |
 | <a id="property-ignoreprintarea"></a> `ignorePrintArea?` | `boolean`                       | Convert the whole sheet rather than its print area. Default: `true`.           |
-| <a id="property-margins"></a> `margins?`                 | [`PageMargins`](PageMargins.md) | -                                                                              |
-| <a id="property-orientation"></a> `orientation?`         | `"landscape"` \| `"portrait"`   | Default: `"portrait"`.                                                         |
-| <a id="property-pagesize"></a> `pageSize?`               | [`PageSize`](PageSize.md)       | -                                                                              |
+| <a id="property-margins"></a> `margins?`                 | [`PageMargins`](PageMargins.md) | Page margins.                                                                  |
+| <a id="property-orientation"></a> `orientation?`         | `"landscape"` \| `"portrait"`   | Page orientation. Default: `"portrait"`.                                       |
+| <a id="property-pagesize"></a> `pageSize?`               | [`PageSize`](PageSize.md)       | Page size.                                                                     |
 | <a id="property-scale"></a> `scale?`                     | `number`                        | Scale of the output, in percent. Default: `100`.                               |

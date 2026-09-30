@@ -8,13 +8,14 @@ type ConvertFileRequest = Omit<ConvertRequest, "key" | "url"> & {
 };
 ```
 
-Body of a request to convert a document sent along with it, rather than one the
-document server downloads from `url`.
+The parameters of [DocumentServerClient.convertFromFile](../classes/DocumentServerClient.md#convertfromfile): those of
+[ConvertRequest](../interfaces/ConvertRequest.md) without `url`, since the document is sent in the request.
 
-`title` names the converted file, which the answer carries in its `Content-Disposition`.
+`title` names the converted file, which the answer carries in `Content-Disposition`. A
+`token` must carry `operation: "converter"`.
 
 ## Type Declaration
 
-| Name   | Type     | Description                                                                                                                                           |
-| ------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `key?` | `string` | Identifier of the source document. The service makes one up when it is left out, which leaves an `async` conversion nothing to be asked for again by. |
+| Name   | Type     | Description                                                                                                                                 |
+| ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key?` | `string` | Identifier of the source document. Without it, the service makes one up for each request, so give one for an `async` conversion you repeat. |

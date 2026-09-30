@@ -6,4 +6,5 @@
 type BuilderRequest = BuildRequest | BuildResultRequest;
 ```
 
-Body of a request to the builder service.
+The body of a request to `/docbuilder`: [BuildRequest](../interfaces/BuildRequest.md) starts a build,
+[BuildResultRequest](../interfaces/BuildResultRequest.md) collects an `async` one.

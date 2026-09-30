@@ -18,12 +18,16 @@
 
 /** Fields every command carries. */
 interface Command {
-  /** JWT signature of this body. Required once the document server has a secret. */
+  /**
+   * A token signed over this body, from {@link jwt!DocumentServerJwt.sign | DocumentServerJwt.sign()}.
+   * Required once the document server has a JWT secret, unless the token is sent in a header.
+   */
   token?: string;
 }
 
 /** Removes a document the editors left behind. */
 export interface DeleteForgottenCommand extends Command {
+  /** The command. */
   c: "deleteForgotten";
   /** Identifier of the forgotten document. */
   key: string;
@@ -31,6 +35,7 @@ export interface DeleteForgottenCommand extends Command {
 
 /** Disconnects users from co-editing, leaving them with view access. */
 export interface DropCommand extends Command {
+  /** The command. */
   c: "drop";
   /** Identifier of the document. */
   key: string;
@@ -40,6 +45,7 @@ export interface DropCommand extends Command {
 
 /** Saves the document being edited without closing it. */
 export interface ForcesaveCommand extends Command {
+  /** The command. */
   c: "forcesave";
   /** Identifier of the document. */
   key: string;
@@ -49,6 +55,7 @@ export interface ForcesaveCommand extends Command {
 
 /** Asks for the URL a forgotten document can be downloaded from. */
 export interface GetForgottenCommand extends Command {
+  /** The command. */
   c: "getForgotten";
   /** Identifier of the forgotten document. */
   key: string;
@@ -56,11 +63,13 @@ export interface GetForgottenCommand extends Command {
 
 /** Lists the documents the editors left behind. */
 export interface GetForgottenListCommand extends Command {
+  /** The command. */
   c: "getForgottenList";
 }
 
 /** Asks who has the document open. */
 export interface InfoCommand extends Command {
+  /** The command. */
   c: "info";
   /** Identifier of the document. */
   key: string;
@@ -70,6 +79,7 @@ export interface InfoCommand extends Command {
 
 /** Asks for the license and for the quota spent against it. */
 export interface LicenseCommand extends Command {
+  /** The command. */
   c: "license";
 }
 
@@ -81,18 +91,24 @@ export interface DocumentMeta {
 
 /** Renames the document in every editor that has it open. */
 export interface MetaCommand extends Command {
+  /** The command. */
   c: "meta";
   /** Identifier of the document. */
   key: string;
+  /** The new metadata. */
   meta: DocumentMeta;
 }
 
 /** Asks for the version of the document server. */
 export interface VersionCommand extends Command {
+  /** The command. */
   c: "version";
 }
 
-/** Body of a request to the command service. */
+/**
+ * The body of a request to `/command`, the command service: one of the commands, told apart by
+ * `c`. Each command is checked against its own parameters.
+ */
 export type CommandRequest =
   | DeleteForgottenCommand
   | DropCommand
@@ -131,6 +147,7 @@ export interface License {
 export interface LicenseServer {
   /** Date the build was made, in ISO 8601. */
   buildDate: string;
+  /** Build number. */
   buildNumber: number;
   /** Version of the build, such as `"8.2.0"`. */
   buildVersion: string;
@@ -167,25 +184,27 @@ export interface LicenseQuota {
  * - `5` the command is unknown
  * - `6` invalid token
  *
- * A code the service does not document stays a number of its own rather than being forced
- * into the union, so a `switch` over it is never exhaustive.
+ * A code the service doesn't document stays a plain number, so keep a `default` branch in a
+ * `switch` over it.
  */
 export type CommandErrorCode = 0 | 1 | 2 | 3 | 4 | 5 | 6 | (number & {});
 
 /**
- * Body of a response from the command service.
- *
- * Only `error` is always there; which of the rest arrive depends on the command that was
- * sent, and a failed command carries the code alone.
+ * The body of a response from `/command`. Only `error` is always there. Which other fields come
+ * depends on the command, and a failed command has the code alone.
  */
 export interface CommandResponse {
+  /** `0` on success, `4` when `forcesave` found nothing to save. See {@link CommandErrorCode}. */
   error: CommandErrorCode;
   /** Identifier of the document the command was about. */
   key?: string;
   /** Identifiers of the forgotten documents. Answers `getForgottenList`. */
   keys?: string[];
+  /** The terms of the license. Answers `license`. */
   license?: License;
+  /** The users counted against the license. Answers `license`. */
   quota?: LicenseQuota;
+  /** The build of the document server and the state of its license. Answers `license`. */
   server?: LicenseServer;
   /** URL the forgotten document can be downloaded from. Answers `getForgotten`. */
   url?: string;

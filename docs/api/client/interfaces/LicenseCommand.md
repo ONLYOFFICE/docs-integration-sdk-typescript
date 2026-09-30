@@ -10,7 +10,7 @@ Asks for the license and for the quota spent against it.
 
 ## Properties
 
-| Property                             | Type        | Description                                                                 |
-| ------------------------------------ | ----------- | --------------------------------------------------------------------------- |
-| <a id="property-c"></a> `c`          | `"license"` | -                                                                           |
-| <a id="property-token"></a> `token?` | `string`    | JWT signature of this body. Required once the document server has a secret. |
+| Property                             | Type        | Description                                                                                                                                                                                            |
+| ------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <a id="property-c"></a> `c`          | `"license"` | The command.                                                                                                                                                                                           |
+| <a id="property-token"></a> `token?` | `string`    | A token signed over this body, from [DocumentServerJwt.sign()](../../jwt/classes/DocumentServerJwt.md#sign). Required once the document server has a JWT secret, unless the token is sent in a header. |
