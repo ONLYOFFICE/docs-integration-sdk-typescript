@@ -2,7 +2,8 @@
 
 # Class: CommandError
 
-The command service answered `200 OK` with an error code. Thrown by [DocumentServerClient.command](DocumentServerClient.md#command) for any code but `0` and `4`.
+The command service answered `200 OK` with an error code. Thrown by
+[DocumentServerClient.command](DocumentServerClient.md#command) for any code but `0` and `4`.
 The message names the code and what it means.
 
 ## Extends
@@ -49,7 +50,8 @@ new CommandError(code, response): CommandError;
 static is(value): value is CommandError;
 ```
 
-Returns whether `value` is a `CommandError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `CommandError`, also one thrown by a second copy of the package,
+which `instanceof` misses.
 
 #### Parameters
 

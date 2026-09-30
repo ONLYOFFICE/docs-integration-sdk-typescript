@@ -144,8 +144,8 @@ export class DocumentServerError extends Error {
   }
 
   /**
-   * Returns whether `value` is any of the client errors, also one thrown by a second copy of
-   * the package, which `instanceof` misses. Narrows to {@link AnyDocumentServerError}.
+   * Returns whether `value` is any of the client errors, also one thrown by a second copy of the
+   * package, which `instanceof` misses. Narrows to {@link AnyDocumentServerError}.
    */
   static is(value: unknown): value is AnyDocumentServerError {
     return typeof value === "object" && value !== null && BRAND in value;
@@ -181,7 +181,10 @@ export class DocumentServerHttpError extends DocumentServerError {
     this.body = body;
   }
 
-  /** Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the
+   * package, which `instanceof` misses.
+   */
   static override is(value: unknown): value is DocumentServerHttpError {
     return DocumentServerError.is(value) && value.kind === "http";
   }
@@ -204,14 +207,18 @@ export class DocumentServerParseError extends DocumentServerError {
     this.body = body;
   }
 
-  /** Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of
+   * the package, which `instanceof` misses.
+   */
   static override is(value: unknown): value is DocumentServerParseError {
     return DocumentServerError.is(value) && value.kind === "parse";
   }
 }
 
 /**
- * The conversion service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.convert} and {@link DocumentServerClient.convertFromFile}.
+ * The conversion service answered `200 OK` with an error code. Thrown by
+ * {@link DocumentServerClient.convert} and {@link DocumentServerClient.convertFromFile}.
  * The message names the code and what it means.
  */
 export class ConversionError extends DocumentServerError {
@@ -233,14 +240,18 @@ export class ConversionError extends DocumentServerError {
     this.code = code;
   }
 
-  /** Returns whether `value` is a `ConversionError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `ConversionError`, also one thrown by a second copy of the
+   * package, which `instanceof` misses.
+   */
   static override is(value: unknown): value is ConversionError {
     return DocumentServerError.is(value) && value.kind === "conversion";
   }
 }
 
 /**
- * The command service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.command} for any code but `0` and `4`.
+ * The command service answered `200 OK` with an error code. Thrown by
+ * {@link DocumentServerClient.command} for any code but `0` and `4`.
  * The message names the code and what it means.
  */
 export class CommandError extends DocumentServerError {
@@ -262,15 +273,18 @@ export class CommandError extends DocumentServerError {
     this.code = code;
   }
 
-  /** Returns whether `value` is a `CommandError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `CommandError`, also one thrown by a second copy of the package,
+   * which `instanceof` misses.
+   */
   static override is(value: unknown): value is CommandError {
     return DocumentServerError.is(value) && value.kind === "command";
   }
 }
 
 /**
- * The builder service answered `200 OK` with an error code. Thrown by {@link DocumentServerClient.docbuilder} and
- * {@link DocumentServerClient.docbuilderFromFile}.
+ * The builder service answered `200 OK` with an error code. Thrown by
+ * {@link DocumentServerClient.docbuilder} and {@link DocumentServerClient.docbuilderFromFile}.
  * The message names the code and what it means.
  */
 export class BuilderError extends DocumentServerError {
@@ -292,7 +306,10 @@ export class BuilderError extends DocumentServerError {
     this.code = code;
   }
 
-  /** Returns whether `value` is a `BuilderError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `BuilderError`, also one thrown by a second copy of the package,
+   * which `instanceof` misses.
+   */
   static override is(value: unknown): value is BuilderError {
     return DocumentServerError.is(value) && value.kind === "builder";
   }
@@ -355,7 +372,10 @@ export class DocumentServerNetworkError extends DocumentServerError {
     this.name = "DocumentServerNetworkError";
   }
 
-  /** Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of
+   * the package, which `instanceof` misses.
+   */
   static override is(value: unknown): value is DocumentServerNetworkError {
     return DocumentServerError.is(value) && value.kind === "network";
   }
@@ -385,7 +405,10 @@ export class DocumentServerTimeoutError extends DocumentServerError {
     this.timeoutMs = timeoutMs;
   }
 
-  /** Returns whether `value` is a `DocumentServerTimeoutError`, also one thrown by a second copy of the package. */
+  /**
+   * Returns whether `value` is a `DocumentServerTimeoutError`, also one thrown by a second copy of
+   * the package, which `instanceof` misses.
+   */
   static override is(value: unknown): value is DocumentServerTimeoutError {
     return DocumentServerError.is(value) && value.kind === "timeout";
   }

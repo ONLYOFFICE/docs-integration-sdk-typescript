@@ -2,8 +2,8 @@
 
 # Class: BuilderError
 
-The builder service answered `200 OK` with an error code. Thrown by [DocumentServerClient.docbuilder](DocumentServerClient.md#docbuilder) and
-[DocumentServerClient.docbuilderFromFile](DocumentServerClient.md#docbuilderfromfile).
+The builder service answered `200 OK` with an error code. Thrown by
+[DocumentServerClient.docbuilder](DocumentServerClient.md#docbuilder) and [DocumentServerClient.docbuilderFromFile](DocumentServerClient.md#docbuilderfromfile).
 The message names the code and what it means.
 
 ## Extends
@@ -50,7 +50,8 @@ new BuilderError(code, response): BuilderError;
 static is(value): value is BuilderError;
 ```
 
-Returns whether `value` is a `BuilderError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `BuilderError`, also one thrown by a second copy of the package,
+which `instanceof` misses.
 
 #### Parameters
 

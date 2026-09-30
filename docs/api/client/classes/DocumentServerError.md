@@ -89,8 +89,8 @@ Error.constructor;
 static is(value): value is AnyDocumentServerError;
 ```
 
-Returns whether `value` is any of the client errors, also one thrown by a second copy of
-the package, which `instanceof` misses. Narrows to [AnyDocumentServerError](../type-aliases/AnyDocumentServerError.md).
+Returns whether `value` is any of the client errors, also one thrown by a second copy of the
+package, which `instanceof` misses. Narrows to [AnyDocumentServerError](../type-aliases/AnyDocumentServerError.md).
 
 #### Parameters
 

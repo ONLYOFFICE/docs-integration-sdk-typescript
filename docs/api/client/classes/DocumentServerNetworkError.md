@@ -51,7 +51,8 @@ new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 static is(value): value is DocumentServerNetworkError;
 ```
 
-Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of
+the package, which `instanceof` misses.
 
 #### Parameters
 

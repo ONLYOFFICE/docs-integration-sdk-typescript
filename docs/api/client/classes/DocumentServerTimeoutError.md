@@ -57,7 +57,8 @@ new DocumentServerTimeoutError(
 static is(value): value is DocumentServerTimeoutError;
 ```
 
-Returns whether `value` is a `DocumentServerTimeoutError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerTimeoutError`, also one thrown by a second copy of
+the package, which `instanceof` misses.
 
 #### Parameters
 

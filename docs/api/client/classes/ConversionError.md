@@ -2,7 +2,8 @@
 
 # Class: ConversionError
 
-The conversion service answered `200 OK` with an error code. Thrown by [DocumentServerClient.convert](DocumentServerClient.md#convert) and [DocumentServerClient.convertFromFile](DocumentServerClient.md#convertfromfile).
+The conversion service answered `200 OK` with an error code. Thrown by
+[DocumentServerClient.convert](DocumentServerClient.md#convert) and [DocumentServerClient.convertFromFile](DocumentServerClient.md#convertfromfile).
 The message names the code and what it means.
 
 ## Extends
@@ -49,7 +50,8 @@ new ConversionError(code, response): ConversionError;
 static is(value): value is ConversionError;
 ```
 
-Returns whether `value` is a `ConversionError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `ConversionError`, also one thrown by a second copy of the
+package, which `instanceof` misses.
 
 #### Parameters
 

@@ -57,7 +57,8 @@ new DocumentServerParseError(
 static is(value): value is DocumentServerParseError;
 ```
 
-Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of
+the package, which `instanceof` misses.
 
 #### Parameters
 

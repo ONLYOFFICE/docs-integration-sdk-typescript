@@ -50,7 +50,8 @@ new DocumentServerHttpError(response, body): DocumentServerHttpError;
 static is(value): value is DocumentServerHttpError;
 ```
 
-Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerHttpError`, also one thrown by a second copy of the
+package, which `instanceof` misses.
 
 #### Parameters
 
