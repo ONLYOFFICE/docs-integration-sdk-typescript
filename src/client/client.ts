@@ -574,7 +574,9 @@ export class DocumentServerClient {
    * const { path, query } = splitFileUrl(result.fileUrl, "https://docs.example.com");
    * const file = await client.getFile(path, query);
    *
-   * await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+   * if (file.body !== null) {
+   *   await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+   * }
    * ```
    *
    * @param path The path of the file, relative to `baseUrl`.

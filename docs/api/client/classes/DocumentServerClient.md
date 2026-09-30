@@ -418,7 +418,9 @@ The response, with the body unread, so a large file can be streamed.
 const { path, query } = splitFileUrl(result.fileUrl, "https://docs.example.com");
 const file = await client.getFile(path, query);
 
-await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+if (file.body !== null) {
+  await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+}
 ```
 
 #### Throws
