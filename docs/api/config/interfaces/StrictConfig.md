@@ -11,7 +11,7 @@ and `documentType` always set.
 
 ## Properties
 
-| Property                                          | Type                                  | Description                                                                                                                            |
-| ------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-document"></a> `document`         | `DocumentNormal` & `DocumentEmbedded` | The document section defines the document parameters. **See** https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/      |
-| <a id="property-documenttype"></a> `documentType` | `DocumentType`                        | The document type to be opened. **See** https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype **For Type** `desktop` | `mobile` | `embedded` |
+| Property                                          | Type                                  | Description                                                              |
+| ------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
+| <a id="property-document"></a> `document`         | `DocumentNormal` & `DocumentEmbedded` | The file, with `fileType` derived from `title`.                          |
+| <a id="property-documenttype"></a> `documentType` | `DocumentType`                        | The editor the file opens in, derived from its format, such as `"word"`. |

@@ -56,7 +56,9 @@ export type ConfigInputDocument = Omit<
   title: string;
   /** Absolute URL the document server downloads the file from. */
   url: string;
+  /** What the user may do with the file. `edit` is required. */
   permissions: ConfigInputPermissions;
+  /** Derived from `title`, so it can't be given. */
   fileType?: never;
 };
 
@@ -69,9 +71,13 @@ export type ConfigInputDocument = Omit<
  * browser.
  */
 export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "token"> & {
+  /** The file, as your storage knows it, and the permissions on it. */
   document: ConfigInputDocument;
+  /** Derived from the format of the file, so it can't be given. */
   documentType?: never;
+  /** Written by {@link DocumentServerConfig.sign}, so it can't be given. */
   token?: never;
+  /** Functions, added in the browser where the editor is created, so they can't be given. */
   events?: never;
 };
 
@@ -80,6 +86,8 @@ export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "to
  * and `documentType` always set.
  */
 export interface StrictConfig extends SignableConfig {
+  /** The file, with `fileType` derived from `title`. */
   document: ConfigDocument;
+  /** The editor the file opens in, derived from its format, such as `"word"`. */
   documentType: DocumentType;
 }

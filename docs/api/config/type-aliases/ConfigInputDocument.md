@@ -22,8 +22,8 @@ The file as your storage knows it. [DocumentServerConfig](../classes/DocumentSer
 
 | Name          | Type                                                  | Description                                                                                               |
 | ------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `fileType?`   | `never`                                               | -                                                                                                         |
+| `fileType?`   | `never`                                               | Derived from `title`, so it can't be given.                                                               |
 | `key`         | `string`                                              | Identifies this revision of the file. Build it with [buildDocumentKey](../functions/buildDocumentKey.md). |
-| `permissions` | [`ConfigInputPermissions`](ConfigInputPermissions.md) | -                                                                                                         |
+| `permissions` | [`ConfigInputPermissions`](ConfigInputPermissions.md) | What the user may do with the file. `edit` is required.                                                   |
 | `title`       | `string`                                              | Name of the file, extension included, which the editor shows and downloads it under.                      |
 | `url`         | `string`                                              | Absolute URL the document server downloads the file from.                                                 |
