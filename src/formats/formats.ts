@@ -75,7 +75,6 @@ function assertArray(formats: readonly Format[]): void {
   }
 }
 
-/** Whether an editor opens the format: it names one, whatever it lets the editor do. */
 function opens(format: Format): boolean {
   return format.type !== "";
 }

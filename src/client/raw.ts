@@ -51,10 +51,6 @@ function buildUrl(baseUrl: string, path: string, query?: Readonly<Record<string,
   return `${url}${url.includes("?") ? "&" : "?"}${search}`;
 }
 
-/**
- * Lays a request out as the form `/converter/from-file` reads: the whole request as the JSON
- * of one `params` part, and the document as `file`.
- */
 function buildForm(request: object, file: Blob, filename: string): FormData {
   const form = new FormData();
 
@@ -64,7 +60,6 @@ function buildForm(request: object, file: Blob, filename: string): FormData {
   return form;
 }
 
-/** The name a file is sent under: its own, or the fallback for a `Blob` that has none. */
 function fileName(file: Blob, fallback: string): string {
   const name = "name" in file ? file.name : undefined;
 
@@ -119,7 +114,6 @@ function buildSignal(timeoutMs: number, options?: RequestOptions): AbortSignal {
   return options?.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
 }
 
-/** A deadline that can be called off once the response headers have arrived. */
 interface Deadline {
   signal: AbortSignal;
   disarm: () => void;

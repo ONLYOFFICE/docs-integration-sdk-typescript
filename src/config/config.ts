@@ -23,10 +23,6 @@ const MAX_KEY_LENGTH = 128;
 const MAX_USER_ID_LENGTH = 128;
 const SUPPORTED_KEY = /^[0-9a-zA-Z._=-]+$/;
 
-/**
- * The permissions a format has to allow, each with the actions of `/meta/formats` that
- * allow it. A permission the format does not allow is lowered to `false`.
- */
 const PERMISSION_ACTIONS = {
   comment: ["comment"],
   edit: ["edit", "lossy-edit"],
@@ -37,11 +33,6 @@ const PERMISSION_ACTIONS = {
 
 type FormatPermission = keyof typeof PERMISSION_ACTIONS;
 
-/**
- * The permissions that let the user change the document — its text, the tracked changes,
- * the comments, the fields of a form — whose changes the document server then posts to
- * `callbackUrl`.
- */
 const CHANGING_PERMISSIONS: readonly FormatPermission[] = [
   "edit",
   "review",
@@ -49,10 +40,8 @@ const CHANGING_PERMISSIONS: readonly FormatPermission[] = [
   "fillForms",
 ];
 
-/** Fields of `editorConfig` that take an absolute URL. */
 const EDITOR_URLS = ["createUrl", "mergeFolderUrl", "saveAsUrl", "sharingSettingsUrl"] as const;
 
-/** Fields of `editorConfig.embedded` that take an absolute URL. */
 const EMBEDDED_URLS = ["embedUrl", "fullscreenUrl", "saveUrl", "shareUrl"] as const;
 
 type Mutable = Record<string, unknown>;
@@ -177,7 +166,6 @@ function checkKey(key: unknown): void {
   }
 }
 
-/** The extension `title` ends in, in lower case, which is the `fileType` of the document. */
 function fileTypeOf(title: unknown): FileType {
   if (typeof title !== "string") {
     throw invalid("document.title", `must be a string, got: ${typeof title}`);
@@ -199,7 +187,6 @@ function fileTypeOf(title: unknown): FileType {
   return extension as FileType;
 }
 
-/** Lowers every permission the format does not allow to `false`. */
 function fitPermissions(permissions: Mutable, format: ConfigFormat): void {
   if (typeof permissions["edit"] !== "boolean") {
     throw invalid(
@@ -228,10 +215,6 @@ function fitPermissions(permissions: Mutable, format: ConfigFormat): void {
   }
 }
 
-/**
- * Keeps `callbackUrl` only where the document server posts to it: in `edit` mode, for a user
- * who may change the document. Anywhere else it is cut, `forcesave` along with it.
- */
 function fitCallback(editor: Mutable, permissions: Mutable): void {
   const mode = editor["mode"] ?? "edit";
 

@@ -298,7 +298,6 @@ export class BuilderError extends DocumentServerError {
   }
 }
 
-/** Where a request went, without the query: a download link carries its signature there. */
 function location(url: string): string {
   try {
     const parsed = new URL(url);
@@ -316,10 +315,6 @@ function at(url: string): string {
   return url === "" ? "" : ` at ${url}`;
 }
 
-/**
- * The reason `fetch` gave, and what lies under it: the system error code, such as
- * `ECONNREFUSED`, or the message of the error when it has no code.
- */
 function reason(cause: unknown): string {
   if (!(cause instanceof Error)) {
     return String(cause);

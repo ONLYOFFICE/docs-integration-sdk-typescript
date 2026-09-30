@@ -157,7 +157,6 @@ async function readSnippet(response: Response, attempt: Attempt): Promise<string
   return trimmed === "" ? "" : `${trimmed.slice(0, BODY_SNIPPET_LIMIT)}…`;
 }
 
-/** Reads a body, a connection that breaks or a deadline that runs out on the way included. */
 async function readText(response: Response, attempt: Attempt): Promise<string> {
   const { text, ended, error } = await readBody(response, attempt);
 
@@ -192,7 +191,6 @@ async function readJson(response: Response, attempt: Attempt): Promise<JsonBody>
   }
 }
 
-/** Whether a response carries JSON rather than a file. */
 function isJson(response: Response): boolean {
   const type = response.headers.get("content-type") ?? "";
 
