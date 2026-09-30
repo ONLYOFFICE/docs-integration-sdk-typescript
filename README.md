@@ -21,13 +21,13 @@ npm install @onlyoffice/docs-integration-sdk
 
 The package root exports everything. Each module is also available on its own subpath:
 
-| Subpath                                     | Exports                                                                      |
-| ------------------------------------------- | ---------------------------------------------------------------------------- |
-| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports             |
-| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
-| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types  |
-| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`                                            |
-| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                              |
+| Subpath                                     | Exports                                                                                      |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports                             |
+| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, `splitFileUrl`, their requests and errors |
+| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types                  |
+| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`, `FormatType`, `FormatAction`                              |
+| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                                              |
 
 ```ts
 import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
