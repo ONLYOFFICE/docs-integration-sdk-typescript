@@ -314,6 +314,7 @@ export class DocumentServerCallback {
    *
    * @param input The body and the headers of the request.
    * @param options The verifier, and the header the token is read from.
+   * @returns The callback, with the event it reports.
    * @throws {@link CallbackError} of kind:
    *
    * - `"body"` when the body is a string or bytes that are not JSON, when a header token
@@ -336,6 +337,7 @@ export class DocumentServerCallback {
    *
    * @param request The request posted to `callbackUrl`. Its body is read.
    * @param options The verifier, and the header the token is read from.
+   * @returns The callback, with the event it reports.
    * @throws {@link CallbackError} whenever {@link DocumentServerCallback.parse} would.
    */
   static async fromRequest(
@@ -361,6 +363,7 @@ export class DocumentServerCallback {
    *
    * @param handlers The handlers, one for each event kind. `save` is required.
    * @param options `onError`, to log a failure.
+   * @returns The reply, to send back as the JSON body of the response.
    */
   async handle(handlers: CallbackHandlers, options?: HandleOptions): Promise<CallbackReply> {
     const event = this.event;

@@ -89,6 +89,8 @@ checks it like [DocumentServerCallback.parse](#parse).
 
 `Promise`\<`DocumentServerCallback`\>
 
+The callback, with the event it reports.
+
 #### Throws
 
 [CallbackError](CallbackError.md) whenever [DocumentServerCallback.parse](#parse) would.
@@ -122,6 +124,8 @@ Never rejects: every failure becomes the reply `fail`.
 
 `Promise`\<[`CallbackReply`](../interfaces/CallbackReply.md)\>
 
+The reply, to send back as the JSON body of the response.
+
 ---
 
 ### parse()
@@ -152,6 +156,8 @@ is ignored.
 #### Returns
 
 `Promise`\<`DocumentServerCallback`\>
+
+The callback, with the event it reports.
 
 #### Throws
 
