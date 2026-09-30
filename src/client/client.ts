@@ -235,7 +235,9 @@ async function readArray(response: Response, attempt: Attempt): Promise<unknown[
  * - {@link DocumentServerNetworkError} when the server can't be reached or the connection
  *   breaks;
  * - {@link DocumentServerTimeoutError} when `timeoutMs` passes first;
- * - the reason of your `signal`, unchanged, when you cancel the call.
+ * - the reason of your `signal`, unchanged, when you cancel the call;
+ * - a `TypeError` when `timeoutMs` in the call options is not a whole number from 1 to
+ *   2147483647.
  *
  * For the untouched `Response`, use {@link DocumentServerClient.raw}.
  *

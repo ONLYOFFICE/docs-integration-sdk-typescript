@@ -5,7 +5,8 @@
 The same endpoints as [DocumentServerClient](DocumentServerClient.md), returning the untouched `Response`. It
 never rejects on what the document server answers, only when no answer comes: with
 [DocumentServerNetworkError](DocumentServerNetworkError.md), with [DocumentServerTimeoutError](DocumentServerTimeoutError.md), or with the
-reason of your `signal` when you cancel the call.
+reason of your `signal` when you cancel the call. A `timeoutMs` in the call options that is
+not a whole number from 1 to 2147483647 rejects with a `TypeError`.
 
 Every request gets, in this order, each over the one before:
 

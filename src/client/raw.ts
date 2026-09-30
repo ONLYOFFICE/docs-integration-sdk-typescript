@@ -144,7 +144,8 @@ function buildDeadline(timeoutMs: number, options?: RequestOptions): Deadline {
  * The same endpoints as {@link DocumentServerClient}, returning the untouched `Response`. It
  * never rejects on what the document server answers, only when no answer comes: with
  * {@link DocumentServerNetworkError}, with {@link DocumentServerTimeoutError}, or with the
- * reason of your `signal` when you cancel the call.
+ * reason of your `signal` when you cancel the call. A `timeoutMs` in the call options that is
+ * not a whole number from 1 to 2147483647 rejects with a `TypeError`.
  *
  * Every request gets, in this order, each over the one before:
  *

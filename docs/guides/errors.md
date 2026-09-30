@@ -128,7 +128,8 @@ decision, not a server failure.
 
 ## What doesn't throw
 
-Apart from that reason, a call throws only the seven errors above. Two outcomes don't throw:
+Apart from that reason, and a `TypeError` for an invalid `timeoutMs` in the per-request
+options, a call throws only the seven errors above. Two outcomes don't throw:
 
 - `healthcheck()` returns `false` for a failing status: a server that is down is the answer you
   asked for.
