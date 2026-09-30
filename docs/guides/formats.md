@@ -30,7 +30,8 @@ config.langs; // ["ar", "az", …, "zh-TW"]
 > default one. See [Client options](client.md#authorizationheader-and-authorizationprefix).
 
 This endpoint describes the server, not a document, so it takes no token and has no error codes.
-Only a status outside 2xx makes it fail, with a `DocumentServerHttpError`.
+It fails only on a status outside 2xx, with a `DocumentServerHttpError`, or on a body that is
+not a JSON object, with a `DocumentServerParseError`.
 
 ## Formats
 
