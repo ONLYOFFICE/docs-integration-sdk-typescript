@@ -5,7 +5,7 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors into your application.
 - Build and sign the editor config.
 - Receive, verify and answer callbacks.
 - Call the conversion API, the command service and the document builder.
-- Built on the standard `fetch`: no dependencies for HTTP, works in Node.js 20+, Deno, Bun,
+- Built on the standard `fetch`: no dependencies for HTTP, works in Node.js 20.19+, Deno, Bun,
   browsers and edge runtimes. ESM and CJS, with type definitions.
 
 > [!NOTE]
