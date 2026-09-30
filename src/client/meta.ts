@@ -68,12 +68,23 @@ export interface ConfigResponse {
 }
 
 /**
- * Editor a format opens in, or the empty string for one that is only ever produced by a
- * conversion, such as an image.
+ * The editor a format opens in, which is `documentType` of the editor config. Empty for a
+ * format that only comes out of a conversion, such as an image.
  */
 export type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word" | (string & {});
 
-/** Something the editors can do with a format. */
+/**
+ * Something the editors can do with a format:
+ *
+ * - `"view"`, `"edit"`, `"comment"`, `"review"`: open it in that mode;
+ * - `"lossy-edit"`: edit it, losing what the format can't store;
+ * - `"fill"`: fill in a form;
+ * - `"customfilter"`: what the `modifyFilter` permission of the editor config needs;
+ * - `"auto-convert"`: convert it on open, like the legacy `doc`;
+ * - `"encrypt"`: open it behind a password.
+ *
+ * A newer document server may name an action this SDK doesn't know.
+ */
 export type FormatAction =
   | "auto-convert"
   | "comment"
