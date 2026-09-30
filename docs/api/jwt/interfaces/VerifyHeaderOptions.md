@@ -11,8 +11,8 @@ the `token.outbox.header` and `token.outbox.prefix` settings of the document ser
 
 ## Properties
 
-| Property                                                         | Type     | Description                                                                                |
-| ---------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string` | The header the token is read from. Default: `"Authorization"`.                             |
-| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string` | What comes before the token in that header. `""` reads a bare token. Default: `"Bearer "`. |
-| <a id="property-clocktolerancesec"></a> `clockToleranceSec?`     | `number` | The leeway for this token, instead of the configured one. Validated the same way.          |
+| Property                                                         | Type     | Description                                                                                                     |
+| ---------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string` | The header the token is read from. Default: `"Authorization"`.                                                  |
+| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string` | What comes before the token in that header, matched in any case. `""` reads a bare token. Default: `"Bearer "`. |
+| <a id="property-clocktolerancesec"></a> `clockToleranceSec?`     | `number` | The leeway for this token, instead of the configured one. Validated the same way.                               |

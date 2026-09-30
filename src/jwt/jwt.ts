@@ -101,7 +101,10 @@ export type JwtHeaders = Headers | Readonly<Record<string, string | readonly str
 export interface VerifyHeaderOptions extends VerifyOptions {
   /** The header the token is read from. Default: `"Authorization"`. */
   authorizationHeader?: string;
-  /** What comes before the token in that header. `""` reads a bare token. Default: `"Bearer "`. */
+  /**
+   * What comes before the token in that header, matched in any case. `""` reads a bare token.
+   * Default: `"Bearer "`.
+   */
   authorizationPrefix?: string;
 }
 
@@ -558,7 +561,11 @@ export class DocumentServerJwt {
     const prefix = options?.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX;
     const value = headerValue(headers, name);
 
-    if (value?.startsWith(prefix) !== true || value.length === prefix.length) {
+    if (
+      value === undefined ||
+      value.length === prefix.length ||
+      value.slice(0, prefix.length).toLowerCase() !== prefix.toLowerCase()
+    ) {
       throw new JwtError("missing", `the request carries no token in ${name}`);
     }
 

@@ -86,7 +86,7 @@ export interface CallbackOptions {
   verifier: CallbackVerifier | null;
   /** The header a token is read from. Default: `"Authorization"`. */
   authorizationHeader?: string;
-  /** What comes before the token in that header. Default: `"Bearer "`. */
+  /** What comes before the token in that header, matched in any case. Default: `"Bearer "`. */
   authorizationPrefix?: string;
 }
 
@@ -199,7 +199,11 @@ async function trustedBody(input: CallbackInput, options: CallbackOptions): Prom
   const prefix = options.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX;
   const value = header(input.headers, name);
 
-  if (value?.startsWith(prefix) !== true || value.length === prefix.length) {
+  if (
+    value === undefined ||
+    value.length === prefix.length ||
+    value.slice(0, prefix.length).toLowerCase() !== prefix.toLowerCase()
+  ) {
     throw new CallbackError(
       "token",
       `the callback carries no token, in the body or in ${name}, and a verifier requires one`,

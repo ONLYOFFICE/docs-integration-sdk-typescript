@@ -625,6 +625,21 @@ describe("verifyHeader", () => {
     ).resolves.toEqual(payload);
   });
 
+  it("matches the prefix in any case", async () => {
+    const token = await jwt.sign({ payload });
+
+    await expect(jwt.verifyHeader({ authorization: `bearer ${token}` })).resolves.toEqual(payload);
+    await expect(
+      jwt.verifyHeader(
+        { "x-docs-token": `TOKEN ${token}` },
+        {
+          authorizationHeader: "X-Docs-Token",
+          authorizationPrefix: "Token ",
+        },
+      ),
+    ).resolves.toEqual(payload);
+  });
+
   it("reads a header and a prefix of the server's own", async () => {
     const headers = { "x-docs-token": `Token ${await jwt.sign({ payload })}` };
 

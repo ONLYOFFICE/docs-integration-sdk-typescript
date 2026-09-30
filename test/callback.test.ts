@@ -249,6 +249,13 @@ describe("DocumentServerCallback.parse, the token in the header", () => {
     expect(event.kind).toBe("save");
   });
 
+  it("matches the prefix in any case", async () => {
+    const token = await jwt.sign({ payload: save });
+    const event = await parse({ body: save, headers: { authorization: `BEARER ${token}` } });
+
+    expect(event.kind).toBe("save");
+  });
+
   it("takes a header and a prefix of its own", async () => {
     const token = await jwt.sign({ payload: save });
     const { event } = await DocumentServerCallback.parse(
