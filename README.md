@@ -146,13 +146,13 @@ if it threw. See
 | [Opening an editor](docs/guides/editor.md)                 | `DocumentServerConfig`, permissions, signing, document keys |
 | [Handling callbacks](docs/guides/callback.md)              | `DocumentServerCallback`, events, saving, replying          |
 | [JWT](docs/guides/jwt.md)                                  | `DocumentServerJwt`: signing and verifying tokens           |
+| [Client options](docs/guides/client.md)                    | options, per-request options, the raw client                |
 | [Converting documents](docs/guides/conversion.md)          | `convert()`, `convertFromFile()`                            |
 | [Commands](docs/guides/commands.md)                        | `command()`: `info`, `forcesave`, `drop` and the rest       |
 | [Document builder](docs/guides/document-builder.md)        | `docbuilder()`, `docbuilderFromFile()`                      |
 | [Downloading files](docs/guides/files.md)                  | `getFile()`, `splitFileUrl()`                               |
 | [Server configuration and formats](docs/guides/formats.md) | `getConfig()`, `getFormats()`, `DocumentServerFormats`      |
 | [Errors](docs/guides/errors.md)                            | the error classes and how to tell them apart                |
-| [Client options](docs/guides/client.md)                    | options, per-request options, the raw client                |
 
 The [API reference](docs/api/README.md) lists every export, generated from the source.
 
