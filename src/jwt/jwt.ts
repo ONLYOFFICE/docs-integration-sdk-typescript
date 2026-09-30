@@ -20,7 +20,7 @@ import { JwtError } from "./errors.js";
 
 const DEFAULT_ALGORITHM: JwtAlgorithm = "HS256";
 const DEFAULT_EXPIRES_IN_SEC = 300;
-const DEFAULT_CLOCK_TOLERANCE_SEC = 0;
+const DEFAULT_CLOCK_TOLERANCE_SEC = 3;
 const DEFAULT_AUTHORIZATION_HEADER = "Authorization";
 const DEFAULT_AUTHORIZATION_PREFIX = "Bearer ";
 const MAX_SECONDS = 2_147_483_647;
@@ -55,7 +55,7 @@ export interface JwtOptions {
   expiresInSec?: number | null;
   /**
    * Leeway on `exp` and `nbf` when verifying, for a document server whose clock differs from
-   * yours: a whole number of seconds from `0` to `2147483647`. Default: `0`.
+   * yours: a whole number of seconds from `0` to `2147483647`. Default: `3`.
    */
   clockToleranceSec?: number;
 }

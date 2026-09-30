@@ -82,6 +82,7 @@ function expectedExp(expiresInSec: number): number {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("jwt options", () => {
@@ -91,7 +92,7 @@ describe("jwt options", () => {
     expect(jwt.options).toEqual({
       algorithm: "HS256",
       expiresInSec: 300,
-      clockToleranceSec: 0,
+      clockToleranceSec: 3,
     });
   });
 
@@ -511,13 +512,27 @@ describe("verify", () => {
 
   it("refuses an expired token", async () => {
     const jwt = new DocumentServerJwt({ secret: "secret" });
-    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 1 });
+    const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 10 });
 
     await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "expired" });
   });
 
-  it("refuses a token expiring this very second", async () => {
+  it("allows three seconds of clock difference by default", async () => {
+    vi.useFakeTimers({ now: 1_700_000_000_000, toFake: ["Date"] });
     const jwt = new DocumentServerJwt({ secret: "secret" });
+    const late = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 2 });
+    const expired = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() - 3 });
+    const early = craft({ alg: "HS256", typ: "JWT" }, { key: "document", nbf: now() + 3 });
+    const premature = craft({ alg: "HS256", typ: "JWT" }, { key: "document", nbf: now() + 4 });
+
+    await expect(jwt.verify(late)).resolves.toHaveProperty("key");
+    await expect(jwt.verify(expired)).rejects.toMatchObject({ kind: "expired" });
+    await expect(jwt.verify(early)).resolves.toHaveProperty("key");
+    await expect(jwt.verify(premature)).rejects.toMatchObject({ kind: "premature" });
+  });
+
+  it("refuses a token expiring this very second", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret", clockToleranceSec: 0 });
     const token = craft({ alg: "HS256", typ: "JWT" }, { key: "document", exp: now() });
 
     await expect(jwt.verify(token)).rejects.toMatchObject({ kind: "expired" });

@@ -124,7 +124,7 @@ How the check works:
 - The payload is parsed only after the signature matches.
 
 `clockToleranceSec` allows for a document server whose clock differs from yours, in seconds. It
-defaults to `0` and can be set on the signer or on one call:
+defaults to `3` and can be set on the signer or on one call:
 
 ```ts
 const jwt = new DocumentServerJwt({ secret, clockToleranceSec: 30 });
