@@ -37,6 +37,7 @@ import { DocumentServerRawClient } from "./raw.js";
 import { type Attempt, transportError } from "./transport.js";
 
 const BODY_SNIPPET_LIMIT = 512;
+const BODY_SNIPPET_READ_LIMIT: ReadLimit = { chars: BODY_SNIPPET_LIMIT, bytes: 65_536 };
 const NO_ERROR = 0;
 const COMMAND_NOTHING_CHANGED: CommandErrorCode = 4;
 
@@ -54,10 +55,29 @@ interface BodyRead {
   error?: unknown;
 }
 
+interface ReadLimit {
+  chars: number;
+  bytes: number;
+}
+
+function timeoutError(): DOMException {
+  return new DOMException("The operation was aborted due to timeout", "TimeoutError");
+}
+
+function reached(text: string, bytes: number, limit: ReadLimit | undefined): boolean {
+  if (limit === undefined) {
+    return false;
+  }
+
+  return (
+    bytes >= limit.bytes || (text.length > limit.chars && text.trimStart().length > limit.chars)
+  );
+}
+
 async function readBody(
   response: Response,
   timeoutMs: number,
-  limit = Infinity,
+  limit?: ReadLimit,
 ): Promise<BodyRead> {
   const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
 
@@ -66,18 +86,26 @@ async function readBody(
   }
 
   const decoder = new TextDecoder();
+  const end = Date.now() + timeoutMs;
   let text = "";
+  let bytes = 0;
   let timeout: DOMException | undefined;
   const timer = setTimeout(() => {
-    timeout = new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    timeout = timeoutError();
     void reader.cancel(timeout).catch(() => undefined);
   }, timeoutMs);
 
   try {
-    while (text.length <= limit || text.trimStart().length <= limit) {
+    while (!reached(text, bytes, limit)) {
       const { done, value } = await reader.read();
 
+      if (timeout === undefined && Date.now() >= end) {
+        timeout = timeoutError();
+      }
+
       if (timeout !== undefined) {
+        void reader.cancel(timeout).catch(() => undefined);
+
         return { text, ended: false, error: timeout };
       }
 
@@ -85,6 +113,7 @@ async function readBody(
         return { text: text + decoder.decode(), ended: true };
       }
 
+      bytes += value.byteLength;
       text += decoder.decode(value, { stream: true });
     }
 
@@ -99,7 +128,7 @@ async function readBody(
 }
 
 async function readSnippet(response: Response, attempt: Attempt): Promise<string> {
-  const { text, ended } = await readBody(response, attempt.timeoutMs, BODY_SNIPPET_LIMIT);
+  const { text, ended } = await readBody(response, attempt.timeoutMs, BODY_SNIPPET_READ_LIMIT);
 
   if (ended) {
     return snippet(text);

@@ -2297,6 +2297,45 @@ describe("the body of an error", () => {
     expect(pulled).toBeLessThan(10);
     expect(cancelled).toBe(true);
   });
+
+  it("reads a bounded amount of an error body that opens with endless whitespace", async () => {
+    let pulled = 0;
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(new Uint8Array(1024).fill(0x20));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    await expect(
+      client(() => new Response(body, { status: 503 })).getConfig(),
+    ).rejects.toMatchObject({ status: 503, body: "" });
+    expect(pulled).toBeLessThanOrEqual(65);
+    expect(cancelled).toBe(true);
+  });
+
+  it("times out a body whose chunks are always ready and never end", async () => {
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.enqueue(new TextEncoder().encode("[".repeat(1024)));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    await expect(
+      client(
+        () => new Response(body, { headers: { "content-type": "application/json" } }),
+      ).getFormats(),
+    ).rejects.toThrow(DocumentServerTimeoutError);
+    expect(cancelled).toBe(true);
+  });
 });
 
 describe("the url of an error", () => {
