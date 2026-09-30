@@ -146,7 +146,8 @@ The document server signs its own requests, such as a file download or a callbac
 const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
 ```
 
-It takes fetch `Headers` or a plain Node headers object, and matches header names in any case.
+It takes fetch `Headers` or a plain Node headers object, and matches header names and the prefix
+in any case.
 If the server sets its own `token.outbox.header` or `token.outbox.prefix`, pass the same values.
 An empty prefix reads a bare token:
 
