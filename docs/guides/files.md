@@ -13,8 +13,7 @@ const file = await client.getFile("/cache/files/data/conv_key/output.pdf/output.
 const bytes = new Uint8Array(await file.arrayBuffer());
 ```
 
-Like every other method, it takes a path and a query instead of a URL, and sends them to the
-configured `baseUrl`.
+It takes a path and a query, not a URL, and sends them to the configured `baseUrl`.
 
 ## Split the URL first
 
