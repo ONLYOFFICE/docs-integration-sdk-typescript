@@ -2336,6 +2336,102 @@ describe("the body of an error", () => {
     ).rejects.toThrow(DocumentServerTimeoutError);
     expect(cancelled).toBe(true);
   });
+
+  describe("cancelled by the caller", () => {
+    const reason = new Error("cancelled by the caller");
+
+    /** A client whose caller cancels while the body of the answer is still arriving. */
+    function cancelling(status: number, type = "text/plain") {
+      const controller = new AbortController();
+      const state = { cancelled: false };
+      const client = new DocumentServerClient({
+        baseUrl: "https://docs.example.com",
+        timeoutMs: 10_000,
+        fetch: spyFetch(() => {
+          setTimeout(() => {
+            controller.abort(reason);
+          }, 5);
+
+          return new Response(
+            new ReadableStream({
+              start(stream) {
+                stream.enqueue(new TextEncoder().encode("Service Unavailable"));
+              },
+              cancel() {
+                state.cancelled = true;
+              },
+            }),
+            { status, headers: { "content-type": type } },
+          );
+        }).fetch,
+      });
+
+      return { client, state, options: { signal: controller.signal } };
+    }
+
+    it("rejects getFile with the reason while reading an error body", async () => {
+      const { client, state, options } = cancelling(503);
+
+      await expect(client.getFile("/cache/files/output.pdf", undefined, options)).rejects.toBe(
+        reason,
+      );
+      expect(state.cancelled).toBe(true);
+    });
+
+    it("rejects convertFromFile with the reason while reading an error body", async () => {
+      const { client, options } = cancelling(503);
+
+      await expect(
+        client.convertFromFile(docx, new Blob(["docx"]), undefined, options),
+      ).rejects.toBe(reason);
+    });
+
+    it("rejects healthcheck with the reason instead of answering false", async () => {
+      const { client, options } = cancelling(503);
+
+      await expect(client.healthcheck(options)).rejects.toBe(reason);
+    });
+
+    it("rejects with the reason while reading a JSON answer", async () => {
+      const { client, state, options } = cancelling(200, "application/json");
+
+      await expect(client.getConfig(options)).rejects.toBe(reason);
+      expect(state.cancelled).toBe(true);
+    });
+
+    it("rejects with the reason when fetch errors the body with it", async () => {
+      const controller = new AbortController();
+      const client = new DocumentServerClient({
+        baseUrl: "https://docs.example.com",
+        timeoutMs: 10_000,
+        fetch: (_url, init) => {
+          const signal = init?.signal;
+
+          return Promise.resolve(
+            new Response(
+              new ReadableStream({
+                start(stream) {
+                  stream.enqueue(new TextEncoder().encode("Service Unavailable"));
+                  signal?.addEventListener("abort", () => {
+                    stream.error(signal.reason);
+                  });
+                },
+              }),
+              { status: 503 },
+            ),
+          );
+        },
+      });
+
+      setTimeout(() => {
+        controller.abort(reason);
+      }, 5);
+
+      await expect(
+        client.getFile("/cache/files/output.pdf", undefined, { signal: controller.signal }),
+      ).rejects.toBe(reason);
+    });
+  });
 });
 
 describe("the url of an error", () => {

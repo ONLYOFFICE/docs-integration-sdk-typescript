@@ -76,7 +76,7 @@ function reached(text: string, bytes: number, limit: ReadLimit | undefined): boo
 
 async function readBody(
   response: Response,
-  timeoutMs: number,
+  attempt: Attempt,
   limit?: ReadLimit,
 ): Promise<BodyRead> {
   const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
@@ -85,28 +85,41 @@ async function readBody(
     return { text: "", ended: true };
   }
 
+  const { signal, timeoutMs } = attempt;
   const decoder = new TextDecoder();
   const end = Date.now() + timeoutMs;
   let text = "";
   let bytes = 0;
-  let timeout: DOMException | undefined;
+  let stop: { error: unknown } | undefined;
+  const fail = (error: unknown): void => {
+    if (stop === undefined) {
+      stop = { error };
+      void reader.cancel(error).catch(() => undefined);
+    }
+  };
+  const abort = (): void => {
+    fail(signal?.reason);
+  };
   const timer = setTimeout(() => {
-    timeout = timeoutError();
-    void reader.cancel(timeout).catch(() => undefined);
+    fail(timeoutError());
   }, timeoutMs);
+
+  signal?.addEventListener("abort", abort, { once: true });
+
+  if (signal?.aborted === true) {
+    abort();
+  }
 
   try {
     while (!reached(text, bytes, limit)) {
       const { done, value } = await reader.read();
 
-      if (timeout === undefined && Date.now() >= end) {
-        timeout = timeoutError();
+      if (Date.now() >= end) {
+        fail(timeoutError());
       }
 
-      if (timeout !== undefined) {
-        void reader.cancel(timeout).catch(() => undefined);
-
-        return { text, ended: false, error: timeout };
+      if (stop !== undefined) {
+        return { text, ended: false, error: stop.error };
       }
 
       if (done) {
@@ -124,11 +137,16 @@ async function readBody(
     return { text, ended: false, error };
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener("abort", abort);
   }
 }
 
 async function readSnippet(response: Response, attempt: Attempt): Promise<string> {
-  const { text, ended } = await readBody(response, attempt.timeoutMs, BODY_SNIPPET_READ_LIMIT);
+  const { text, ended } = await readBody(response, attempt, BODY_SNIPPET_READ_LIMIT);
+
+  if (!ended && attempt.signal?.aborted === true) {
+    throw attempt.signal.reason;
+  }
 
   if (ended) {
     return snippet(text);
@@ -141,7 +159,7 @@ async function readSnippet(response: Response, attempt: Attempt): Promise<string
 
 /** Reads a body, a connection that breaks or a deadline that runs out on the way included. */
 async function readText(response: Response, attempt: Attempt): Promise<string> {
-  const { text, ended, error } = await readBody(response, attempt.timeoutMs);
+  const { text, ended, error } = await readBody(response, attempt);
 
   if (!ended) {
     throw transportError(error, attempt);
