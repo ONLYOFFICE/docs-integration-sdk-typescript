@@ -69,5 +69,6 @@ error page from a reverse proxy is never written to disk as the file.
 ## Timeout
 
 `timeoutMs` only limits the wait for the response. It stops once the response arrives, so
-reading the body doesn't race the deadline. To cancel a download in progress, pass a `signal`.
+reading the body doesn't race the deadline. The beginning of an error body, read for the
+`DocumentServerHttpError`, gets a `timeoutMs` of its own. To cancel a download in progress, pass a `signal`.
 See [`timeoutMs`](client.md#timeoutms).

@@ -161,7 +161,11 @@ export class DocumentServerHttpError extends DocumentServerError {
   declare readonly response: Response;
   /** The status of the response. */
   readonly status: number;
-  /** The first 512 characters of the response body, trimmed. Empty when it couldn't be read. */
+  /**
+   * The first 512 characters of the response body, trimmed, ending with `…` when the body goes
+   * on. The body is read only that far, and for at most `timeoutMs`: what arrived by then, with
+   * `…`. Empty when nothing of it could be read.
+   */
   readonly body: string;
 
   constructor(response: Response, body: string) {

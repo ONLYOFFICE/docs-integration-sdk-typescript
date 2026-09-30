@@ -2226,6 +2226,79 @@ describe("a request that gets no answer", () => {
   });
 });
 
+describe("the body of an error", () => {
+  const docx: ConvertFileRequest = { filetype: "docx", key: "Khirz6zTPdfd7", outputtype: "pdf" };
+
+  /** A response that sends the first chunk of its body and then stalls, never ending. */
+  function stalled(status: number, chunk: string, type = "text/plain"): () => Response {
+    return () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(chunk));
+          },
+        }),
+        { status, headers: { "content-type": type } },
+      );
+  }
+
+  function client(respond: () => Response) {
+    return new DocumentServerClient({
+      baseUrl: "https://docs.example.com",
+      timeoutMs: 20,
+      fetch: spyFetch(respond).fetch,
+    });
+  }
+
+  it("stops reading a stalled error body of getFile on the deadline", async () => {
+    await expect(
+      client(stalled(503, "Service Unavailable")).getFile("/cache/files/output.pdf"),
+    ).rejects.toMatchObject({ kind: "http", status: 503, body: "Service Unavailable…" });
+  });
+
+  it("stops reading a stalled error body of convertFromFile on the deadline", async () => {
+    await expect(
+      client(stalled(503, "Service Unavailable")).convertFromFile(docx, new Blob(["docx"])),
+    ).rejects.toMatchObject({ kind: "http", status: 503, body: "Service Unavailable…" });
+  });
+
+  it("times out a stalled JSON answer of convertFromFile", async () => {
+    const rejection = client(stalled(200, '{"endConvert":', "application/json")).convertFromFile(
+      docx,
+      new Blob(["docx"]),
+    );
+
+    await expect(rejection).rejects.toThrow(DocumentServerTimeoutError);
+    await expect(rejection).rejects.toMatchObject({ timeoutMs: 20 });
+  });
+
+  it("gives an empty body when nothing arrived before the deadline", async () => {
+    await expect(
+      client(stalled(503, "  ")).getFile("/cache/files/output.pdf"),
+    ).rejects.toMatchObject({ status: 503, body: "" });
+  });
+
+  it("reads no more of an error body than the snippet needs, and cancels the rest", async () => {
+    let pulled = 0;
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(new TextEncoder().encode("x".repeat(100)));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+
+    await expect(
+      client(() => new Response(body, { status: 500 })).getConfig(),
+    ).rejects.toMatchObject({ body: `${"x".repeat(512)}…` });
+    expect(pulled).toBeLessThan(10);
+    expect(cancelled).toBe(true);
+  });
+});
+
 describe("the url of an error", () => {
   /** Answers the way fetch does: the response carries the url it was fetched from. */
   function answering(respond: () => Response): ClientOptions["fetch"] {

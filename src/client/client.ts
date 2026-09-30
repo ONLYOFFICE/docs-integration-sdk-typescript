@@ -48,21 +48,77 @@ function snippet(text: string): string {
     : `${trimmed.slice(0, BODY_SNIPPET_LIMIT)}…`;
 }
 
-async function readSnippet(response: Response): Promise<string> {
-  try {
-    return snippet(await response.text());
-  } catch {
-    return "";
+interface BodyRead {
+  text: string;
+  ended: boolean;
+  error?: unknown;
+}
+
+async function readBody(
+  response: Response,
+  timeoutMs: number,
+  limit = Infinity,
+): Promise<BodyRead> {
+  const reader: ReadableStreamDefaultReader<Uint8Array> | undefined = response.body?.getReader();
+
+  if (reader === undefined) {
+    return { text: "", ended: true };
   }
+
+  const decoder = new TextDecoder();
+  let text = "";
+  let timeout: DOMException | undefined;
+  const timer = setTimeout(() => {
+    timeout = new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    void reader.cancel(timeout).catch(() => undefined);
+  }, timeoutMs);
+
+  try {
+    while (text.length <= limit || text.trimStart().length <= limit) {
+      const { done, value } = await reader.read();
+
+      if (timeout !== undefined) {
+        return { text, ended: false, error: timeout };
+      }
+
+      if (done) {
+        return { text: text + decoder.decode(), ended: true };
+      }
+
+      text += decoder.decode(value, { stream: true });
+    }
+
+    void reader.cancel().catch(() => undefined);
+
+    return { text, ended: false };
+  } catch (error) {
+    return { text, ended: false, error };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readSnippet(response: Response, attempt: Attempt): Promise<string> {
+  const { text, ended } = await readBody(response, attempt.timeoutMs, BODY_SNIPPET_LIMIT);
+
+  if (ended) {
+    return snippet(text);
+  }
+
+  const trimmed = text.trim();
+
+  return trimmed === "" ? "" : `${trimmed.slice(0, BODY_SNIPPET_LIMIT)}…`;
 }
 
 /** Reads a body, a connection that breaks or a deadline that runs out on the way included. */
 async function readText(response: Response, attempt: Attempt): Promise<string> {
-  try {
-    return await response.text();
-  } catch (error) {
+  const { text, ended, error } = await readBody(response, attempt.timeoutMs);
+
+  if (!ended) {
     throw transportError(error, attempt);
   }
+
+  return text;
 }
 
 interface JsonBody {
@@ -72,7 +128,7 @@ interface JsonBody {
 
 async function readJson(response: Response, attempt: Attempt): Promise<JsonBody> {
   if (!response.ok) {
-    throw new DocumentServerHttpError(response, await readSnippet(response));
+    throw new DocumentServerHttpError(response, await readSnippet(response, attempt));
   }
 
   const text = await readText(response, attempt);
@@ -188,7 +244,7 @@ export class DocumentServerClient {
     const response = await this.raw.healthcheck(options);
 
     if (!response.ok) {
-      await readSnippet(response);
+      await readSnippet(response, this.#attempt(response, options));
 
       return false;
     }
@@ -311,7 +367,10 @@ export class DocumentServerClient {
     const response = await this.raw.convertFromFile(request, file, token, options);
 
     if (!response.ok) {
-      throw new DocumentServerHttpError(response, await readSnippet(response));
+      throw new DocumentServerHttpError(
+        response,
+        await readSnippet(response, this.#attempt(response, options)),
+      );
     }
 
     if (!isJson(response)) {
@@ -485,7 +544,10 @@ export class DocumentServerClient {
     const response = await this.raw.getFile(path, query, options);
 
     if (!response.ok) {
-      throw new DocumentServerHttpError(response, await readSnippet(response));
+      throw new DocumentServerHttpError(
+        response,
+        await readSnippet(response, this.#attempt(response, options)),
+      );
     }
 
     return response;
