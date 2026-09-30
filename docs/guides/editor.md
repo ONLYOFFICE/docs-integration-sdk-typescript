@@ -51,8 +51,8 @@ The constructor takes:
 1. The config input: the file, the permissions on it and the whole `editorConfig`. The fields
    are typed by [`@onlyoffice/doceditor-types`][doceditor-types]. Its version follows the
    document server version (`9.4.2` is Docs `9.4.0`), not the version of this SDK.
-2. A format lookup: [`DocumentServerFormats`](formats.md), or any object with a
-   `getFormat(extension)` method that returns the `type` and `actions` of a format.
+2. A format lookup: [`DocumentServerFormats`](formats.md), or any `FormatLookup`: an object
+   with a `getFormat(extension)` method that returns the `type` and `actions` of a format.
 
 The result is on `config.config`. It is validated, completed and deeply frozen. The input is
 copied, so later changes to it have no effect. The instance serializes as the config, so
@@ -138,8 +138,8 @@ const signed = await config.sign(jwt);
 The token covers the whole config except the token itself. A config that already has a
 `token` is signed again from scratch.
 
-`sign()` takes [`DocumentServerJwt`](jwt.md) or any object with a `sign(payload)` method that
-resolves to a token, for example a signer backed by a key vault.
+`sign()` takes [`DocumentServerJwt`](jwt.md) or any `ConfigSigner`: an object with a
+`sign(payload)` method that resolves to a token, for example a signer backed by a key vault.
 
 ## Open the editor in the browser
 

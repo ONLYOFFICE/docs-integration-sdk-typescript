@@ -119,8 +119,9 @@ somewhere else never reaches your download.
 
 `verifier` is required:
 
-- Pass [`DocumentServerJwt`](jwt.md) configured with the inbox secret, or any object with a
-  `verify(token)` method that resolves to the token's payload.
+- Pass [`DocumentServerJwt`](jwt.md) configured with the inbox secret, or any
+  `CallbackVerifier`: an object with a `verify(token)` method that resolves to the token's
+  payload.
 - Pass `null` for a document server without a secret. Unsigned callbacks are accepted, and a
   token they carry is not checked or trusted. You have to write `null` explicitly, so you can't
   turn off the check by forgetting an option.

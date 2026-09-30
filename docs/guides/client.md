@@ -4,7 +4,6 @@
 - [Options](#options)
 - [Per-request options](#per-request-options)
 - [The raw client](#the-raw-client)
-- [Modules](#modules)
 
 ## Create a client
 
@@ -192,26 +191,3 @@ response.
 The typed `convertFromFile()` also gives the converted file unread, as `result.file`, but reads
 a JSON answer: it returns the progress of an `async` conversion, and rejects with a
 `ConversionError` on an `error` code. The raw one returns every answer as it came.
-
-## Modules
-
-The package root exports everything. Each module is also available on its own subpath:
-
-| Subpath                                     | Exports                                                                      |
-| ------------------------------------------- | ---------------------------------------------------------------------------- |
-| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports             |
-| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
-| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types  |
-| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`                                            |
-| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                              |
-
-```ts
-import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
-```
-
-Modules don't import each other. Where one works with another, it declares an interface: the
-config signs with any `ConfigSigner` and looks formats up in any `FormatLookup`.
-`DocumentServerJwt` and `DocumentServerFormats` implement them, and so can your own classes.
-
-A class is the same whichever path you import it from. A `JwtError` thrown by a signer from
-`/jwt` passes `instanceof` against the `JwtError` of the root, in ESM and in CJS.
