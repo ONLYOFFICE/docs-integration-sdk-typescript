@@ -26,8 +26,9 @@ All seven extend `DocumentServerError`. The [JWT](jwt.md#verify-a-token),
 separate classes.
 
 **`response`.** The last five errors carry the `response` they were read from. Its body is
-already consumed, so a truncated copy of it is on the error. A network error or a timeout may
-happen before any response, so their `response` is `undefined`.
+already consumed, so `DocumentServerHttpError` and `DocumentServerParseError` keep its beginning
+as `body`. A network error and a timeout have no `response`, even when they happen while the
+body is read.
 
 **`url`.** Every error has the `url` of the request, which tells two document servers apart in a
 log, for example the internal and the public address of the same server. The query is left out,

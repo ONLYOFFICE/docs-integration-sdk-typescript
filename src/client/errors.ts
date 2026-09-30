@@ -114,7 +114,7 @@ export class DocumentServerError extends Error {
 
   /**
    * The response the error was read from, with its body already read. `undefined` for a
-   * network error and a timeout, which can happen before any response.
+   * network error and a timeout, even one that happens while the body is read.
    */
   readonly response: Response | undefined;
 
