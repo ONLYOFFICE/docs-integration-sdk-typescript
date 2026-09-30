@@ -179,7 +179,7 @@ export interface LicenseQuota {
  * Why a command failed:
  *
  * - `0` no error
- * - `1` the document key is missing or too long
+ * - `1` the document key is missing or no document with such key could be found
  * - `2` the callback url is incorrect
  * - `3` internal server error
  * - `4` nothing had changed since the last save, so `forcesave` did nothing
