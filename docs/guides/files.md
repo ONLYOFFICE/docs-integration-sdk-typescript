@@ -15,6 +15,11 @@ const bytes = new Uint8Array(await file.arrayBuffer());
 
 It takes a path and a query, not a URL, and sends them to the configured `baseUrl`.
 
+- [Split the URL first](#split-the-url-first)
+- [Tokens](#tokens)
+- [Streaming](#streaming)
+- [Timeout](#timeout)
+
 ## Split the URL first
 
 The document server hands out absolute URLs: `fileUrl` of a conversion, `url` of a callback,

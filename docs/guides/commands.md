@@ -24,6 +24,10 @@ documentation of each:
 | [`meta`][cmd-meta]                         | Renames the document in every editor.       |
 | [`version`][cmd-version]                   | Returns the version of the document server. |
 
+- [Typed parameters](#typed-parameters)
+- [Response and errors](#response-and-errors)
+- [Signing](#signing)
+
 ## Typed parameters
 
 `CommandRequest` is a union discriminated on `c`, so each command is checked against its own
