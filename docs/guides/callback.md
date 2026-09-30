@@ -22,7 +22,7 @@ import { splitFileUrl } from "@onlyoffice/docs-integration-sdk/client";
 
 export async function POST(request: Request): Promise<Response> {
   const fileId = new URL(request.url).searchParams.get("fileId");
-  const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+  const callback = await DocumentServerCallback.fromRequest(request, { verifier: outbox });
   const file = await storage.find(fileId);
 
   if (file === undefined) {
@@ -69,7 +69,7 @@ JSON, text or bytes. The headers can be `Headers` or a plain Node headers object
 app.post("/callback", express.json(), async (req, res) => {
   const callback = await DocumentServerCallback.parse(
     { body: req.body, headers: req.headers },
-    { verifier: inbox },
+    { verifier: outbox },
   );
 
   const reply = await callback.handle(handlers);
@@ -119,7 +119,7 @@ somewhere else never reaches your download.
 
 `verifier` is required:
 
-- Pass [`DocumentServerJwt`](jwt.md) configured with the inbox secret, or any
+- Pass [`DocumentServerJwt`](jwt.md) configured with the outbox secret, or any
   `CallbackVerifier`: an object with a `verify(token)` method that resolves to the token's
   payload.
 - Pass `null` for a document server without a secret. Unsigned callbacks are accepted, and a
@@ -190,7 +190,7 @@ Such a request did not come from the document server, or not in a shape it sends
 
 ```ts
 try {
-  callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+  callback = await DocumentServerCallback.fromRequest(request, { verifier: outbox });
 } catch (error) {
   if (CallbackError.is(error)) {
     return new Response(null, { status: error.kind === "body" ? 400 : 403 });
