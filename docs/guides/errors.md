@@ -119,7 +119,7 @@ is one, or the message of the underlying error:
 ```
 
 Both cover a body that breaks off while it is read, as well as a request that never got a
-response. Both take `url` from the request, since there may be no response. See
+response. Both take `url` from the request, or from the response when the body broke off. See
 [`timeoutMs`](client.md#timeoutms).
 
 **Cancelling is not wrapped.** A call cancelled through your own `signal` rejects with the
