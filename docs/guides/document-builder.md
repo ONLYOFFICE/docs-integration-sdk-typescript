@@ -44,7 +44,7 @@ By default the document server keeps the connection open until the files are rea
 long-running script can take longer than `timeoutMs`.
 
 With `async: true` the call returns at once with `end: false` and the `key` of the build. Repeat
-the request with that key, and nothing else, until `end` is `true`:
+the request with `async: true` and that key, and nothing else, until `end` is `true`:
 
 ```ts
 const started = await client.docbuilder({ async: true, url });
