@@ -6,4 +6,5 @@
 type JwtHeaders = Headers | Readonly<Record<string, string | readonly string[] | undefined>>;
 ```
 
-Headers of a request, as the `Headers` of fetch or as the plain object of Node.
+The headers of a request: fetch `Headers` or a plain Node headers object. Names are matched
+in any case; of a header given several times, the first value is read.

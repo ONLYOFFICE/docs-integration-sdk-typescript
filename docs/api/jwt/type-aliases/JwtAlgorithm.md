@@ -6,4 +6,4 @@
 type JwtAlgorithm = "HS256" | "HS384" | "HS512";
 ```
 
-The HMAC algorithms the document server signs with.
+The HMAC algorithms the document server signs with. Use the one it is configured with.

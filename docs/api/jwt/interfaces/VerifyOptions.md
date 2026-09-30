@@ -2,7 +2,7 @@
 
 # Interface: VerifyOptions
 
-Overrides applied to a single check, on top of the signer options.
+Options of one [DocumentServerJwt.verify](../classes/DocumentServerJwt.md#verify) call, over the signer options.
 
 ## Extended by
 
@@ -10,6 +10,6 @@ Overrides applied to a single check, on top of the signer options.
 
 ## Properties
 
-| Property                                                     | Type     | Description                                            |
-| ------------------------------------------------------------ | -------- | ------------------------------------------------------ |
-| <a id="property-clocktolerancesec"></a> `clockToleranceSec?` | `number` | Leeway for this token, in place of the configured one. |
+| Property                                                     | Type     | Description                                                                       |
+| ------------------------------------------------------------ | -------- | --------------------------------------------------------------------------------- |
+| <a id="property-clocktolerancesec"></a> `clockToleranceSec?` | `number` | The leeway for this token, instead of the configured one. Validated the same way. |

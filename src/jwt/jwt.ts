@@ -39,60 +39,69 @@ const decoder = new TextDecoder();
 
 type HmacKey = Awaited<ReturnType<typeof crypto.subtle.importKey>>;
 
-/** The HMAC algorithms the document server signs with. */
+/** The HMAC algorithms the document server signs with. Use the one it is configured with. */
 export type JwtAlgorithm = "HS256" | "HS384" | "HS512";
 
-/** Settings of a signer, applied to every token it makes. */
+/** Settings of a {@link DocumentServerJwt}, applied to every token it signs or verifies. */
 export interface JwtOptions {
-  /** Secret the document server is configured with. Required, and not empty. */
+  /** The secret the document server is configured with. Required, not empty. */
   secret: string;
-  /** Algorithm the token is signed with. Default: `"HS256"`. */
+  /** The algorithm tokens are signed and verified with. Default: `"HS256"`. */
   algorithm?: JwtAlgorithm;
   /**
-   * How long a token stays valid, in whole seconds from `1` to `2147483647`, written to
-   * `exp`. `null` leaves the claim out and the token never expires. Default: `300`.
+   * How long a signed token is valid, written to `exp`: a whole number of seconds from `1` to
+   * `2147483647`. `null` leaves `exp` out, and the token never expires. Default: `300`.
    */
   expiresInSec?: number | null;
   /**
-   * Leeway on `exp` and `nbf`, in whole seconds from `0` to `2147483647`, for a document
-   * server whose clock runs apart from ours. Default: `0`.
+   * Leeway on `exp` and `nbf` when verifying, for a document server whose clock differs from
+   * yours: a whole number of seconds from `0` to `2147483647`. Default: `0`.
    */
   clockToleranceSec?: number;
 }
 
 /**
- * The endpoint a token is meant for: `"converter"` for `/converter` and
- * `/converter/from-file`, `"command"` for `/command`, `"docbuilder"` for `/docbuilder` and
- * `/docbuilder/from-file`.
+ * The endpoint a token is for, written to the `operation` claim:
+ *
+ * - `"converter"`: `/converter` and `/converter/from-file`;
+ * - `"command"`: `/command`;
+ * - `"docbuilder"`: `/docbuilder` and `/docbuilder/from-file`.
  */
 export type JwtOperation = "converter" | "command" | "docbuilder";
 
-/** Overrides applied to a single token, on top of the signer options. */
+/** Options of one {@link DocumentServerJwt.sign} call, over the signer options. */
 export interface SignOptions {
-  /** Lifetime of this token, in place of the configured one. */
+  /** The lifetime of this token, instead of the configured one. Validated the same way. */
   expiresInSec?: number | null;
   /**
-   * Written to the `operation` claim, in place of one the payload carries. The document
-   * server refuses a token whose `operation` names another endpoint, and the `from-file`
-   * endpoints refuse one without it.
+   * Written to the `operation` claim, over an `operation` the payload has.
+   *
+   * The document server refuses a token whose `operation` names another endpoint. The
+   * `from-file` endpoints refuse a token without it; the others accept one without it.
    */
   operation?: JwtOperation;
 }
 
-/** Overrides applied to a single check, on top of the signer options. */
+/** Options of one {@link DocumentServerJwt.verify} call, over the signer options. */
 export interface VerifyOptions {
-  /** Leeway for this token, in place of the configured one. */
+  /** The leeway for this token, instead of the configured one. Validated the same way. */
   clockToleranceSec?: number;
 }
 
-/** Headers of a request, as the `Headers` of fetch or as the plain object of Node. */
+/**
+ * The headers of a request: fetch `Headers` or a plain Node headers object. Names are matched
+ * in any case; of a header given several times, the first value is read.
+ */
 export type JwtHeaders = Headers | Readonly<Record<string, string | readonly string[] | undefined>>;
 
-/** Where {@link DocumentServerJwt.verifyHeader} finds the token, on top of the check. */
+/**
+ * Options of one {@link DocumentServerJwt.verifyHeader} call. Set the header and the prefix to
+ * the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
+ */
 export interface VerifyHeaderOptions extends VerifyOptions {
-  /** Header the token is sent in. Default: `"Authorization"`. */
+  /** The header the token is read from. Default: `"Authorization"`. */
   authorizationHeader?: string;
-  /** Written before the token in that header. Default: `"Bearer "`. */
+  /** What comes before the token in that header. `""` reads a bare token. Default: `"Bearer "`. */
   authorizationPrefix?: string;
 }
 
@@ -308,15 +317,28 @@ function withClaims(
 }
 
 /**
- * Signs the tokens the document server expects, over the secret it is configured with.
+ * Signs the tokens the document server expects and verifies the tokens it sends. HMAC comes
+ * from WebCrypto, so there are no dependencies.
  *
- * One signer stands for one secret. A server configured with separate `inbox`, `outbox`
- * and `session` secrets takes a signer for each.
+ * One signer holds one secret. A document server with separate `inbox`, `outbox` and
+ * `session` secrets needs a signer for each.
+ *
+ * @example
+ * ```ts
+ * const jwt = new DocumentServerJwt({ secret: process.env["DOCS_JWT_SECRET"] ?? "" });
+ *
+ * await client.convert({ ...request, token: await jwt.sign(request) });
+ * await client.convert(request, await jwt.signHeader(request));
+ *
+ * const claims = await jwt.verify(token);
+ * ```
+ *
+ * @see [JWT](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/jwt.md)
  */
 export class DocumentServerJwt {
   /**
-   * The effective settings: validated, with the defaults applied, and frozen. The secret is
-   * kept out of them, so that logging the signer does not write it out.
+   * The settings in effect: validated, with defaults, and frozen. The secret is left out, so
+   * logging the signer doesn't reveal it.
    */
   readonly options: Readonly<Required<Omit<JwtOptions, "secret">>>;
 
@@ -324,6 +346,12 @@ export class DocumentServerJwt {
   readonly #hash: string;
   #key?: Promise<HmacKey>;
 
+  /**
+   * @param options The secret, and the defaults of every token.
+   * @throws {TypeError} when `secret` is empty, `algorithm` is not one of
+   * {@link JwtAlgorithm}, `expiresInSec` is neither `null` nor a whole number from `1` to
+   * `2147483647`, or `clockToleranceSec` is not a whole number from `0` to `2147483647`.
+   */
   constructor(options: JwtOptions) {
     const algorithm = options.algorithm ?? DEFAULT_ALGORITHM;
     const expiresInSec =
@@ -356,14 +384,31 @@ export class DocumentServerJwt {
   }
 
   /**
-   * Signs `payload` into a token in the compact serialization.
+   * Signs `payload` into a token. Use it for a token in the request body, which signs the body
+   * itself.
    *
-   * `iat` and `exp` are added, each unless the payload already carries it. A claim set to
-   * `undefined` or `null` counts as not carried. `operation`, when given, is written over
-   * the one the payload carries.
+   * Claims added to the payload:
    *
-   * @throws {TypeError} when the payload is not a plain object — an array, a `Map`, an
-   * instance of a class — or the lifetime is neither `null` nor a positive integer.
+   * - `iat`, the current time, unless the payload has one;
+   * - `exp`, the current time plus `expiresInSec`, unless the payload has one. Left out when
+   *   `expiresInSec` is `null`;
+   * - `operation`, when given in `options`, over an `operation` the payload has.
+   *
+   * A claim that is `undefined` or `null` in the payload counts as missing.
+   *
+   * @example
+   * ```ts
+   * await jwt.sign(payload); // expires in 5 minutes
+   * await jwt.sign(payload, { expiresInSec: 3600 }); // in an hour
+   * await jwt.sign(payload, { expiresInSec: null }); // never
+   * await jwt.sign(request, { operation: "converter" });
+   * ```
+   *
+   * @param payload A plain object: its prototype is `Object.prototype` or `null`.
+   * @param options The lifetime and the `operation` claim of this token.
+   * @returns The token, in the compact serialization.
+   * @throws {TypeError} when `payload` is not a plain object, such as an array, a `Map` or an
+   * instance of a class, or when `expiresInSec` is invalid.
    */
   async sign(payload: object, options?: SignOptions): Promise<string> {
     const expiresInSec =
@@ -381,12 +426,17 @@ export class DocumentServerJwt {
   }
 
   /**
-   * Signs `payload` into a token for a header of a request to the document server, which
-   * takes the body of such a request wrapped as `{ payload: … }`.
+   * Signs `payload` into a token for the authorization header of a request. The document
+   * server expects that token to sign the body wrapped as `{ payload: … }`, so
+   * `signHeader(body)` is `sign({ payload: body })`.
    *
-   * `iat`, `exp` and `operation` go beside `payload`, as {@link DocumentServerJwt.sign}
-   * writes them. The document server does not look for `operation` inside `payload`.
+   * `iat`, `exp` and `operation` are added next to `payload`, as
+   * {@link DocumentServerJwt.sign} adds them. The document server doesn't look for `operation`
+   * inside `payload`.
    *
+   * @param payload The request body, a plain object.
+   * @param options The lifetime and the `operation` claim of this token.
+   * @returns The token, to pass as the header argument of a client method.
    * @throws {TypeError} whenever {@link DocumentServerJwt.sign} would.
    */
   async signHeader(payload: object, options?: SignOptions): Promise<string> {
@@ -396,14 +446,31 @@ export class DocumentServerJwt {
   }
 
   /**
-   * Checks a token against the secret and the clock, and answers with what it carries.
+   * Verifies a token and returns its claims.
    *
-   * The algorithm is the one the signer is configured with: a token naming another in its
-   * header is refused rather than taken at its word. `exp` and `nbf` are honoured when
-   * present, `iat` is not. The payload is parsed only once the signature has matched.
+   * The checks, in order:
    *
-   * @throws {@link JwtError} when the token is malformed, signed with another algorithm
-   * or another secret, expired, or not valid yet.
+   * 1. The `alg` of the token header must be the configured algorithm. A token that names
+   *    another, `"none"` included, is refused before the signature is checked.
+   * 2. The signature must match the secret.
+   * 3. `exp` and `nbf`, when present, must be numbers, and the current time must be within
+   *    them, give or take `clockToleranceSec`. `iat` is not checked.
+   *
+   * The payload is parsed only after the signature matches.
+   *
+   * @param token The token, in the compact serialization.
+   * @param options The leeway for this token.
+   * @returns The claims, typed as `T`. The type is not checked.
+   * @throws {@link JwtError} of kind:
+   *
+   * - `"malformed"` when the token is not a string of three segments, a segment is not
+   *   canonical base64url, the header or the payload is not a JSON object, or `exp` or `nbf` is
+   *   not a number;
+   * - `"algorithm"` when the header names another algorithm;
+   * - `"signature"` when the signature doesn't match;
+   * - `"expired"` when `exp` has passed;
+   * - `"premature"` when `nbf` has not come yet.
+   * @throws {TypeError} when `clockToleranceSec` is invalid.
    */
   async verify<T = Record<string, unknown>>(token: string, options?: VerifyOptions): Promise<T> {
     if (typeof token !== "string") {
@@ -463,17 +530,25 @@ export class DocumentServerJwt {
   }
 
   /**
-   * Checks the token the document server sent in a header of its request, and answers with
-   * the `payload` it signs.
+   * Reads the token from the authorization header of a request the document server sent, such
+   * as a file download, verifies it and returns its `payload` claim.
    *
-   * The document server signs what it sends — the download of a file, a callback — in the
-   * `Authorization` header by default, as `Bearer <token>`, and the claims of such a token
-   * wrap what the request is about under `payload`. The header and the prefix are the
-   * `token.outbox.header` and `token.outbox.prefix` settings of the server.
+   * The document server sends `Authorization: Bearer <token>` by default, and its claims wrap
+   * the request data in `payload`.
    *
-   * @throws {@link JwtError} `missing` when the header carries no token, `malformed` when
-   * the token carries no `payload` object, and whatever {@link DocumentServerJwt.verify}
-   * refuses it with.
+   * @example
+   * ```ts
+   * const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
+   * ```
+   *
+   * @param headers The headers of the request.
+   * @param options The header, the prefix and the leeway.
+   * @returns The `payload` claim, typed as `T`. The type is not checked.
+   * @throws {@link JwtError} of kind `"missing"` when the header is missing, has another
+   * prefix or holds only the prefix. Use it to tell a request of the document server from one
+   * of a user.
+   * @throws {@link JwtError} of kind `"malformed"` when the token has no `payload` object, and
+   * any error {@link DocumentServerJwt.verify} throws.
    */
   async verifyHeader<T = Record<string, unknown>>(
     headers: JwtHeaders,

@@ -2,11 +2,11 @@
 
 # Interface: SignOptions
 
-Overrides applied to a single token, on top of the signer options.
+Options of one [DocumentServerJwt.sign](../classes/DocumentServerJwt.md#sign) call, over the signer options.
 
 ## Properties
 
-| Property                                           | Type                                              | Description                                                                                                                                                                                               |
-| -------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="property-expiresinsec"></a> `expiresInSec?` | `number` \| `null`                                | Lifetime of this token, in place of the configured one.                                                                                                                                                   |
-| <a id="property-operation"></a> `operation?`       | [`JwtOperation`](../type-aliases/JwtOperation.md) | Written to the `operation` claim, in place of one the payload carries. The document server refuses a token whose `operation` names another endpoint, and the `from-file` endpoints refuse one without it. |
+| Property                                           | Type                                              | Description                                                                                                                                                                                                                                 |
+| -------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <a id="property-expiresinsec"></a> `expiresInSec?` | `number` \| `null`                                | The lifetime of this token, instead of the configured one. Validated the same way.                                                                                                                                                          |
+| <a id="property-operation"></a> `operation?`       | [`JwtOperation`](../type-aliases/JwtOperation.md) | Written to the `operation` claim, over an `operation` the payload has. The document server refuses a token whose `operation` names another endpoint. The `from-file` endpoints refuse a token without it; the others accept one without it. |

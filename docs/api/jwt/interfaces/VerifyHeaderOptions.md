@@ -2,7 +2,8 @@
 
 # Interface: VerifyHeaderOptions
 
-Where [DocumentServerJwt.verifyHeader](../classes/DocumentServerJwt.md#verifyheader) finds the token, on top of the check.
+Options of one [DocumentServerJwt.verifyHeader](../classes/DocumentServerJwt.md#verifyheader) call. Set the header and the prefix to
+the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
 
 ## Extends
 
@@ -10,8 +11,8 @@ Where [DocumentServerJwt.verifyHeader](../classes/DocumentServerJwt.md#verifyhea
 
 ## Properties
 
-| Property                                                         | Type     | Description                                                    |
-| ---------------------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string` | Header the token is sent in. Default: `"Authorization"`.       |
-| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string` | Written before the token in that header. Default: `"Bearer "`. |
-| <a id="property-clocktolerancesec"></a> `clockToleranceSec?`     | `number` | Leeway for this token, in place of the configured one.         |
+| Property                                                         | Type     | Description                                                                                |
+| ---------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| <a id="property-authorizationheader"></a> `authorizationHeader?` | `string` | The header the token is read from. Default: `"Authorization"`.                             |
+| <a id="property-authorizationprefix"></a> `authorizationPrefix?` | `string` | What comes before the token in that header. `""` reads a bare token. Default: `"Bearer "`. |
+| <a id="property-clocktolerancesec"></a> `clockToleranceSec?`     | `number` | The leeway for this token, instead of the configured one. Validated the same way.          |

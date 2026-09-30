@@ -111,6 +111,8 @@ try {
 | `"premature"` | `nbf` is in the future             |
 | `"missing"`   | the header carries no token        |
 
+The exact conditions are in the [`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
+
 How the check works:
 
 - The algorithm is the one the signer is configured with. A token that names another algorithm

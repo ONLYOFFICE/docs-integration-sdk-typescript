@@ -2,8 +2,11 @@
 
 # Class: JwtError
 
-A token that could not be trusted: missing where one is required, malformed, signed with
-another algorithm or another secret, expired, or not valid yet.
+Thrown by [DocumentServerJwt.verify](DocumentServerJwt.md#verify) and [DocumentServerJwt.verifyHeader](DocumentServerJwt.md#verifyheader) when a
+token can't be trusted. Reply to such a request with `403`.
+
+Separate from the client errors: `JwtError.is()` and `DocumentServerError.is()` never both
+return `true`.
 
 ## Extends
 
@@ -41,9 +44,9 @@ Error.constructor;
 
 ## Properties
 
-| Property                          | Modifier   | Type                                              | Description                            |
-| --------------------------------- | ---------- | ------------------------------------------------- | -------------------------------------- |
-| <a id="property-kind"></a> `kind` | `readonly` | [`JwtErrorKind`](../type-aliases/JwtErrorKind.md) | Which of the checks refused the token. |
+| Property                          | Modifier   | Type                                              | Description                    |
+| --------------------------------- | ---------- | ------------------------------------------------- | ------------------------------ |
+| <a id="property-kind"></a> `kind` | `readonly` | [`JwtErrorKind`](../type-aliases/JwtErrorKind.md) | Which check refused the token. |
 
 ## Methods
 
@@ -53,7 +56,8 @@ Error.constructor;
 static is(value): value is JwtError;
 ```
 
-Recognizes an error of this SDK, a second copy of the package included.
+Returns whether `value` is a `JwtError`, also one thrown by a second copy of the package,
+which `instanceof` misses.
 
 #### Parameters
 
