@@ -25,13 +25,15 @@ new CallbackError(
 ): CallbackError;
 ```
 
+Creates the error, for a check of your own that refuses a callback the same way.
+
 #### Parameters
 
-| Parameter  | Type                                                        |
-| ---------- | ----------------------------------------------------------- |
-| `kind`     | [`CallbackErrorKind`](../type-aliases/CallbackErrorKind.md) |
-| `message`  | `string`                                                    |
-| `options?` | `ErrorOptions`                                              |
+| Parameter  | Type                                                        | Description                                                |
+| ---------- | ----------------------------------------------------------- | ---------------------------------------------------------- |
+| `kind`     | [`CallbackErrorKind`](../type-aliases/CallbackErrorKind.md) | Which check refused the callback.                          |
+| `message`  | `string`                                                    | What was wrong, for a log.                                 |
+| `options?` | `ErrorOptions`                                              | The `cause`: for `"signature"`, the error of the verifier. |
 
 #### Returns
 

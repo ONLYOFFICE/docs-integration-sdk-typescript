@@ -125,6 +125,15 @@ export class DocumentServerError extends Error {
    */
   readonly url: string;
 
+  /**
+   * Creates the error. The client throws the subclasses; build one yourself only to fail the same
+   * way, for example in a `fetch` of your own.
+   *
+   * @param kind Which failure the error stands for.
+   * @param message What went wrong, for a log.
+   * @param response The response the error was read from, or `undefined` when there is none.
+   * @param options The `cause`, and the `url` of the request when there is no response.
+   */
   constructor(
     kind: DocumentServerErrorKind,
     message: string,
@@ -168,6 +177,12 @@ export class DocumentServerHttpError extends DocumentServerError {
    */
   readonly body: string;
 
+  /**
+   * Creates the error for a status outside the 2xx range.
+   *
+   * @param response The response, with its body already read.
+   * @param body The beginning of the body, which the message repeats.
+   */
   constructor(response: Response, body: string) {
     const status = `${String(response.status)} ${response.statusText}`.trim();
 
@@ -201,6 +216,14 @@ export class DocumentServerParseError extends DocumentServerError {
   /** The first 512 characters of the response body, trimmed. */
   readonly body: string;
 
+  /**
+   * Creates the error for a body that is not what the endpoint promises.
+   *
+   * @param message What was wrong with the body.
+   * @param response The response, with its body already read.
+   * @param body The beginning of the body.
+   * @param options The `cause`, such as the `SyntaxError` of `JSON.parse`.
+   */
   constructor(message: string, response: Response, body: string, options?: ErrorOptions) {
     super("parse", message, response, options);
     this.name = "DocumentServerParseError";
@@ -230,6 +253,13 @@ export class ConversionError extends DocumentServerError {
    */
   readonly code: ConversionErrorCode;
 
+  /**
+   * Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+   * it means.
+   *
+   * @param code The error code the service answered with.
+   * @param response The response, with its body already read.
+   */
   constructor(code: ConversionErrorCode, response: Response) {
     super(
       "conversion",
@@ -263,6 +293,13 @@ export class CommandError extends DocumentServerError {
    */
   readonly code: CommandErrorCode;
 
+  /**
+   * Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+   * it means.
+   *
+   * @param code The error code the service answered with.
+   * @param response The response, with its body already read.
+   */
   constructor(code: CommandErrorCode, response: Response) {
     super(
       "command",
@@ -296,6 +333,13 @@ export class BuilderError extends DocumentServerError {
    */
   readonly code: BuilderErrorCode;
 
+  /**
+   * Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+   * it means.
+   *
+   * @param code The error code the service answered with.
+   * @param response The response, with its body already read.
+   */
   constructor(code: BuilderErrorCode, response: Response) {
     super(
       "builder",
@@ -362,6 +406,12 @@ export class DocumentServerNetworkError extends DocumentServerError {
   declare readonly kind: "network";
   declare readonly response: undefined;
 
+  /**
+   * Creates the error for a request that got no answer or lost it on the way.
+   *
+   * @param url The URL of the request. The query is left out of the error.
+   * @param cause What `fetch` or the body stream rejected with.
+   */
   constructor(url: string, cause: unknown) {
     super(
       "network",
@@ -394,6 +444,13 @@ export class DocumentServerTimeoutError extends DocumentServerError {
   /** The deadline that passed, in milliseconds. */
   readonly timeoutMs: number;
 
+  /**
+   * Creates the error for a deadline that passed.
+   *
+   * @param url The URL of the request. The query is left out of the error.
+   * @param timeoutMs The deadline, in milliseconds.
+   * @param cause The abort reason, a `DOMException` named `"TimeoutError"`.
+   */
   constructor(url: string, timeoutMs: number, cause: unknown) {
     super(
       "timeout",

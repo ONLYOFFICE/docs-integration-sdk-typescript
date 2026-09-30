@@ -54,14 +54,17 @@ new DocumentServerError(
 ): DocumentServerError;
 ```
 
+Creates the error. The client throws the subclasses; build one yourself only to fail the same
+way, for example in a `fetch` of your own.
+
 #### Parameters
 
-| Parameter  | Type                                                                    |
-| ---------- | ----------------------------------------------------------------------- |
-| `kind`     | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) |
-| `message`  | `string`                                                                |
-| `response` | `Response` \| `undefined`                                               |
-| `options?` | `ErrorOptions` & \{ `url?`: `string`; \}                                |
+| Parameter  | Type                                                                    | Description                                                              |
+| ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `kind`     | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | Which failure the error stands for.                                      |
+| `message`  | `string`                                                                | What went wrong, for a log.                                              |
+| `response` | `Response` \| `undefined`                                               | The response the error was read from, or `undefined` when there is none. |
+| `options?` | `ErrorOptions` & \{ `url?`: `string`; \}                                | The `cause`, and the `url` of the request when there is no response.     |
 
 #### Returns
 

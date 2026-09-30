@@ -23,14 +23,16 @@ new DocumentServerParseError(
 ): DocumentServerParseError;
 ```
 
+Creates the error for a body that is not what the endpoint promises.
+
 #### Parameters
 
-| Parameter  | Type           |
-| ---------- | -------------- |
-| `message`  | `string`       |
-| `response` | `Response`     |
-| `body`     | `string`       |
-| `options?` | `ErrorOptions` |
+| Parameter  | Type           | Description                                             |
+| ---------- | -------------- | ------------------------------------------------------- |
+| `message`  | `string`       | What was wrong with the body.                           |
+| `response` | `Response`     | The response, with its body already read.               |
+| `body`     | `string`       | The beginning of the body.                              |
+| `options?` | `ErrorOptions` | The `cause`, such as the `SyntaxError` of `JSON.parse`. |
 
 #### Returns
 

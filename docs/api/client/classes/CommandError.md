@@ -18,12 +18,15 @@ The message names the code and what it means.
 new CommandError(code, response): CommandError;
 ```
 
+Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+it means.
+
 #### Parameters
 
-| Parameter  | Type                                                      |
-| ---------- | --------------------------------------------------------- |
-| `code`     | [`CommandErrorCode`](../type-aliases/CommandErrorCode.md) |
-| `response` | `Response`                                                |
+| Parameter  | Type                                                      | Description                               |
+| ---------- | --------------------------------------------------------- | ----------------------------------------- |
+| `code`     | [`CommandErrorCode`](../type-aliases/CommandErrorCode.md) | The error code the service answered with. |
+| `response` | `Response`                                                | The response, with its body already read. |
 
 #### Returns
 

@@ -20,12 +20,14 @@ the system error code under it, such as `ECONNREFUSED`, or else that error's mes
 new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 ```
 
+Creates the error for a request that got no answer or lost it on the way.
+
 #### Parameters
 
-| Parameter | Type      |
-| --------- | --------- |
-| `url`     | `string`  |
-| `cause`   | `unknown` |
+| Parameter | Type      | Description                                                 |
+| --------- | --------- | ----------------------------------------------------------- |
+| `url`     | `string`  | The URL of the request. The query is left out of the error. |
+| `cause`   | `unknown` | What `fetch` or the body stream rejected with.              |
 
 #### Returns
 

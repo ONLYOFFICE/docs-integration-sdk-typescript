@@ -18,12 +18,15 @@ The message names the code and what it means.
 new ConversionError(code, response): ConversionError;
 ```
 
+Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+it means.
+
 #### Parameters
 
-| Parameter  | Type                                                            |
-| ---------- | --------------------------------------------------------------- |
-| `code`     | [`ConversionErrorCode`](../type-aliases/ConversionErrorCode.md) |
-| `response` | `Response`                                                      |
+| Parameter  | Type                                                            | Description                               |
+| ---------- | --------------------------------------------------------------- | ----------------------------------------- |
+| `code`     | [`ConversionErrorCode`](../type-aliases/ConversionErrorCode.md) | The error code the service answered with. |
+| `response` | `Response`                                                      | The response, with its body already read. |
 
 #### Returns
 

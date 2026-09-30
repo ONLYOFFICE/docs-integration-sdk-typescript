@@ -17,12 +17,14 @@ status, the URL and the beginning of the body.
 new DocumentServerHttpError(response, body): DocumentServerHttpError;
 ```
 
+Creates the error for a status outside the 2xx range.
+
 #### Parameters
 
-| Parameter  | Type       |
-| ---------- | ---------- |
-| `response` | `Response` |
-| `body`     | `string`   |
+| Parameter  | Type       | Description                                           |
+| ---------- | ---------- | ----------------------------------------------------- |
+| `response` | `Response` | The response, with its body already read.             |
+| `body`     | `string`   | The beginning of the body, which the message repeats. |
 
 #### Returns
 

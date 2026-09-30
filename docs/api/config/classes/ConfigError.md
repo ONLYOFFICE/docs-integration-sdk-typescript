@@ -22,14 +22,16 @@ new ConfigError(
 ): ConfigError;
 ```
 
+Creates the error, for a check of your own that refuses a config the same way.
+
 #### Parameters
 
-| Parameter  | Type                                                    |
-| ---------- | ------------------------------------------------------- |
-| `kind`     | [`ConfigErrorKind`](../type-aliases/ConfigErrorKind.md) |
-| `field`    | `string`                                                |
-| `message`  | `string`                                                |
-| `options?` | `ErrorOptions`                                          |
+| Parameter  | Type                                                    | Description                                                |
+| ---------- | ------------------------------------------------------- | ---------------------------------------------------------- |
+| `kind`     | [`ConfigErrorKind`](../type-aliases/ConfigErrorKind.md) | Which check refused the config.                            |
+| `field`    | `string`                                                | The path of the refused field, such as `"document.title"`. |
+| `message`  | `string`                                                | What was wrong, for a log.                                 |
+| `options?` | `ErrorOptions`                                          | The `cause`, such as the error the check failed with.      |
 
 #### Returns
 

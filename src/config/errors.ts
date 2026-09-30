@@ -36,6 +36,14 @@ export class ConfigError extends Error {
   /** The path of the refused field, such as `"document.title"`, or `"config"` for the whole input. */
   readonly field: string;
 
+  /**
+   * Creates the error, for a check of your own that refuses a config the same way.
+   *
+   * @param kind Which check refused the config.
+   * @param field The path of the refused field, such as `"document.title"`.
+   * @param message What was wrong, for a log.
+   * @param options The `cause`, such as the error the check failed with.
+   */
   constructor(kind: ConfigErrorKind, field: string, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "ConfigError";

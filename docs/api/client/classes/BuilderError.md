@@ -18,12 +18,15 @@ The message names the code and what it means.
 new BuilderError(code, response): BuilderError;
 ```
 
+Creates the error for an `error` code in a `200 OK` body. The message names the code and what
+it means.
+
 #### Parameters
 
-| Parameter  | Type                                                      |
-| ---------- | --------------------------------------------------------- |
-| `code`     | [`BuilderErrorCode`](../type-aliases/BuilderErrorCode.md) |
-| `response` | `Response`                                                |
+| Parameter  | Type                                                      | Description                               |
+| ---------- | --------------------------------------------------------- | ----------------------------------------- |
+| `code`     | [`BuilderErrorCode`](../type-aliases/BuilderErrorCode.md) | The error code the service answered with. |
+| `response` | `Response`                                                | The response, with its body already read. |
 
 #### Returns
 

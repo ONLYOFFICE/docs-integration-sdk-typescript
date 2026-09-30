@@ -24,13 +24,15 @@ new DocumentServerTimeoutError(
 ): DocumentServerTimeoutError;
 ```
 
+Creates the error for a deadline that passed.
+
 #### Parameters
 
-| Parameter   | Type      |
-| ----------- | --------- |
-| `url`       | `string`  |
-| `timeoutMs` | `number`  |
-| `cause`     | `unknown` |
+| Parameter   | Type      | Description                                                 |
+| ----------- | --------- | ----------------------------------------------------------- |
+| `url`       | `string`  | The URL of the request. The query is left out of the error. |
+| `timeoutMs` | `number`  | The deadline, in milliseconds.                              |
+| `cause`     | `unknown` | The abort reason, a `DOMException` named `"TimeoutError"`.  |
 
 #### Returns
 
