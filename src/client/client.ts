@@ -285,7 +285,8 @@ export class DocumentServerClient {
    *
    * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    * @returns `true` when the server answers `true`. `false` for any other body, and for a
-   * status outside the 2xx range: a server that is down is an answer, not a failure.
+   * status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
+   * failure. A server that can't be reached still rejects.
    */
   async healthcheck(options?: RequestOptions): Promise<boolean> {
     const response = await this.raw.healthcheck(options);

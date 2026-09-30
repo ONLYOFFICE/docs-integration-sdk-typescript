@@ -131,8 +131,8 @@ decision, not a server failure.
 Apart from that reason, and a `TypeError` for an invalid `timeoutMs` in the per-request
 options, a call throws only the seven errors above. Two outcomes don't throw:
 
-- `healthcheck()` returns `false` for a failing status: a server that is down is the answer you
-  asked for.
+- `healthcheck()` returns `false` for a failing status: a server that reports itself unhealthy
+  is the answer you asked for. A server that can't be reached still rejects.
 - `error: 4` from `forcesave` is returned on the result: nothing to save is an outcome, not a
   failure.
 

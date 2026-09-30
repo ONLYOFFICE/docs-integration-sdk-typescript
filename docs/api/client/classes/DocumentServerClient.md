@@ -480,4 +480,5 @@ Calls `/healthcheck`.
 `Promise`\<`boolean`\>
 
 `true` when the server answers `true`. `false` for any other body, and for a
-status outside the 2xx range: a server that is down is an answer, not a failure.
+status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
+failure. A server that can't be reached still rejects.
