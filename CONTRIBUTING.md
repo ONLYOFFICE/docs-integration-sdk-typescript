@@ -3,6 +3,7 @@
 - [Development](#development)
 - [Project layout](#project-layout)
 - [Modules](#modules)
+- [Conventions](#conventions)
 - [Documentation](#documentation)
 - [License header](#license-header)
 - [Integration tests](#integration-tests)
@@ -15,6 +16,7 @@ npm test                  # vitest
 npm run test:integration  # vitest against a document server in docker
 npm run lint              # eslint
 npm run format            # prettier --write
+npm run format:check      # prettier --check, as CI runs it
 npm run build             # tsup -> dist (ESM + CJS + .d.ts), one entry per subpath
 npm run check:exports     # the built subpaths share every export with the root
 npm run docs              # typedoc -> docs/api (markdown API reference)
@@ -28,6 +30,7 @@ src/
   */index.ts            the exports of a module, one subpath each
   client/client.ts      DocumentServerClient, the typed layer
   client/raw.ts         DocumentServerRawClient, the transport
+  client/transport.ts   maps a failed fetch to the network and timeout errors
   client/errors.ts      DocumentServerError and the rest
   client/options.ts     ClientOptions and RequestOptions
   client/meta.ts        server configuration and formats
@@ -55,6 +58,7 @@ test/
     setup.ts            starts the stack and waits for the server to be healthy
     env.ts              the client, the signer and the helpers the tests share
     host.ts             a server in the test process the document server downloads from
+    *.test.ts           one file per area: server, conversion, command, builder, outbox, transport
     fixtures/           the files the document server downloads
 docs/
   README.md             the index of the documentation
@@ -75,8 +79,23 @@ reference documents the same files.
 To add a module, create its folder and add a line to `src/index.ts`. `npm run check:exports`
 fails when the line is missing, or when `dist/` has a folder no module stands for.
 
-The client and the format lookup each declare `Format`, and the root exports the one of the
-lookup. The two are the same type, and a test keeps them so.
+Modules don't import each other: ESLint refuses `../` inside `src/*/`. Where one module needs
+another, it declares a small interface and the caller passes the object. The config takes a
+`FormatLookup` and a `ConfigSigner`, the callback a `CallbackVerifier`, and the client takes a
+token already signed.
+
+The client and the format lookup each declare `Format`, `FormatType` and `FormatAction`, and the
+root exports those of the lookup. They are the same types, and a test keeps them so.
+
+## Conventions
+
+- **Validate only the documented contract.** Refuse only what the ONLYOFFICE API documentation
+  forbids or the document server would reject. Best practices go into the guides and the doc
+  comments.
+- **No explanatory comments in the code.** The reasons go into the commit message. Doc comments
+  on what is exported are wanted: they are the contract and make the API reference.
+- **Commits** follow [Conventional Commits](https://www.conventionalcommits.org), for example
+  `feat(client): ...` or `docs(guides): ...`.
 
 ## Documentation
 
