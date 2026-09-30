@@ -6,5 +6,5 @@
 type FormatType = "" | "cell" | "diagram" | "pdf" | "slide" | "word" | (string & {});
 ```
 
-Editor a format opens in, or the empty string for one that is only ever produced by a
-conversion, such as an image.
+The editor a format opens in, which is `documentType` of the editor config. Empty for a
+format that only comes out of a conversion, such as an image.

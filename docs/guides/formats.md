@@ -78,29 +78,30 @@ formats.getFormatsByMime("application/pdf"); // [{ name: "pdf", … }]
 Extensions are matched case-insensitively, with or without the dot. A file name is read up to
 its last dot. So `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the same lookup.
 
-| Method                               | Returns                                                                   |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| `getFormat(ext)`                     | The `Format`, or `undefined` for an extension the server doesn't know.    |
-| `hasFormat(ext)`                     | Whether the extension is known.                                           |
-| `getDocumentType(ext)`               | The editor it opens in, which is the `documentType` of the editor config. |
-| `getActions(ext)`                    | What the editors may do with it.                                          |
-| `can(ext, action)`                   | Whether they may do that action.                                          |
-| `isOpenable(ext)`                    | Whether any editor opens it, in any mode.                                 |
-| `isViewable(ext)`                    | `view`.                                                                   |
-| `isEditable(ext)`                    | `edit`.                                                                   |
-| `isLossyEditable(ext)`               | `lossy-edit`: editing loses what the format can't store.                  |
-| `isFillable(ext)`                    | `fill`: a form that is filled in, not edited.                             |
-| `isCommentable(ext)`                 | `comment`.                                                                |
-| `isReviewable(ext)`                  | `review`.                                                                 |
-| `isAutoConvertable(ext)`             | `auto-convert`: converted on open, like the legacy `doc`.                 |
-| `isEncryptable(ext)`                 | `encrypt`.                                                                |
-| `getConversions(ext)`                | The extensions it converts to, as `outputtype` takes them.                |
-| `isConvertibleTo(from, to)`          | Whether the conversion API converts one into the other.                   |
-| `getMimes(ext)`                      | The MIME types it is served under.                                        |
-| `getFormatsByMime(mime)`             | The formats served under a MIME type.                                     |
-| `getFormatsByType(type)`             | The formats one editor opens, or the output-only ones for `""`.           |
-| `getExtensions()`                    | Every extension in the list, without the dots.                            |
-| `all`, `size`, `[Symbol.iterator]()` | The list itself, frozen, in the server's order.                           |
+| Method                       | Returns                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| `getFormat(ext)`             | The `Format`, or `undefined` for an extension the server doesn't know.    |
+| `hasFormat(ext)`             | Whether the extension is known.                                           |
+| `getDocumentType(ext)`       | The editor it opens in, which is the `documentType` of the editor config. |
+| `getActions(ext)`            | What the editors may do with it.                                          |
+| `can(ext, action)`           | Whether they may do that action.                                          |
+| `isOpenable(ext)`            | Whether any editor opens it, in any mode.                                 |
+| `isViewable(ext)`            | `view`.                                                                   |
+| `isEditable(ext)`            | `edit`.                                                                   |
+| `isLossyEditable(ext)`       | `lossy-edit`: editing loses what the format can't store.                  |
+| `isFillable(ext)`            | `fill`: a form that is filled in, not edited.                             |
+| `isCommentable(ext)`         | `comment`.                                                                |
+| `isReviewable(ext)`          | `review`.                                                                 |
+| `isAutoConvertable(ext)`     | `auto-convert`: converted on open, like the legacy `doc`.                 |
+| `isEncryptable(ext)`         | `encrypt`.                                                                |
+| `getConversions(ext)`        | The extensions it converts to, as `outputtype` takes them.                |
+| `isConvertibleTo(from, to)`  | Whether the conversion API converts one into the other.                   |
+| `getMimes(ext)`              | The MIME types it is served under.                                        |
+| `getFormatsByMime(mime)`     | The formats served under a MIME type.                                     |
+| `getFormatsByType(type)`     | The formats one editor opens, or the output-only ones for `""`.           |
+| `getExtensions()`            | Every extension in the list, without the dots.                            |
+| `all`, `[Symbol.iterator]()` | The list itself, frozen, in the server's order.                           |
+| `size`                       | How many different extensions the list covers.                            |
 
 Details:
 

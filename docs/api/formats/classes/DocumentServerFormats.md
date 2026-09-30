@@ -2,12 +2,30 @@
 
 # Class: DocumentServerFormats
 
-The formats of `/meta/formats`, indexed by extension: what each one opens in, what the
-editors may do with it, what it converts to and what it is served as.
+The formats of `/meta/formats`, indexed by extension: the editor each one opens in, what the
+editors can do with it, what it converts to and its MIME types.
 
-The list changes with the version of the document server and with its licence, so it is
-read from the server rather than carried here. One instance stands for one such answer;
-get a fresh list to see a format the server has since learned.
+Every method takes an extension with or without the dot, or a whole file name, and matches
+it in any case: `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the same lookup. An
+extension the server doesn't know gives `undefined`, `false` or an empty list.
+
+The list depends on the version and the license of the document server. An instance holds
+one answer and sends no requests, so it works as well with a list you cached. Fetch the list
+again to see a format the server has learned since.
+
+## Example
+
+```ts
+const formats = new DocumentServerFormats(await client.getFormats());
+
+formats.getDocumentType("report.docx"); // "word"
+formats.isEditable("docx"); // true
+formats.isConvertibleTo("docx", "pdf"); // true
+```
+
+## See
+
+[Server configuration and formats](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/formats.md)
 
 ## Constructors
 
@@ -17,11 +35,14 @@ get a fresh list to see a format the server has since learned.
 new DocumentServerFormats(formats): DocumentServerFormats;
 ```
 
+Indexes the list. When two formats share an extension, the one an editor opens wins over
+one no editor opens; otherwise the first one wins.
+
 #### Parameters
 
-| Parameter | Type                                           | Description                                                                                               |
-| --------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `formats` | readonly [`Format`](../interfaces/Format.md)[] | The answer of [DocumentServerClient.getFormats](../../client/classes/DocumentServerClient.md#getformats). |
+| Parameter | Type                                           | Description                                                                                                 |
+| --------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `formats` | readonly [`Format`](../interfaces/Format.md)[] | The answer of [DocumentServerClient.getFormats()](../../client/classes/DocumentServerClient.md#getformats). |
 
 #### Returns
 
@@ -29,13 +50,13 @@ new DocumentServerFormats(formats): DocumentServerFormats;
 
 #### Throws
 
-when it is not an array.
+when `formats` is not an array.
 
 ## Properties
 
-| Property                        | Modifier   | Type                                           | Description                                                              |
-| ------------------------------- | ---------- | ---------------------------------------------- | ------------------------------------------------------------------------ |
-| <a id="property-all"></a> `all` | `readonly` | readonly [`Format`](../interfaces/Format.md)[] | Every format of the list, in the order the server gave them, and frozen. |
+| Property                        | Modifier   | Type                                           | Description                                              |
+| ------------------------------- | ---------- | ---------------------------------------------- | -------------------------------------------------------- |
+| <a id="property-all"></a> `all` | `readonly` | readonly [`Format`](../interfaces/Format.md)[] | Every format of the list, in the server's order, frozen. |
 
 ## Accessors
 
@@ -47,7 +68,8 @@ when it is not an array.
 get size(): number;
 ```
 
-How many extensions the list covers.
+How many different extensions the list covers. Can be less than `all.length`, since two
+formats may share an extension.
 
 ##### Returns
 
@@ -61,6 +83,8 @@ How many extensions the list covers.
 iterator: IterableIterator<Format>;
 ```
 
+Iterates over [DocumentServerFormats.all](#property-all).
+
 #### Returns
 
 `IterableIterator`\<[`Format`](../interfaces/Format.md)\>
@@ -73,7 +97,7 @@ iterator: IterableIterator<Format>;
 can(extension, action): boolean;
 ```
 
-Whether the editors may do that with an extension.
+Returns whether the editors can do `action` with an extension.
 
 #### Parameters
 
@@ -94,7 +118,7 @@ Whether the editors may do that with an extension.
 getActions(extension): readonly FormatAction[];
 ```
 
-What the editors may do with an extension. Empty for one they never open.
+Returns what the editors can do with an extension. Empty when no editor opens it.
 
 #### Parameters
 
@@ -114,8 +138,8 @@ readonly [`FormatAction`](../type-aliases/FormatAction.md)[]
 getConversions(extension): readonly string[];
 ```
 
-The extensions an extension converts to, each without the dot, as the conversion API
-takes them in `outputtype`. Empty for a format the server does not convert.
+Returns the extensions an extension converts to, without the dot, as `outputtype` of a
+conversion takes them. Empty when the server doesn't convert it.
 
 #### Parameters
 
@@ -135,20 +159,20 @@ readonly `string`[]
 getDocumentType(extension): FormatType | undefined;
 ```
 
-The editor an extension opens in, which is the `documentType` the editor config takes.
-
-`undefined` both for an extension the server does not know and for one no editor
-opens, such as an image or `zip` that a conversion only ever produces.
+Returns the editor an extension opens in, which is `documentType` of the editor config.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
 [`FormatType`](../type-aliases/FormatType.md) \| `undefined`
+
+The editor, or `undefined` both when the server doesn't know the extension and
+when no editor opens it, such as an image or `zip`.
 
 ---
 
@@ -158,7 +182,7 @@ opens, such as an image or `zip` that a conversion only ever produces.
 getExtensions(): readonly string[];
 ```
 
-Every extension the list covers, without the dots, in the order the server gave them.
+Returns every extension the list covers, without the dot, in the server's order.
 
 #### Returns
 
@@ -172,16 +196,13 @@ readonly `string`[]
 getFormat(extension): Format | undefined;
 ```
 
-The format an extension names, or `undefined` for one the server does not know.
-
-The extension is matched case-insensitively, with or without the leading dot, and a
-whole file name is read down to the part behind its last dot.
+Returns the format of an extension, or `undefined` when the server doesn't know it.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -195,7 +216,7 @@ whole file name is read down to the part behind its last dot.
 getFormatsByMime(mime): readonly Format[];
 ```
 
-The formats served under a MIME type, matched case-insensitively.
+Returns the formats served under a MIME type, matched in any case.
 
 #### Parameters
 
@@ -215,7 +236,7 @@ readonly [`Format`](../interfaces/Format.md)[]
 getFormatsByType(type): readonly Format[];
 ```
 
-The formats one editor opens, or, for `""`, those a conversion only ever produces.
+Returns the formats one editor opens, or, for `""`, those that only come out of a conversion.
 
 #### Parameters
 
@@ -235,7 +256,7 @@ readonly [`Format`](../interfaces/Format.md)[]
 getMimes(extension): readonly string[];
 ```
 
-The MIME types an extension is served under.
+Returns the MIME types an extension is served under.
 
 #### Parameters
 
@@ -255,13 +276,13 @@ readonly `string`[]
 hasFormat(extension): boolean;
 ```
 
-Whether the server knows the extension at all.
+Returns whether the server knows the extension.
 
 #### Parameters
 
-| Parameter   | Type     |
-| ----------- | -------- |
-| `extension` | `string` |
+| Parameter   | Type     | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `extension` | `string` | An extension, with or without the dot, or a file name. Matched in any case. |
 
 #### Returns
 
@@ -275,7 +296,7 @@ Whether the server knows the extension at all.
 isAutoConvertable(extension): boolean;
 ```
 
-Whether the editors convert it on the way in, the way they do the legacy `doc`.
+Returns whether the editors convert it on open, like the legacy `doc`: action `"auto-convert"`.
 
 #### Parameters
 
@@ -295,6 +316,8 @@ Whether the editors convert it on the way in, the way they do the legacy `doc`.
 isCommentable(extension): boolean;
 ```
 
+Returns whether the editors open it for commenting: action `"comment"`.
+
 #### Parameters
 
 | Parameter   | Type     |
@@ -313,7 +336,8 @@ isCommentable(extension): boolean;
 isConvertibleTo(from, to): boolean;
 ```
 
-Whether the conversion API turns `from` into `to`.
+Returns whether the conversion API converts `from` into `to`. Both are matched like any
+extension.
 
 #### Parameters
 
@@ -334,7 +358,7 @@ Whether the conversion API turns `from` into `to`.
 isEditable(extension): boolean;
 ```
 
-Whether the editors save it back in its own format, rather than only read it.
+Returns whether the editors edit it and save it in its own format: action `"edit"`.
 
 #### Parameters
 
@@ -354,7 +378,7 @@ Whether the editors save it back in its own format, rather than only read it.
 isEncryptable(extension): boolean;
 ```
 
-Whether the editors open it behind a password.
+Returns whether the editors open it behind a password: action `"encrypt"`.
 
 #### Parameters
 
@@ -374,7 +398,7 @@ Whether the editors open it behind a password.
 isFillable(extension): boolean;
 ```
 
-Whether it is a form the editors fill in rather than edit.
+Returns whether it is a form the editors fill in: action `"fill"`.
 
 #### Parameters
 
@@ -394,7 +418,7 @@ Whether it is a form the editors fill in rather than edit.
 isLossyEditable(extension): boolean;
 ```
 
-Whether editing it loses what the format cannot carry, the way `rtf` and `odt` do.
+Returns whether editing it loses what the format can't store, like `rtf`: action `"lossy-edit"`.
 
 #### Parameters
 
@@ -414,8 +438,8 @@ Whether editing it loses what the format cannot carry, the way `rtf` and `odt` d
 isOpenable(extension): boolean;
 ```
 
-Whether an editor opens the extension at all, in whatever mode: the format names an
-editor in `type`. Its actions are not consulted.
+Returns whether any editor opens the extension, in any mode: the format has a `type`.
+Its actions are not checked.
 
 #### Parameters
 
@@ -435,6 +459,8 @@ editor in `type`. Its actions are not consulted.
 isReviewable(extension): boolean;
 ```
 
+Returns whether the editors open it for reviewing: action `"review"`.
+
 #### Parameters
 
 | Parameter   | Type     |
@@ -452,6 +478,8 @@ isReviewable(extension): boolean;
 ```ts
 isViewable(extension): boolean;
 ```
+
+Returns whether the editors open the extension for viewing: action `"view"`.
 
 #### Parameters
 

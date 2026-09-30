@@ -9,7 +9,7 @@ The formats a document server knows, looked up by extension. Imported from
 
 | Class                                                     | Description                                                                                                                                                  |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [DocumentServerFormats](classes/DocumentServerFormats.md) | The formats of `/meta/formats`, indexed by extension: what each one opens in, what the editors may do with it, what it converts to and what it is served as. |
+| [DocumentServerFormats](classes/DocumentServerFormats.md) | The formats of `/meta/formats`, indexed by extension: the editor each one opens in, what the editors can do with it, what it converts to and its MIME types. |
 
 ## Interfaces
 
@@ -19,7 +19,7 @@ The formats a document server knows, looked up by extension. Imported from
 
 ## Type Aliases
 
-| Type Alias                                   | Description                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| [FormatAction](type-aliases/FormatAction.md) | Something the editors can do with a format.                                                                         |
-| [FormatType](type-aliases/FormatType.md)     | Editor a format opens in, or the empty string for one that is only ever produced by a conversion, such as an image. |
+| Type Alias                                   | Description                                                                                                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [FormatAction](type-aliases/FormatAction.md) | Something the editors can do with a format:                                                                                                           |
+| [FormatType](type-aliases/FormatType.md)     | The editor a format opens in, which is `documentType` of the editor config. Empty for a format that only comes out of a conversion, such as an image. |
