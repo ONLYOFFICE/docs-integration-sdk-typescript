@@ -189,5 +189,6 @@ stream. They differ only on a failing status: the typed one rejects, the raw one
 response.
 
 The typed `convertFromFile()` also gives the converted file unread, as `result.file`, but reads
-a JSON answer: it returns the progress of an `async` conversion, and rejects with a
-`ConversionError` on an `error` code. The raw one returns every answer as it came.
+a JSON answer: it returns the progress of an `async` conversion, rejects with a
+`ConversionError` on an `error` code, and with a `DocumentServerParseError` on any other JSON.
+A 2xx that is not JSON is taken as the file. The raw one returns every answer as it came.

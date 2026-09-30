@@ -398,7 +398,8 @@ export class DocumentServerClient {
    * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    * @returns `{ endConvert: true, file }`, with the converted file as an unread `Response`, or
    * `{ endConvert: false, percent }` while an `async` conversion runs. Repeat the same request,
-   * which uploads the document again, until `endConvert` is `true`.
+   * which uploads the document again, until `endConvert` is `true`. A 2xx that is not
+   * `application/json` is taken as the converted file.
    * @throws {@link ConversionError} when the body has an `error` code other than `0`.
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range, `404`
    * included for a document server without this endpoint.

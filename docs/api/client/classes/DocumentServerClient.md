@@ -222,7 +222,8 @@ A token, in the header or in `request.token`, must carry `operation: "converter"
 
 `{ endConvert: true, file }`, with the converted file as an unread `Response`, or
 `{ endConvert: false, percent }` while an `async` conversion runs. Repeat the same request,
-which uploads the document again, until `endConvert` is `true`.
+which uploads the document again, until `endConvert` is `true`. A 2xx that is not
+`application/json` is taken as the converted file.
 
 #### Throws
 
