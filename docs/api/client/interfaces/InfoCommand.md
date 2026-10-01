@@ -4,6 +4,10 @@
 
 Asks who has the document open.
 
+## See
+
+[info](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/info/)
+
 ## Extends
 
 - `Command`

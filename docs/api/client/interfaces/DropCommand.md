@@ -4,6 +4,10 @@
 
 Disconnects users from co-editing, leaving them with view access.
 
+## See
+
+[drop](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/drop/)
+
 ## Extends
 
 - `Command`

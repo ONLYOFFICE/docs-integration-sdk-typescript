@@ -4,6 +4,10 @@
 
 Asks for the version of the document server.
 
+## See
+
+[version](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/version/)
+
 ## Extends
 
 - `Command`

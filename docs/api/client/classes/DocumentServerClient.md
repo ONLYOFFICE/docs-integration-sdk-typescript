@@ -123,7 +123,8 @@ const { users } = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
 
 #### See
 
-[Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+- [Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+- [Command service](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/)
 
 ---
 

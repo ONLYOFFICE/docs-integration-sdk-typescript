@@ -4,6 +4,10 @@
 
 Asks for the license and for the quota spent against it.
 
+## See
+
+[license](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/license/)
+
 ## Extends
 
 - `Command`

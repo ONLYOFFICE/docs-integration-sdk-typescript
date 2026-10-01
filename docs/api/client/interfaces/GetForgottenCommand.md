@@ -4,6 +4,10 @@
 
 Asks for the URL a forgotten document can be downloaded from.
 
+## See
+
+[getforgotten](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgotten/)
+
 ## Extends
 
 - `Command`
