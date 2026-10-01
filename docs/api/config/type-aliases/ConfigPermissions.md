@@ -7,3 +7,7 @@ type ConfigPermissions = NonNullable<ConfigDocument["permissions"]>;
 ```
 
 The `document.permissions` section of a config.
+
+## See
+
+[permissions](https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/permissions/)

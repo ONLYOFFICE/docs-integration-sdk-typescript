@@ -44,7 +44,8 @@ const signed = await config.sign(jwt);
 
 ## See
 
-[Opening an editor](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md)
+- [Opening an editor](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md)
+- [Config](https://api.onlyoffice.com/docs/docs-api/usage-api/config/)
 
 ## Constructors
 

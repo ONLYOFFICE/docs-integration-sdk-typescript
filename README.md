@@ -95,7 +95,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 ```
 
-Open it in the page:
+Open it in the page with
+[`DocsAPI.DocEditor`](https://api.onlyoffice.com/docs/docs-api/usage-api/doceditor/#docsapi):
 
 ```html
 <div id="placeholder"></div>

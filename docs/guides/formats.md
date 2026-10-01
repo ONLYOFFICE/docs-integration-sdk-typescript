@@ -49,7 +49,7 @@ docx?.mime; // ["application/vnd.openxmlformats-officedocument.wordprocessingml.
 
 | Field     | What it is                                                                                                                 |
 | --------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `type`    | the editor the format opens in: the `documentType` of the editor config                                                    |
+| `type`    | the editor the format opens in: the [`documentType`][config-documenttype] of the editor config                             |
 | `actions` | what that editor may do: `edit`, `fill`, `comment`, `review`, `auto-convert` (a legacy format converted on open) and so on |
 | `convert` | the extensions you can pass as `outputtype` to convert this format                                                         |
 | `mime`    | the MIME types the format is served under                                                                                  |
@@ -117,3 +117,5 @@ Details:
 **Caching.** The list depends on the document server version and license. An instance holds one
 answer of `/meta/formats`; to see a format the server has learned since, fetch the list again.
 The class sends no requests, so it works just as well with a list cached in your application.
+
+[config-documenttype]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype

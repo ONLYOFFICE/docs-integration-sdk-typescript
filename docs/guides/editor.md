@@ -64,15 +64,15 @@ The document server decides some fields from the file format. You don't pass the
 declare them as `never`. If a value gets there anyway (from JavaScript or through a cast), the
 SDK replaces it with the derived value:
 
-| Field               | Derived from                                        |
-| ------------------- | --------------------------------------------------- |
-| `document.fileType` | the extension of `title`, in lower case             |
-| `documentType`      | the editor the document server opens that format in |
+| Field                                 | Derived from                                        |
+| ------------------------------------- | --------------------------------------------------- |
+| `document.fileType`                   | the extension of `title`, in lower case             |
+| [`documentType`][config-documenttype] | the editor the document server opens that format in |
 
 ## Permissions
 
-`document.permissions.edit` is required. Whether a file may be changed is a decision of your
-system, so the SDK has no default for it.
+[`document.permissions.edit`][config-permissions] is required. Whether a file may be changed is a
+decision of your system, so the SDK has no default for it.
 
 The SDK then fits the permissions to the format. It silently sets a permission to `false` if the
 format does not allow it. It leaves out a permission you did not pass.
@@ -93,14 +93,16 @@ format. They are kept as you passed them.
 
 ## Callback URL and mode
 
-The document server posts document changes to `callbackUrl`. See [Handling callbacks](callback.md).
+The document server posts document changes to [`callbackUrl`][config-callbackurl]. See
+[Handling callbacks](callback.md).
 
-`editorConfig.mode` is kept as you passed it. It decides what happens to `callbackUrl`:
+[`editorConfig.mode`][config-mode] is kept as you passed it. It decides what happens to
+`callbackUrl`:
 
 - **`"edit"` mode (default) and the user can change the document** (`edit`, `review`, `comment`
   or `fillForms` is `true` after fitting): `callbackUrl` is kept and **required**.
 - **Otherwise** (`"view"` mode, or no permission left to change anything): `callbackUrl` and
-  `customization.forcesave` are removed.
+  [`customization.forcesave`][config-forcesave] are removed.
 
 > [!TIP]
 > The document key changes with every save, so the callback can't find the file by it. Put the
@@ -145,7 +147,8 @@ The token covers the whole config except the token itself. A config that already
 
 Load `api.js` from the document server. Its path is `urls.api` of
 [`getConfig()`](formats.md#server-configuration). Serve the signed config from an endpoint of
-yours, for example as `Response.json(signed)`, and create the editor from it:
+yours, for example as `Response.json(signed)`, and create a [`DocsAPI.DocEditor`][docsapi] from
+it:
 
 ```html
 <div id="placeholder"></div>
@@ -160,8 +163,8 @@ yours, for example as `Response.json(signed)`, and create the editor from it:
 ```
 
 > [!NOTE]
-> Editor `events` are functions. They survive neither `JSON.stringify` nor a signature, so
-> `ConfigInput` has no field for them. Add them in the browser, as above.
+> Editor [`events`][config-events] are functions. They survive neither `JSON.stringify` nor a
+> signature, so `ConfigInput` has no field for them. Add them in the browser, as above.
 
 ## Document keys
 
@@ -229,3 +232,10 @@ The full list of checks is in the
 [config-document-key]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
 [signature-browser]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/browser/#opening-file
+[config-documenttype]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype
+[config-permissions]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/permissions/
+[config-callbackurl]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#callbackurl
+[config-mode]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#mode
+[config-forcesave]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/customization/customization-standard-branding/#forcesave
+[config-events]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/events/
+[docsapi]: https://api.onlyoffice.com/docs/docs-api/usage-api/doceditor/#docsapi
