@@ -106,10 +106,10 @@ callback with one of these statuses and no `url` is refused) and optional on the
 
 With a JWT secret configured, the document server signs every callback, in one of two places:
 
-- **In the body:** `token` signs the callback itself.
-- **In a header:** `Authorization: Bearer …` by default, or the header named by
-  `authorizationHeader` and `authorizationPrefix`. The token signs the callback wrapped as
-  `{ payload: … }`.
+- **[In the body][token-in-body-outgoing]:** `token` signs the callback itself.
+- **[In a header][token-in-header-outgoing]:** `Authorization: Bearer …` by default, or the
+  header named by `authorizationHeader` and `authorizationPrefix`. The token signs the callback
+  wrapped as `{ payload: … }`.
 
 The body token is checked first. The header is checked only if the body has no token.
 
@@ -203,3 +203,5 @@ try {
 
 [callback-handler]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/
 [callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype
+[token-in-body-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/#outgoing-requests
+[token-in-header-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests

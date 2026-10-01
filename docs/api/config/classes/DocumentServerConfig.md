@@ -130,6 +130,10 @@ signed again from scratch.
 
 The signed config, frozen.
 
+#### See
+
+[Opening a file](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/browser/#opening-file)
+
 ---
 
 ### toJSON()

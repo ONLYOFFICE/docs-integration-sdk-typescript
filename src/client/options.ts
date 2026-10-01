@@ -34,11 +34,15 @@ export interface ClientOptions {
   /**
    * The header a token is sent in, when a method gets one. Set it to
    * `authorization.header` of {@link DocumentServerClient.getConfig}. Default: `"Authorization"`.
+   *
+   * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
    */
   authorizationHeader?: string;
   /**
    * What comes before the token in that header, as is: `""` sends a bare token. Set it to
    * `authorization.prefix` of {@link DocumentServerClient.getConfig}. Default: `"Bearer "`.
+   *
+   * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
    */
   authorizationPrefix?: string;
   /**

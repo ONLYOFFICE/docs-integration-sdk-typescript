@@ -127,8 +127,8 @@ If you pass `user`, it needs an `id`. The document server uses it to:
 
 ## Sign the config
 
-When the document server has a JWT secret, the editor needs a signed config. `sign()` returns a
-copy of the config with a `token` field:
+When the document server has a JWT secret, the editor needs a
+[signed config][signature-browser]. `sign()` returns a copy of the config with a `token` field:
 
 ```ts
 const jwt = new DocumentServerJwt({ secret: process.env["DOCS_JWT_SECRET"] ?? "" });
@@ -228,3 +228,4 @@ The full list of checks is in the
 [config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user
 [config-document-key]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
+[signature-browser]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/browser/#opening-file

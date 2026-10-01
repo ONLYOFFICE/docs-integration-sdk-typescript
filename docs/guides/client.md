@@ -98,7 +98,8 @@ the constructor refuses it.
 
 ### authorizationHeader and authorizationPrefix
 
-They match the `token.inbox.header` and `token.inbox.prefix` settings of the document server.
+They match the `token.inbox.header` and `token.inbox.prefix` [settings][server-token] of the
+document server.
 [`getConfig()`](formats.md#server-configuration) returns them as `authorization`. They are used
 only when a method gets a header token.
 
@@ -193,3 +194,5 @@ The typed `convertFromFile()` also gives the converted file unread, as `result.f
 a JSON answer: it returns the progress of an `async` conversion, rejects with a
 `ConversionError` on an `error` code, and with a `DocumentServerParseError` on any other JSON.
 A 2xx that is not JSON is taken as the file. The raw one returns every answer as it came.
+
+[server-token]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token

@@ -5,6 +5,10 @@
 Options of one [DocumentServerJwt.verifyHeader](../classes/DocumentServerJwt.md#verifyheader) call. Set the header and the prefix to
 the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
 
+## See
+
+[Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
+
 ## Extends
 
 - [`VerifyOptions`](VerifyOptions.md)

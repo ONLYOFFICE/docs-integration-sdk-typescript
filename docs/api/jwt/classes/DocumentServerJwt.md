@@ -21,7 +21,8 @@ const claims = await jwt.verify(token);
 
 ## See
 
-[JWT](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/jwt.md)
+- [JWT](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/jwt.md)
+- [Signature](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/)
 
 ## Constructors
 
@@ -100,6 +101,10 @@ await jwt.sign(request, { operation: "converter" });
 when `payload` is not a plain object, such as an array, a `Map` or an
 instance of a class, or when `expiresInSec` is invalid.
 
+#### See
+
+[Token in the body](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/)
+
 ---
 
 ### signHeader()
@@ -132,6 +137,10 @@ The token, to pass as the header argument of a client method.
 #### Throws
 
 whenever [DocumentServerJwt.sign](#sign) would.
+
+#### See
+
+[Token in the header](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/)
 
 ---
 
@@ -237,3 +246,7 @@ of a user.
 
 [JwtError](JwtError.md) of kind `"malformed"` when the token has no `payload` object, and
 any error [DocumentServerJwt.verify](#verify) throws.
+
+#### See
+
+[Outgoing requests](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests)
