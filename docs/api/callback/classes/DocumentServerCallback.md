@@ -30,7 +30,8 @@ export async function POST(request: Request): Promise<Response> {
 
 ## See
 
-[Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+- [Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+- [Callback handler](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/)
 
 ## Constructors
 

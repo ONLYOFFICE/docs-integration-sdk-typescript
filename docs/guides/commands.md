@@ -63,7 +63,8 @@ if (result.error === 4) {
 
 > [!NOTE]
 > `forcesave` with `error: 0` only means the save has started. The file arrives at your
-> [callback handler](callback.md), with `forcesavetype` and the `userdata` you passed.
+> [callback handler](callback.md), with [`forcesavetype`][callback-forcesavetype] and the
+> `userdata` you passed.
 
 ## Signing
 
@@ -90,3 +91,4 @@ The `shardkey` query parameter is added for commands with a `key`. It is left ou
 [cmd-meta]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/meta/
 [cmd-version]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/version/
 [command-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#possible-error-codes-and-their-description
+[callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype

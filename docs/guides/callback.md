@@ -99,7 +99,8 @@ callback with one of these statuses and no `url` is refused) and optional on the
 
 > [!NOTE]
 > Status `6` can come even if the editor config never enables `customization.forcesave`: from the
-> `forcesave` command, a submitted form or the autosave timer of the document server.
+> `forcesave` command, a submitted form or the autosave timer of the document server. See
+> [force saving][force-saving].
 > [`forcesavetype`][callback-forcesavetype] says which.
 
 ## Check the token
@@ -147,7 +148,7 @@ return Response.json(reply);
 - `DocumentServerCallback.ok`, `{"error":0}`, when the handler finished;
 - `DocumentServerCallback.fail`, `{"error":1}`, when the handler threw or rejected.
 
-The [callback handler documentation][callback-handler] requires `{"error":0}`.
+The [callback handler documentation][callback-reply] requires `{"error":0}`.
 
 > [!IMPORTANT]
 > On any reply other than `{"error":0}`, the document editor shows an error message.
@@ -205,3 +206,5 @@ try {
 [callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype
 [token-in-body-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/#outgoing-requests
 [token-in-header-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests
+[force-saving]: https://api.onlyoffice.com/docs/docs-api/get-started/how-it-works/saving-file/#force-saving
+[callback-reply]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#response-from-the-document-storage-service

@@ -276,6 +276,7 @@ function toEvent(body: unknown): CallbackEvent {
  * ```
  *
  * @see [Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+ * @see [Callback handler](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/)
  */
 export class DocumentServerCallback {
   /** The reply `{ error: 0 }`: the callback is handled. */

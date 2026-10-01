@@ -4,6 +4,10 @@
 
 The reply to a callback: `0` handled, `1` not handled.
 
+## See
+
+[Response from the document storage service](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#response-from-the-document-storage-service)
+
 ## Properties
 
 | Property                            | Modifier   | Type       | Description                                             |
