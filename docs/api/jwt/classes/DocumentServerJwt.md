@@ -5,8 +5,8 @@
 Signs the tokens the document server expects and verifies the tokens it sends. HMAC comes
 from WebCrypto, so there are no dependencies.
 
-One signer holds one secret. A document server with separate `inbox`, `outbox` and
-`session` secrets needs a signer for each.
+One signer holds one secret, and the header it reads tokens from. A document server with
+separate `inbox`, `outbox` and `session` secrets needs a signer for each.
 
 ## Example
 
@@ -55,6 +55,34 @@ when `secret` is empty, `algorithm` is not one of
 | <a id="property-options"></a> `options` | `readonly` | `Readonly`\<`Required`\<`Omit`\<[`JwtOptions`](../interfaces/JwtOptions.md), `"secret"`\>\>\> | The settings in effect: validated, with defaults, and frozen. The secret is left out, so logging the signer doesn't reveal it. |
 
 ## Methods
+
+### readHeader()
+
+```ts
+readHeader(headers): string | undefined;
+```
+
+Reads the token from the authorization header of a request the document server sent,
+without checking it: the value of `authorizationHeader` after `authorizationPrefix`.
+
+#### Parameters
+
+| Parameter | Type                                          | Description                 |
+| --------- | --------------------------------------------- | --------------------------- |
+| `headers` | [`JwtHeaders`](../type-aliases/JwtHeaders.md) | The headers of the request. |
+
+#### Returns
+
+`string` \| `undefined`
+
+The token, or `undefined` when the header is missing, has another prefix or holds
+only the prefix.
+
+#### See
+
+[Outgoing requests](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests)
+
+---
 
 ### sign()
 
@@ -208,8 +236,9 @@ verifyHeader<T>(headers, options?): Promise<T>;
 Reads the token from the authorization header of a request the document server sent, such
 as a file download, verifies it and returns its `payload` claim.
 
-The document server sends `Authorization: Bearer <token>` by default, and its claims wrap
-the request data in `payload`.
+The token is read by [DocumentServerJwt.readHeader](#readheader). The document server sends
+`Authorization: Bearer <token>` by default, and its claims wrap the request data in
+`payload`.
 
 #### Type Parameters
 
@@ -219,10 +248,10 @@ the request data in `payload`.
 
 #### Parameters
 
-| Parameter  | Type                                                          | Description                            |
-| ---------- | ------------------------------------------------------------- | -------------------------------------- |
-| `headers`  | [`JwtHeaders`](../type-aliases/JwtHeaders.md)                 | The headers of the request.            |
-| `options?` | [`VerifyHeaderOptions`](../interfaces/VerifyHeaderOptions.md) | The header, the prefix and the leeway. |
+| Parameter  | Type                                              | Description                 |
+| ---------- | ------------------------------------------------- | --------------------------- |
+| `headers`  | [`JwtHeaders`](../type-aliases/JwtHeaders.md)     | The headers of the request. |
+| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) | The leeway.                 |
 
 #### Returns
 

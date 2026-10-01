@@ -2,10 +2,31 @@
 
 # Interface: CallbackVerifier
 
-Checks the token of a callback. [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md) implements
-it; any object with `verify()` works.
+Finds and checks the token of a callback. [DocumentServerJwt](../../jwt/classes/DocumentServerJwt.md)
+implements it; any object with `verify()` and `readHeader()` works.
 
 ## Methods
+
+### readHeader()
+
+```ts
+readHeader(headers): string | undefined;
+```
+
+Reads the token from the headers of the callback, without checking it. Returns `undefined`
+when the headers carry no token.
+
+#### Parameters
+
+| Parameter | Type                                                    |
+| --------- | ------------------------------------------------------- |
+| `headers` | [`CallbackHeaders`](../type-aliases/CallbackHeaders.md) |
+
+#### Returns
+
+`string` \| `undefined`
+
+---
 
 ### verify()
 

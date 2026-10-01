@@ -21,10 +21,12 @@ import {
   type CallbackBody,
   CallbackError,
   type CallbackEvent,
+  type CallbackHeaders,
   type CallbackVerifier,
   DocumentServerCallback,
   DocumentServerJwt,
   JwtError,
+  type JwtHeaders,
 } from "../src/index.js";
 
 const jwt = new DocumentServerJwt({ secret: "secret" });
@@ -256,11 +258,16 @@ describe("DocumentServerCallback.parse, the token in the header", () => {
     expect(event.kind).toBe("save");
   });
 
-  it("takes a header and a prefix of its own", async () => {
+  it("takes the header and the prefix of the verifier", async () => {
     const token = await jwt.sign({ payload: save });
+    const verifier = new DocumentServerJwt({
+      secret: "secret",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "Token ",
+    });
     const { event } = await DocumentServerCallback.parse(
       { body: save, headers: { "x-docs-token": `Token ${token}` } },
-      { verifier: jwt, authorizationHeader: "X-Docs-Token", authorizationPrefix: "Token " },
+      { verifier },
     );
 
     expect(event.kind).toBe("save");
@@ -474,10 +481,30 @@ describe("CallbackVerifier", () => {
     expectTypeOf<DocumentServerJwt>().toExtend<CallbackVerifier>();
   });
 
+  it("takes the headers the signer of the sdk reads", () => {
+    expectTypeOf<CallbackHeaders>().toEqualTypeOf<JwtHeaders>();
+  });
+
   it("takes a verifier of its own", async () => {
-    const verifier: CallbackVerifier = { verify: () => Promise.resolve(save) };
+    const verifier: CallbackVerifier = {
+      verify: () => Promise.resolve(save),
+      readHeader: () => undefined,
+    };
     const { event } = await DocumentServerCallback.parse(
       { body: { token: "opaque" } },
+      { verifier },
+    );
+
+    expect(event.kind).toBe("save");
+  });
+
+  it("reads the header token through the verifier", async () => {
+    const verifier: CallbackVerifier = {
+      verify: (token) => Promise.resolve(token === "opaque" ? { payload: save } : {}),
+      readHeader: (headers) => (headers as Record<string, string>)["x-token"],
+    };
+    const { event } = await DocumentServerCallback.parse(
+      { body: save, headers: { "x-token": "opaque" } },
       { verifier },
     );
 

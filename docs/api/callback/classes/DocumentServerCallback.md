@@ -84,7 +84,7 @@ checks it like [DocumentServerCallback.parse](#parse).
 | Parameter | Type                                                  | Description                                            |
 | --------- | ----------------------------------------------------- | ------------------------------------------------------ |
 | `request` | `Request`                                             | The request posted to `callbackUrl`. Its body is read. |
-| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier, and the header the token is read from.   |
+| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier.                                          |
 
 #### Returns
 
@@ -141,18 +141,18 @@ itself, such as Express with `express.json()`.
 Where the token is looked for:
 
 1. `token` in the body, when it is a string. It signs the callback itself.
-2. Otherwise the header named by `authorizationHeader`, after `authorizationPrefix`. It
-   signs the callback as `{ payload: … }`.
+2. Otherwise the header the verifier reads with `readHeader()`. It signs the callback as
+   `{ payload: … }`.
 
 Once the token is checked, the callback is what the token carries, and the unsigned body
 is ignored.
 
 #### Parameters
 
-| Parameter | Type                                                  | Description                                          |
-| --------- | ----------------------------------------------------- | ---------------------------------------------------- |
-| `input`   | [`CallbackInput`](../interfaces/CallbackInput.md)     | The body and the headers of the request.             |
-| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier, and the header the token is read from. |
+| Parameter | Type                                                  | Description                              |
+| --------- | ----------------------------------------------------- | ---------------------------------------- |
+| `input`   | [`CallbackInput`](../interfaces/CallbackInput.md)     | The body and the headers of the request. |
+| `options` | [`CallbackOptions`](../interfaces/CallbackOptions.md) | The verifier.                            |
 
 #### Returns
 
@@ -168,5 +168,5 @@ The callback, with the event it reports.
   carries no `payload` object, or when the callback fails the checks of the
   constructor;
 - `"token"` when `verifier` is set and there is no token: no string `token` in the body,
-  and the header is missing, has another prefix or holds only the prefix;
+  and `readHeader()` of the verifier finds none;
 - `"signature"` when the verifier rejects the token. Its error is the `cause`.

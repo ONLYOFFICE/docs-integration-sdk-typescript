@@ -93,6 +93,8 @@ describe("jwt options", () => {
       algorithm: "HS256",
       expiresInSec: 300,
       clockToleranceSec: 3,
+      authorizationHeader: "Authorization",
+      authorizationPrefix: "Bearer ",
     });
   });
 
@@ -102,12 +104,16 @@ describe("jwt options", () => {
       algorithm: "HS512",
       expiresInSec: 60,
       clockToleranceSec: 5,
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
     };
 
     expect(new DocumentServerJwt(options).options).toEqual({
       algorithm: "HS512",
       expiresInSec: 60,
       clockToleranceSec: 5,
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "",
     });
   });
 
@@ -643,33 +649,33 @@ describe("verifyHeader", () => {
   it("matches the prefix in any case", async () => {
     const token = await jwt.sign({ payload });
 
+    const own = new DocumentServerJwt({
+      secret: "secret",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "Token ",
+    });
+
     await expect(jwt.verifyHeader({ authorization: `bearer ${token}` })).resolves.toEqual(payload);
-    await expect(
-      jwt.verifyHeader(
-        { "x-docs-token": `TOKEN ${token}` },
-        {
-          authorizationHeader: "X-Docs-Token",
-          authorizationPrefix: "Token ",
-        },
-      ),
-    ).resolves.toEqual(payload);
+    await expect(own.verifyHeader({ "x-docs-token": `TOKEN ${token}` })).resolves.toEqual(payload);
   });
 
   it("reads a header and a prefix of the server's own", async () => {
+    const own = new DocumentServerJwt({
+      secret: "secret",
+      authorizationHeader: "X-Docs-Token",
+      authorizationPrefix: "Token ",
+    });
     const headers = { "x-docs-token": `Token ${await jwt.sign({ payload })}` };
 
-    await expect(
-      jwt.verifyHeader(headers, {
-        authorizationHeader: "X-Docs-Token",
-        authorizationPrefix: "Token ",
-      }),
-    ).resolves.toEqual(payload);
+    await expect(own.verifyHeader(headers)).resolves.toEqual(payload);
+    await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "missing" });
   });
 
   it("reads a bare token when the prefix is empty", async () => {
+    const bare = new DocumentServerJwt({ secret: "secret", authorizationPrefix: "" });
     const headers = { authorization: await jwt.sign({ payload }) };
 
-    await expect(jwt.verifyHeader(headers, { authorizationPrefix: "" })).resolves.toEqual(payload);
+    await expect(bare.verifyHeader(headers)).resolves.toEqual(payload);
   });
 
   it.each([
@@ -702,6 +708,23 @@ describe("verifyHeader", () => {
 
     await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "expired" });
     await expect(jwt.verifyHeader(headers, { clockToleranceSec: 60 })).resolves.toEqual(payload);
+  });
+});
+
+describe("readHeader", () => {
+  const jwt = new DocumentServerJwt({ secret: "secret" });
+
+  it("answers with the token after the prefix, unchecked", () => {
+    expect(jwt.readHeader({ authorization: "Bearer not.a.token" })).toBe("not.a.token");
+    expect(jwt.readHeader(new Headers({ Authorization: "bearer opaque" }))).toBe("opaque");
+  });
+
+  it.each([
+    ["no header", {}],
+    ["another prefix", { authorization: "Basic dXNlcjpwYXNz" }],
+    ["the prefix alone", { authorization: "Bearer " }],
+  ])("answers undefined for %s", (_, headers) => {
+    expect(jwt.readHeader(headers)).toBeUndefined();
   });
 });
 

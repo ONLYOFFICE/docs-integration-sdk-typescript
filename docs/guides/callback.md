@@ -109,8 +109,9 @@ With a JWT secret configured, the document server signs every callback, in one o
 
 - **[In the body][token-in-body-outgoing]:** `token` signs the callback itself.
 - **[In a header][token-in-header-outgoing]:** `Authorization: Bearer …` by default, or the
-  header named by `authorizationHeader` and `authorizationPrefix`. The token signs the callback
-  wrapped as `{ payload: … }`.
+  header set by `authorizationHeader` and `authorizationPrefix` of the
+  [signer](jwt.md#verify-a-token-from-a-header). The token signs the callback wrapped as
+  `{ payload: … }`.
 
 The body token is checked first. The header is checked only if the body has no token.
 
@@ -122,7 +123,7 @@ somewhere else never reaches your download.
 
 - Pass [`DocumentServerJwt`](jwt.md) configured with the outbox secret, or any
   `CallbackVerifier`: an object with a `verify(token)` method that resolves to the token's
-  payload.
+  payload, and a `readHeader(headers)` method that returns the header token, or `undefined`.
 - Pass `null` for a document server without a secret. Unsigned callbacks are accepted, and a
   token they carry is not checked or trusted. You have to write `null` explicitly, so you can't
   turn off the check by forgetting an option.

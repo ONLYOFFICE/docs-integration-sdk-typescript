@@ -18,12 +18,11 @@ Signing and checking the tokens the document server exchanges. Imported from
 
 ## Interfaces
 
-| Interface                                                | Description                                                                                                                                                                                                            |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [JwtOptions](interfaces/JwtOptions.md)                   | Settings of a [DocumentServerJwt](classes/DocumentServerJwt.md), applied to every token it signs or verifies.                                                                                                          |
-| [SignOptions](interfaces/SignOptions.md)                 | Options of one [DocumentServerJwt.sign](classes/DocumentServerJwt.md#sign) call, over the signer options.                                                                                                              |
-| [VerifyHeaderOptions](interfaces/VerifyHeaderOptions.md) | Options of one [DocumentServerJwt.verifyHeader](classes/DocumentServerJwt.md#verifyheader) call. Set the header and the prefix to the `token.outbox.header` and `token.outbox.prefix` settings of the document server. |
-| [VerifyOptions](interfaces/VerifyOptions.md)             | Options of one [DocumentServerJwt.verify](classes/DocumentServerJwt.md#verify) call, over the signer options.                                                                                                          |
+| Interface                                    | Description                                                                                                                                                                                  |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [JwtOptions](interfaces/JwtOptions.md)       | Settings of a [DocumentServerJwt](classes/DocumentServerJwt.md), applied to every token it signs or verifies.                                                                                |
+| [SignOptions](interfaces/SignOptions.md)     | Options of one [DocumentServerJwt.sign](classes/DocumentServerJwt.md#sign) call, over the signer options.                                                                                    |
+| [VerifyOptions](interfaces/VerifyOptions.md) | Options of one [DocumentServerJwt.verify](classes/DocumentServerJwt.md#verify) or [DocumentServerJwt.verifyHeader](classes/DocumentServerJwt.md#verifyheader) call, over the signer options. |
 
 ## Type Aliases
 

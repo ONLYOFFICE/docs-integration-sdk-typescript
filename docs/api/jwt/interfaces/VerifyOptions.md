@@ -2,11 +2,8 @@
 
 # Interface: VerifyOptions
 
-Options of one [DocumentServerJwt.verify](../classes/DocumentServerJwt.md#verify) call, over the signer options.
-
-## Extended by
-
-- [`VerifyHeaderOptions`](VerifyHeaderOptions.md)
+Options of one [DocumentServerJwt.verify](../classes/DocumentServerJwt.md#verify) or [DocumentServerJwt.verifyHeader](../classes/DocumentServerJwt.md#verifyheader)
+call, over the signer options.
 
 ## Properties
 

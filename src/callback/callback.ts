@@ -30,9 +30,6 @@ import type {
   CallbackUnknown,
 } from "./types.js";
 
-const DEFAULT_AUTHORIZATION_HEADER = "Authorization";
-const DEFAULT_AUTHORIZATION_PREFIX = "Bearer ";
-
 const KINDS: Readonly<Record<number, CallbackEvent["kind"]>> = {
   1: "editing",
   2: "save",
@@ -48,12 +45,17 @@ const OK: CallbackReply = Object.freeze({ error: 0 });
 const FAIL: CallbackReply = Object.freeze({ error: 1 });
 
 /**
- * Checks the token of a callback. {@link jwt!DocumentServerJwt | DocumentServerJwt} implements
- * it; any object with `verify()` works.
+ * Finds and checks the token of a callback. {@link jwt!DocumentServerJwt | DocumentServerJwt}
+ * implements it; any object with `verify()` and `readHeader()` works.
  */
 export interface CallbackVerifier {
   /** Resolves to the claims of the token, or rejects when the token can't be trusted. */
   verify(token: string): Promise<unknown>;
+  /**
+   * Reads the token from the headers of the callback, without checking it. Returns `undefined`
+   * when the headers carry no token.
+   */
+  readHeader(headers: CallbackHeaders): string | undefined;
 }
 
 /**
@@ -84,10 +86,6 @@ export interface CallbackOptions {
    * callback carries is then neither checked nor trusted.
    */
   verifier: CallbackVerifier | null;
-  /** The header a token is read from. Default: `"Authorization"`. */
-  authorizationHeader?: string;
-  /** What comes before the token in that header, matched in any case. Default: `"Bearer "`. */
-  authorizationPrefix?: string;
 }
 
 /**
@@ -150,30 +148,6 @@ function parseBody(body: unknown): unknown {
   }
 }
 
-function isHeaders(headers: CallbackHeaders): headers is Headers {
-  return typeof headers.get === "function";
-}
-
-function header(headers: CallbackHeaders | undefined, name: string): string | undefined {
-  if (headers === undefined) {
-    return undefined;
-  }
-
-  if (isHeaders(headers)) {
-    return headers.get(name)?.split(", ")[0];
-  }
-
-  const wanted = name.toLowerCase();
-
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === wanted) {
-      return typeof value === "string" ? value : value?.[0];
-    }
-  }
-
-  return undefined;
-}
-
 async function verify(verifier: CallbackVerifier, token: string): Promise<unknown> {
   try {
     return await verifier.verify(token);
@@ -195,25 +169,20 @@ async function trustedBody(input: CallbackInput, options: CallbackOptions): Prom
     return await verify(options.verifier, body["token"]);
   }
 
-  const name = options.authorizationHeader ?? DEFAULT_AUTHORIZATION_HEADER;
-  const prefix = options.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX;
-  const value = header(input.headers, name);
+  const token =
+    input.headers === undefined ? undefined : options.verifier.readHeader(input.headers);
 
-  if (
-    value === undefined ||
-    value.length === prefix.length ||
-    value.slice(0, prefix.length).toLowerCase() !== prefix.toLowerCase()
-  ) {
+  if (token === undefined) {
     throw new CallbackError(
       "token",
-      `the callback carries no token, in the body or in ${name}, and a verifier requires one`,
+      "the callback carries no token, in the body or in the header, and a verifier requires one",
     );
   }
 
-  const claims = await verify(options.verifier, value.slice(prefix.length));
+  const claims = await verify(options.verifier, token);
 
   if (!isRecord(claims) || !isRecord(claims["payload"])) {
-    throw new CallbackError("body", `the token in ${name} carries no payload`);
+    throw new CallbackError("body", "the token in the header carries no payload");
   }
 
   return claims["payload"];
@@ -307,14 +276,14 @@ export class DocumentServerCallback {
    * Where the token is looked for:
    *
    * 1. `token` in the body, when it is a string. It signs the callback itself.
-   * 2. Otherwise the header named by `authorizationHeader`, after `authorizationPrefix`. It
-   *    signs the callback as `{ payload: … }`.
+   * 2. Otherwise the header the verifier reads with `readHeader()`. It signs the callback as
+   *    `{ payload: … }`.
    *
    * Once the token is checked, the callback is what the token carries, and the unsigned body
    * is ignored.
    *
    * @param input The body and the headers of the request.
-   * @param options The verifier, and the header the token is read from.
+   * @param options The verifier.
    * @returns The callback, with the event it reports.
    * @throws {@link CallbackError} of kind:
    *
@@ -322,7 +291,7 @@ export class DocumentServerCallback {
    *   carries no `payload` object, or when the callback fails the checks of the
    *   {@link DocumentServerCallback | constructor};
    * - `"token"` when `verifier` is set and there is no token: no string `token` in the body,
-   *   and the header is missing, has another prefix or holds only the prefix;
+   *   and `readHeader()` of the verifier finds none;
    * - `"signature"` when the verifier rejects the token. Its error is the `cause`.
    */
   static async parse(
@@ -337,7 +306,7 @@ export class DocumentServerCallback {
    * checks it like {@link DocumentServerCallback.parse}.
    *
    * @param request The request posted to `callbackUrl`. Its body is read.
-   * @param options The verifier, and the header the token is read from.
+   * @param options The verifier.
    * @returns The callback, with the event it reports.
    * @throws {@link CallbackError} whenever {@link DocumentServerCallback.parse} would.
    */

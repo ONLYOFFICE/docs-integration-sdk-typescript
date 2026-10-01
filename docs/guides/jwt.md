@@ -150,11 +150,22 @@ const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
 
 It takes fetch `Headers` or a plain Node headers object, and matches header names and the prefix
 in any case. If the server sets its own `token.outbox.header` or `token.outbox.prefix` in its
-[`token` settings][server-token], pass the same values. An empty prefix reads a bare token:
+[`token` settings][server-token], set the same values on the signer. An empty prefix reads a
+bare token:
 
 ```ts
-await jwt.verifyHeader(headers, { authorizationHeader: "X-Docs-Token", authorizationPrefix: "" });
+const jwt = new DocumentServerJwt({
+  secret,
+  authorizationHeader: "X-Docs-Token",
+  authorizationPrefix: "",
+});
+
+await jwt.verifyHeader(headers);
 ```
+
+The signer reads the header the same way when it checks a [callback](callback.md), so the
+values are set in one place. `readHeader()` only reads: it returns the token, unchecked, or
+`undefined` when there is none.
 
 Errors:
 
@@ -185,6 +196,10 @@ const outbox = new DocumentServerJwt({ secret: outboxSecret });
 
 await client.convert(request, await inbox.signHeader(request));
 ```
+
+The header a signer reads tokens from belongs to it as well: set the `token.outbox` values on
+the signer that checks what the server sends. The header the client sends tokens in is a
+[client option](client.md#authorizationheader-and-authorizationprefix), the `token.inbox` side.
 
 A server with one secret everywhere, the common case, needs one signer.
 

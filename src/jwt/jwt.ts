@@ -62,6 +62,20 @@ export interface JwtOptions {
    * yours: a whole number of seconds from `0` to `2147483647`. Default: `3`.
    */
   clockToleranceSec?: number;
+  /**
+   * The header {@link DocumentServerJwt.readHeader} reads a token from. Set it to the
+   * `token.outbox.header` setting of the document server. Default: `"Authorization"`.
+   *
+   * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
+   */
+  authorizationHeader?: string;
+  /**
+   * What comes before the token in that header, matched in any case. `""` reads a bare token.
+   * Set it to the `token.outbox.prefix` setting of the document server. Default: `"Bearer "`.
+   *
+   * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
+   */
+  authorizationPrefix?: string;
 }
 
 /**
@@ -86,7 +100,10 @@ export interface SignOptions {
   operation?: JwtOperation;
 }
 
-/** Options of one {@link DocumentServerJwt.verify} call, over the signer options. */
+/**
+ * Options of one {@link DocumentServerJwt.verify} or {@link DocumentServerJwt.verifyHeader}
+ * call, over the signer options.
+ */
 export interface VerifyOptions {
   /** The leeway for this token, instead of the configured one. Validated the same way. */
   clockToleranceSec?: number;
@@ -97,22 +114,6 @@ export interface VerifyOptions {
  * in any case; of a header given several times, the first value is read.
  */
 export type JwtHeaders = Headers | Readonly<Record<string, string | readonly string[] | undefined>>;
-
-/**
- * Options of one {@link DocumentServerJwt.verifyHeader} call. Set the header and the prefix to
- * the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
- *
- * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
- */
-export interface VerifyHeaderOptions extends VerifyOptions {
-  /** The header the token is read from. Default: `"Authorization"`. */
-  authorizationHeader?: string;
-  /**
-   * What comes before the token in that header, matched in any case. `""` reads a bare token.
-   * Default: `"Bearer "`.
-   */
-  authorizationPrefix?: string;
-}
 
 function normalizeSecret(secret: string): string {
   if (secret === "") {
@@ -329,8 +330,8 @@ function withClaims(
  * Signs the tokens the document server expects and verifies the tokens it sends. HMAC comes
  * from WebCrypto, so there are no dependencies.
  *
- * One signer holds one secret. A document server with separate `inbox`, `outbox` and
- * `session` secrets needs a signer for each.
+ * One signer holds one secret, and the header it reads tokens from. A document server with
+ * separate `inbox`, `outbox` and `session` secrets needs a signer for each.
  *
  * @example
  * ```ts
@@ -375,6 +376,8 @@ export class DocumentServerJwt {
       clockToleranceSec: normalizeTolerance(
         options.clockToleranceSec ?? DEFAULT_CLOCK_TOLERANCE_SEC,
       ),
+      authorizationHeader: options.authorizationHeader ?? DEFAULT_AUTHORIZATION_HEADER,
+      authorizationPrefix: options.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX,
     });
   }
 
@@ -542,11 +545,36 @@ export class DocumentServerJwt {
   }
 
   /**
+   * Reads the token from the authorization header of a request the document server sent,
+   * without checking it: the value of `authorizationHeader` after `authorizationPrefix`.
+   *
+   * @param headers The headers of the request.
+   * @returns The token, or `undefined` when the header is missing, has another prefix or holds
+   * only the prefix.
+   * @see [Outgoing requests](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests)
+   */
+  readHeader(headers: JwtHeaders): string | undefined {
+    const { authorizationHeader, authorizationPrefix } = this.options;
+    const value = headerValue(headers, authorizationHeader);
+
+    if (
+      value === undefined ||
+      value.length === authorizationPrefix.length ||
+      value.slice(0, authorizationPrefix.length).toLowerCase() !== authorizationPrefix.toLowerCase()
+    ) {
+      return undefined;
+    }
+
+    return value.slice(authorizationPrefix.length);
+  }
+
+  /**
    * Reads the token from the authorization header of a request the document server sent, such
    * as a file download, verifies it and returns its `payload` claim.
    *
-   * The document server sends `Authorization: Bearer <token>` by default, and its claims wrap
-   * the request data in `payload`.
+   * The token is read by {@link DocumentServerJwt.readHeader}. The document server sends
+   * `Authorization: Bearer <token>` by default, and its claims wrap the request data in
+   * `payload`.
    *
    * @example
    * ```ts
@@ -554,7 +582,7 @@ export class DocumentServerJwt {
    * ```
    *
    * @param headers The headers of the request.
-   * @param options The header, the prefix and the leeway.
+   * @param options The leeway.
    * @returns The `payload` claim, typed as `T`. The type is not checked.
    * @throws {@link JwtError} of kind `"missing"` when the header is missing, has another
    * prefix or holds only the prefix. Use it to tell a request of the document server from one
@@ -565,21 +593,16 @@ export class DocumentServerJwt {
    */
   async verifyHeader<T = Record<string, unknown>>(
     headers: JwtHeaders,
-    options?: VerifyHeaderOptions,
+    options?: VerifyOptions,
   ): Promise<T> {
-    const name = options?.authorizationHeader ?? DEFAULT_AUTHORIZATION_HEADER;
-    const prefix = options?.authorizationPrefix ?? DEFAULT_AUTHORIZATION_PREFIX;
-    const value = headerValue(headers, name);
+    const name = this.options.authorizationHeader;
+    const token = this.readHeader(headers);
 
-    if (
-      value === undefined ||
-      value.length === prefix.length ||
-      value.slice(0, prefix.length).toLowerCase() !== prefix.toLowerCase()
-    ) {
+    if (token === undefined) {
       throw new JwtError("missing", `the request carries no token in ${name}`);
     }
 
-    const claims = await this.verify(value.slice(prefix.length), options);
+    const claims = await this.verify(token, options);
 
     if (!isRecord(claims["payload"])) {
       throw new JwtError("malformed", `the token in ${name} carries no payload`);

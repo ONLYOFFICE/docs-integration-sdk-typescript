@@ -34,7 +34,7 @@ apart by what it reports. Imported from `@onlyoffice/docs-integration-sdk/callba
 | [CallbackSave](interfaces/CallbackSave.md)                     | Status `2`: the last editor closed and the document changed. Download `url` and store it.                                                                                     |
 | [CallbackSaveError](interfaces/CallbackSaveError.md)           | Status `3`: the document server failed to build the document. `url` may be missing.                                                                                           |
 | [CallbackUnknown](interfaces/CallbackUnknown.md)               | A status this SDK doesn't know yet. Read `status`.                                                                                                                            |
-| [CallbackVerifier](interfaces/CallbackVerifier.md)             | Checks the token of a callback. [DocumentServerJwt](../jwt/classes/DocumentServerJwt.md) implements it; any object with `verify()` works.                                     |
+| [CallbackVerifier](interfaces/CallbackVerifier.md)             | Finds and checks the token of a callback. [DocumentServerJwt](../jwt/classes/DocumentServerJwt.md) implements it; any object with `verify()` and `readHeader()` works.        |
 | [HandleOptions](interfaces/HandleOptions.md)                   | Options of [DocumentServerCallback.handle](classes/DocumentServerCallback.md#handle).                                                                                         |
 
 ## Type Aliases
