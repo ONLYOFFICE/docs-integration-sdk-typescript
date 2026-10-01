@@ -294,7 +294,8 @@ const { urls } = await client.docbuilder({ url: "https://example.com/contract.js
 
 #### See
 
-[Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+- [Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+- [Document Builder API](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/)
 
 ---
 

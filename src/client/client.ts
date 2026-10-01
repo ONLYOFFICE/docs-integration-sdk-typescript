@@ -505,6 +505,7 @@ export class DocumentServerClient {
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range.
    * @throws {@link DocumentServerParseError} when the body is not a JSON object.
    * @see [Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+   * @see [Document Builder API](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/)
    */
   async docbuilder(
     request: BuilderRequest,

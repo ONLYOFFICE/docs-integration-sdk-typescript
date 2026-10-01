@@ -5,6 +5,10 @@
 The body of a response from `/docbuilder` and `/docbuilder/from-file`: the state of the
 build, or an `error` code and nothing else. The client throws on the code.
 
+## See
+
+[Response parameters](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#response-parameters)
+
 ## Properties
 
 | Property                             | Type                                                      | Description                                                                                     |
