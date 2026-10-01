@@ -4,6 +4,10 @@
 
 Saves the document being edited without closing it.
 
+## See
+
+[forcesave](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/forcesave/)
+
 ## Extends
 
 - `Command`

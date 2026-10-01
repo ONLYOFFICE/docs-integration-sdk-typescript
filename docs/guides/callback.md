@@ -22,7 +22,7 @@ import { splitFileUrl } from "@onlyoffice/docs-integration-sdk/client";
 
 export async function POST(request: Request): Promise<Response> {
   const fileId = new URL(request.url).searchParams.get("fileId");
-  const callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+  const callback = await DocumentServerCallback.fromRequest(request, { verifier: outbox });
   const file = await storage.find(fileId);
 
   if (file === undefined) {
@@ -69,7 +69,7 @@ JSON, text or bytes. The headers can be `Headers` or a plain Node headers object
 app.post("/callback", express.json(), async (req, res) => {
   const callback = await DocumentServerCallback.parse(
     { body: req.body, headers: req.headers },
-    { verifier: inbox },
+    { verifier: outbox },
   );
 
   const reply = await callback.handle(handlers);
@@ -99,17 +99,18 @@ callback with one of these statuses and no `url` is refused) and optional on the
 
 > [!NOTE]
 > Status `6` can come even if the editor config never enables `customization.forcesave`: from the
-> `forcesave` command, a submitted form or the autosave timer of the document server.
+> `forcesave` command, a submitted form or the autosave timer of the document server. See
+> [force saving][force-saving].
 > [`forcesavetype`][callback-forcesavetype] says which.
 
 ## Check the token
 
 With a JWT secret configured, the document server signs every callback, in one of two places:
 
-- **In the body:** `token` signs the callback itself.
-- **In a header:** `Authorization: Bearer …` by default, or the header named by
-  `authorizationHeader` and `authorizationPrefix`. The token signs the callback wrapped as
-  `{ payload: … }`.
+- **[In the body][token-in-body-outgoing]:** `token` signs the callback itself.
+- **[In a header][token-in-header-outgoing]:** `Authorization: Bearer …` by default, or the
+  header named by `authorizationHeader` and `authorizationPrefix`. The token signs the callback
+  wrapped as `{ payload: … }`.
 
 The body token is checked first. The header is checked only if the body has no token.
 
@@ -119,8 +120,9 @@ somewhere else never reaches your download.
 
 `verifier` is required:
 
-- Pass [`DocumentServerJwt`](jwt.md) configured with the inbox secret, or any object with a
-  `verify(token)` method that resolves to the token's payload.
+- Pass [`DocumentServerJwt`](jwt.md) configured with the outbox secret, or any
+  `CallbackVerifier`: an object with a `verify(token)` method that resolves to the token's
+  payload.
 - Pass `null` for a document server without a secret. Unsigned callbacks are accepted, and a
   token they carry is not checked or trusted. You have to write `null` explicitly, so you can't
   turn off the check by forgetting an option.
@@ -146,7 +148,7 @@ return Response.json(reply);
 - `DocumentServerCallback.ok`, `{"error":0}`, when the handler finished;
 - `DocumentServerCallback.fail`, `{"error":1}`, when the handler threw or rejected.
 
-The [callback handler documentation][callback-handler] requires `{"error":0}`.
+The [callback handler documentation][callback-reply] requires `{"error":0}`.
 
 > [!IMPORTANT]
 > On any reply other than `{"error":0}`, the document editor shows an error message.
@@ -179,7 +181,8 @@ Handlers:
 | `"token"`     | A verifier is set and the callback carries no token.                 |
 | `"signature"` | The verifier rejected the token. Its error is the `cause`.           |
 
-The exact conditions are in the [`parse()` reference](../api/callback/classes/DocumentServerCallback.md#parse).
+The exact conditions are in the
+[`parse()` reference](../api/callback/classes/DocumentServerCallback.md#parse).
 
 A fourth kind, `"unhandled"`, never comes from `parse()` or `fromRequest()`. It is what
 `handle()` passes to `onError` for a `6` without a `forcesave` handler.
@@ -189,7 +192,7 @@ Such a request did not come from the document server, or not in a shape it sends
 
 ```ts
 try {
-  callback = await DocumentServerCallback.fromRequest(request, { verifier: inbox });
+  callback = await DocumentServerCallback.fromRequest(request, { verifier: outbox });
 } catch (error) {
   if (CallbackError.is(error)) {
     return new Response(null, { status: error.kind === "body" ? 400 : 403 });
@@ -201,3 +204,7 @@ try {
 
 [callback-handler]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/
 [callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype
+[token-in-body-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/#outgoing-requests
+[token-in-header-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests
+[force-saving]: https://api.onlyoffice.com/docs/docs-api/get-started/how-it-works/saving-file/#force-saving
+[callback-reply]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#response-from-the-document-storage-service

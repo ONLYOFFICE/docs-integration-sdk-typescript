@@ -51,8 +51,8 @@ The constructor takes:
 1. The config input: the file, the permissions on it and the whole `editorConfig`. The fields
    are typed by [`@onlyoffice/doceditor-types`][doceditor-types]. Its version follows the
    document server version (`9.4.2` is Docs `9.4.0`), not the version of this SDK.
-2. A format lookup: [`DocumentServerFormats`](formats.md), or any object with a
-   `getFormat(extension)` method that returns the `type` and `actions` of a format.
+2. A format lookup: [`DocumentServerFormats`](formats.md), or any `FormatLookup`: an object
+   with a `getFormat(extension)` method that returns the `type` and `actions` of a format.
 
 The result is on `config.config`. It is validated, completed and deeply frozen. The input is
 copied, so later changes to it have no effect. The instance serializes as the config, so
@@ -64,15 +64,15 @@ The document server decides some fields from the file format. You don't pass the
 declare them as `never`. If a value gets there anyway (from JavaScript or through a cast), the
 SDK replaces it with the derived value:
 
-| Field               | Derived from                                        |
-| ------------------- | --------------------------------------------------- |
-| `document.fileType` | the extension of `title`, in lower case             |
-| `documentType`      | the editor the document server opens that format in |
+| Field                                 | Derived from                                        |
+| ------------------------------------- | --------------------------------------------------- |
+| `document.fileType`                   | the extension of `title`, in lower case             |
+| [`documentType`][config-documenttype] | the editor the document server opens that format in |
 
 ## Permissions
 
-`document.permissions.edit` is required. Whether a file may be changed is a decision of your
-system, so the SDK has no default for it.
+[`document.permissions.edit`][config-permissions] is required. Whether a file may be changed is a
+decision of your system, so the SDK has no default for it.
 
 The SDK then fits the permissions to the format. It silently sets a permission to `false` if the
 format does not allow it. It leaves out a permission you did not pass.
@@ -93,14 +93,16 @@ format. They are kept as you passed them.
 
 ## Callback URL and mode
 
-The document server posts document changes to `callbackUrl`. See [Handling callbacks](callback.md).
+The document server posts document changes to [`callbackUrl`][config-callbackurl]. See
+[Handling callbacks](callback.md).
 
-`editorConfig.mode` is kept as you passed it. It decides what happens to `callbackUrl`:
+[`editorConfig.mode`][config-mode] is kept as you passed it. It decides what happens to
+`callbackUrl`:
 
 - **`"edit"` mode (default) and the user can change the document** (`edit`, `review`, `comment`
   or `fillForms` is `true` after fitting): `callbackUrl` is kept and **required**.
 - **Otherwise** (`"view"` mode, or no permission left to change anything): `callbackUrl` and
-  `customization.forcesave` are removed.
+  [`customization.forcesave`][config-forcesave] are removed.
 
 > [!TIP]
 > The document key changes with every save, so the callback can't find the file by it. Put the
@@ -127,8 +129,8 @@ If you pass `user`, it needs an `id`. The document server uses it to:
 
 ## Sign the config
 
-When the document server has a JWT secret, the editor needs a signed config. `sign()` returns a
-copy of the config with a `token` field:
+When the document server has a JWT secret, the editor needs a
+[signed config][signature-browser]. `sign()` returns a copy of the config with a `token` field:
 
 ```ts
 const jwt = new DocumentServerJwt({ secret: process.env["DOCS_JWT_SECRET"] ?? "" });
@@ -138,14 +140,15 @@ const signed = await config.sign(jwt);
 The token covers the whole config except the token itself. A config that already has a
 `token` is signed again from scratch.
 
-`sign()` takes [`DocumentServerJwt`](jwt.md) or any object with a `sign(payload)` method that
-resolves to a token, for example a signer backed by a key vault.
+`sign()` takes [`DocumentServerJwt`](jwt.md) or any `ConfigSigner`: an object with a
+`sign(payload)` method that resolves to a token, for example a signer backed by a key vault.
 
 ## Open the editor in the browser
 
 Load `api.js` from the document server. Its path is `urls.api` of
 [`getConfig()`](formats.md#server-configuration). Serve the signed config from an endpoint of
-yours, for example as `Response.json(signed)`, and create the editor from it:
+yours, for example as `Response.json(signed)`, and create a [`DocsAPI.DocEditor`][docsapi] from
+it:
 
 ```html
 <div id="placeholder"></div>
@@ -160,8 +163,8 @@ yours, for example as `Response.json(signed)`, and create the editor from it:
 ```
 
 > [!NOTE]
-> Editor `events` are functions. They survive neither `JSON.stringify` nor a signature, so
-> `ConfigInput` has no field for them. Add them in the browser, as above.
+> Editor [`events`][config-events] are functions. They survive neither `JSON.stringify` nor a
+> signature, so `ConfigInput` has no field for them. Add them in the browser, as above.
 
 ## Document keys
 
@@ -183,7 +186,7 @@ How it works:
   same parts always give the same key, also after a restart.
 - A number and its string form count as the same part.
 - A part that is neither a string nor a finite number, such as `undefined` or `NaN`, is refused.
-  Otherwise every revision would get the same key.
+  Otherwise every revision would get the same key. No parts, or only empty ones, are refused too.
 
 Choosing the parts:
 
@@ -228,3 +231,11 @@ The full list of checks is in the
 [config-editor-user]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#user
 [config-document-key]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key
 [doceditor-types]: https://www.npmjs.com/package/@onlyoffice/doceditor-types
+[signature-browser]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/browser/#opening-file
+[config-documenttype]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype
+[config-permissions]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/permissions/
+[config-callbackurl]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#callbackurl
+[config-mode]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/#mode
+[config-forcesave]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/customization/customization-standard-branding/#forcesave
+[config-events]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/events/
+[docsapi]: https://api.onlyoffice.com/docs/docs-api/usage-api/doceditor/#docsapi

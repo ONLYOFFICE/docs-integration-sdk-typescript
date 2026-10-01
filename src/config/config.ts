@@ -338,6 +338,7 @@ function checkEditorUrls(editor: Mutable): void {
  * ```
  *
  * @see [Opening an editor](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md)
+ * @see [Config](https://api.onlyoffice.com/docs/docs-api/usage-api/config/)
  */
 export class DocumentServerConfig {
   /** The config the constructor built: validated, completed and deeply frozen. */
@@ -425,6 +426,7 @@ export class DocumentServerConfig {
    *
    * @param signer {@link jwt!DocumentServerJwt | DocumentServerJwt} or any {@link ConfigSigner}.
    * @returns The signed config, frozen.
+   * @see [Opening a file](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/browser/#opening-file)
    */
   async sign(signer: ConfigSigner): Promise<Readonly<StrictConfig>> {
     const payload: StrictConfig = { ...this.config };

@@ -23,14 +23,16 @@ new DocumentServerParseError(
 ): DocumentServerParseError;
 ```
 
+Creates the error for a body that is not what the endpoint promises.
+
 #### Parameters
 
-| Parameter  | Type           |
-| ---------- | -------------- |
-| `message`  | `string`       |
-| `response` | `Response`     |
-| `body`     | `string`       |
-| `options?` | `ErrorOptions` |
+| Parameter  | Type           | Description                                             |
+| ---------- | -------------- | ------------------------------------------------------- |
+| `message`  | `string`       | What was wrong with the body.                           |
+| `response` | `Response`     | The response, with its body already read.               |
+| `body`     | `string`       | The beginning of the body.                              |
+| `options?` | `ErrorOptions` | The `cause`, such as the `SyntaxError` of `JSON.parse`. |
 
 #### Returns
 
@@ -46,7 +48,7 @@ new DocumentServerParseError(
 | ----------------------------------------- | ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-body"></a> `body`         | `readonly` | `string`   | The first 512 characters of the response body, trimmed.                                                                                                                                                                                               |
 | <a id="property-kind"></a> `kind`         | `readonly` | `"parse"`  | Which failure the error stands for.                                                                                                                                                                                                                   |
-| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-response"></a> `response` | `readonly` | `Response` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, even one that happens while the body is read.                                                                                        |
 | <a id="property-url"></a> `url`           | `readonly` | `string`   | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
@@ -57,7 +59,8 @@ new DocumentServerParseError(
 static is(value): value is DocumentServerParseError;
 ```
 
-Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerParseError`, also one thrown by a second copy of
+the package, which `instanceof` misses.
 
 #### Parameters
 

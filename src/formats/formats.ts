@@ -207,12 +207,21 @@ export class DocumentServerFormats {
     return format === undefined || format.type === "" ? undefined : format.type;
   }
 
-  /** Returns what the editors can do with an extension. Empty when no editor opens it. */
+  /**
+   * Returns what the editors can do with an extension. Empty when no editor opens it.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   getActions(extension: string): readonly FormatAction[] {
     return this.getFormat(extension)?.actions ?? NONE;
   }
 
-  /** Returns whether the editors can do `action` with an extension. */
+  /**
+   * Returns whether the editors can do `action` with an extension.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   * @param action The action, such as `"edit"`.
+   */
   can(extension: string, action: FormatAction): boolean {
     return this.getActions(extension).includes(action);
   }
@@ -220,6 +229,8 @@ export class DocumentServerFormats {
   /**
    * Returns whether any editor opens the extension, in any mode: the format has a `type`.
    * Its actions are not checked.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
    */
   isOpenable(extension: string): boolean {
     const format = this.getFormat(extension);
@@ -227,42 +238,75 @@ export class DocumentServerFormats {
     return format !== undefined && opens(format);
   }
 
-  /** Returns whether the editors open the extension for viewing: action `"view"`. */
+  /**
+   * Returns whether the editors open the extension for viewing: action `"view"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isViewable(extension: string): boolean {
     return this.can(extension, "view");
   }
 
-  /** Returns whether the editors edit it and save it in its own format: action `"edit"`. */
+  /**
+   * Returns whether the editors edit it and save it in its own format: action `"edit"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isEditable(extension: string): boolean {
     return this.can(extension, "edit");
   }
 
-  /** Returns whether editing it loses what the format can't store, like `rtf`: action `"lossy-edit"`. */
+  /**
+   * Returns whether editing it loses what the format can't store, like `rtf`: action
+   * `"lossy-edit"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isLossyEditable(extension: string): boolean {
     return this.can(extension, "lossy-edit");
   }
 
-  /** Returns whether it is a form the editors fill in: action `"fill"`. */
+  /**
+   * Returns whether it is a form the editors fill in: action `"fill"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isFillable(extension: string): boolean {
     return this.can(extension, "fill");
   }
 
-  /** Returns whether the editors open it for commenting: action `"comment"`. */
+  /**
+   * Returns whether the editors open it for commenting: action `"comment"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isCommentable(extension: string): boolean {
     return this.can(extension, "comment");
   }
 
-  /** Returns whether the editors open it for reviewing: action `"review"`. */
+  /**
+   * Returns whether the editors open it for reviewing: action `"review"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isReviewable(extension: string): boolean {
     return this.can(extension, "review");
   }
 
-  /** Returns whether the editors convert it on open, like the legacy `doc`: action `"auto-convert"`. */
+  /**
+   * Returns whether the editors convert it on open, like the legacy `doc`: action `"auto-convert"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isAutoConvertable(extension: string): boolean {
     return this.can(extension, "auto-convert");
   }
 
-  /** Returns whether the editors open it behind a password: action `"encrypt"`. */
+  /**
+   * Returns whether the editors open it behind a password: action `"encrypt"`.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   isEncryptable(extension: string): boolean {
     return this.can(extension, "encrypt");
   }
@@ -270,6 +314,8 @@ export class DocumentServerFormats {
   /**
    * Returns the extensions an extension converts to, without the dot, as `outputtype` of a
    * conversion takes them. Empty when the server doesn't convert it.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
    */
   getConversions(extension: string): readonly string[] {
     return this.getFormat(extension)?.convert ?? NONE;
@@ -278,22 +324,37 @@ export class DocumentServerFormats {
   /**
    * Returns whether the conversion API converts `from` into `to`. Both are matched like any
    * extension.
+   *
+   * @param from The extension or file name converted from.
+   * @param to The extension converted to.
    */
   isConvertibleTo(from: string, to: string): boolean {
     return this.getConversions(from).includes(normalize(to));
   }
 
-  /** Returns the MIME types an extension is served under. */
+  /**
+   * Returns the MIME types an extension is served under.
+   *
+   * @param extension An extension, with or without the dot, or a file name. Matched in any case.
+   */
   getMimes(extension: string): readonly string[] {
     return this.getFormat(extension)?.mime ?? NONE;
   }
 
-  /** Returns the formats served under a MIME type, matched in any case. */
+  /**
+   * Returns the formats served under a MIME type, matched in any case.
+   *
+   * @param mime A MIME type, such as `"application/pdf"`.
+   */
   getFormatsByMime(mime: string): readonly Format[] {
     return this.#byMime.get(mime.trim().toLowerCase()) ?? NONE;
   }
 
-  /** Returns the formats one editor opens, or, for `""`, those that only come out of a conversion. */
+  /**
+   * Returns the formats one editor opens, or, for `""`, those that only come out of a conversion.
+   *
+   * @param type The editor, such as `"word"`, or `""`.
+   */
   getFormatsByType(type: FormatType): readonly Format[] {
     return Object.freeze(this.all.filter((format) => format.type === type));
   }

@@ -23,13 +23,14 @@ keyed by the file name. One build can return a document and a spreadsheet at onc
 
 To download the results, see [Downloading files](files.md).
 
-**Errors.** Like a conversion, the service answers `200 OK` either way. On failure the body has
-an `error` code (`-1`, `-2`, `-3`, `-4`, `-6` or `-8`, listed on `BuilderErrorCode`), and the SDK
-rejects with a `BuilderError`. See [Errors](errors.md).
+**Errors.** Like a conversion, the service answers `200 OK` either way. On failure the body has an
+[`error` code][builder-errors] (`-1`, `-2`, `-3`, `-4`, `-6` or `-8`, listed on `BuilderErrorCode`),
+and the SDK rejects with a `BuilderError`. See [Errors](errors.md).
 
 ## Pass arguments
 
-Put values for the script in `argument`. The script reads them from its `Argument` global:
+Put values for the script in [`argument`][builder-argument]. The script reads them from its
+`Argument` global:
 
 ```ts
 await client.docbuilder({
@@ -43,8 +44,8 @@ await client.docbuilder({
 By default the document server keeps the connection open until the files are ready. A
 long-running script can take longer than `timeoutMs`.
 
-With `async: true` the call returns at once with `end: false` and the `key` of the build. Repeat
-the request with that key, and nothing else, until `end` is `true`:
+With [`async: true`][builder-async] the call returns at once with `end: false` and the `key` of the
+build. Repeat the request with `async: true` and that key, and nothing else, until `end` is `true`:
 
 ```ts
 const started = await client.docbuilder({ async: true, url });
@@ -65,8 +66,8 @@ result.urls; // { "output.docx": "…" }
 `BuilderRequest` is a union of the two requests: starting a build needs `url`, collecting the
 result needs `key`. Neither can be sent empty.
 
-The `shardkey` query parameter carries the build key, so every poll reaches the node running the
-build. The first request has no key yet and is sent without it.
+The [`shardkey`][shard-key] query parameter carries the build key, so every poll reaches the node
+running the build. The first request has no key yet and is sent without it.
 
 ## Signing
 
@@ -122,3 +123,7 @@ await client.docbuilderFromFile(request, file, await jwt.signHeader(request, sig
 > with a `DocumentServerHttpError`.
 
 [builder-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/
+[builder-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#possible-error-codes-and-their-description
+[builder-argument]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#argument
+[builder-async]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#asynchronous-request
+[shard-key]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests

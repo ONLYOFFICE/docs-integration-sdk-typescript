@@ -5,7 +5,7 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors into your application.
 - Build and sign the editor config.
 - Receive, verify and answer callbacks.
 - Call the conversion API, the command service and the document builder.
-- Built on the standard `fetch`: no dependencies for HTTP, works in Node.js 20+, Deno, Bun,
+- Built on the standard `fetch`: no dependencies for HTTP, works in Node.js 20.19+, Deno, Bun,
   browsers and edge runtimes. ESM and CJS, with type definitions.
 
 > [!NOTE]
@@ -16,6 +16,28 @@ TypeScript SDK for integrating ONLYOFFICE Docs editors into your application.
 ```sh
 npm install @onlyoffice/docs-integration-sdk
 ```
+
+### Subpath imports
+
+The package root exports everything. Each module is also available on its own subpath:
+
+| Subpath                                     | Exports                                                                                      |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports                             |
+| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, `splitFileUrl`, their requests and errors |
+| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types                  |
+| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`, `FormatType`, `FormatAction`                              |
+| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                                              |
+
+```ts
+import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
+```
+
+Modules don't import each other. Where one works with another, it takes any object of the right
+shape, so `DocumentServerJwt` and `DocumentServerFormats` can be replaced with your own classes.
+
+A class is the same whichever path you import it from. A `JwtError` thrown by a signer from
+`/jwt` passes `instanceof` against the `JwtError` of the root, in ESM and in CJS.
 
 ## Quick start
 
@@ -73,7 +95,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 ```
 
-Open it in the page:
+Open it in the page with
+[`DocsAPI.DocEditor`](https://api.onlyoffice.com/docs/docs-api/usage-api/doceditor/#docsapi):
 
 ```html
 <div id="placeholder"></div>
@@ -119,18 +142,18 @@ if it threw. See
 
 ## Guides
 
-| Guide                                                      | Covers                                                        |
-| ---------------------------------------------------------- | ------------------------------------------------------------- |
-| [Opening an editor](docs/guides/editor.md)                 | `DocumentServerConfig`, permissions, signing, document keys   |
-| [Handling callbacks](docs/guides/callback.md)              | `DocumentServerCallback`, events, saving, replying            |
-| [JWT](docs/guides/jwt.md)                                  | `DocumentServerJwt`: signing and verifying tokens             |
-| [Converting documents](docs/guides/conversion.md)          | `convert()`, `convertFromFile()`                              |
-| [Commands](docs/guides/commands.md)                        | `command()`: `info`, `forcesave`, `drop` and the rest         |
-| [Document builder](docs/guides/document-builder.md)        | `docbuilder()`, `docbuilderFromFile()`                        |
-| [Downloading files](docs/guides/files.md)                  | `getFile()`, `splitFileUrl()`                                 |
-| [Server configuration and formats](docs/guides/formats.md) | `getConfig()`, `getFormats()`, `DocumentServerFormats`        |
-| [Errors](docs/guides/errors.md)                            | the error classes and how to tell them apart                  |
-| [Client options](docs/guides/client.md)                    | options, per-request options, the raw client, subpath imports |
+| Guide                                                      | Covers                                                      |
+| ---------------------------------------------------------- | ----------------------------------------------------------- |
+| [Opening an editor](docs/guides/editor.md)                 | `DocumentServerConfig`, permissions, signing, document keys |
+| [Handling callbacks](docs/guides/callback.md)              | `DocumentServerCallback`, events, saving, replying          |
+| [JWT](docs/guides/jwt.md)                                  | `DocumentServerJwt`: signing and verifying tokens           |
+| [Client options](docs/guides/client.md)                    | options, per-request options, the raw client                |
+| [Converting documents](docs/guides/conversion.md)          | `convert()`, `convertFromFile()`                            |
+| [Commands](docs/guides/commands.md)                        | `command()`: `info`, `forcesave`, `drop` and the rest       |
+| [Document builder](docs/guides/document-builder.md)        | `docbuilder()`, `docbuilderFromFile()`                      |
+| [Downloading files](docs/guides/files.md)                  | `getFile()`, `splitFileUrl()`                               |
+| [Server configuration and formats](docs/guides/formats.md) | `getConfig()`, `getFormats()`, `DocumentServerFormats`      |
+| [Errors](docs/guides/errors.md)                            | the error classes and how to tell them apart                |
 
 The [API reference](docs/api/README.md) lists every export, generated from the source.
 

@@ -26,8 +26,9 @@ All seven extend `DocumentServerError`. The [JWT](jwt.md#verify-a-token),
 separate classes.
 
 **`response`.** The last five errors carry the `response` they were read from. Its body is
-already consumed, so a truncated copy of it is on the error. A network error or a timeout may
-happen before any response, so their `response` is `undefined`.
+already consumed, so `DocumentServerHttpError` and `DocumentServerParseError` keep its beginning
+as `body`. A network error and a timeout have no `response`, even when they happen while the
+body is read.
 
 **`url`.** Every error has the `url` of the request, which tells two document servers apart in a
 log, for example the internal and the public address of the same server. The query is left out,
@@ -118,7 +119,7 @@ is one, or the message of the underlying error:
 ```
 
 Both cover a body that breaks off while it is read, as well as a request that never got a
-response. Both take `url` from the request, since there may be no response. See
+response. Both take `url` from the request, or from the response when the body broke off. See
 [`timeoutMs`](client.md#timeoutms).
 
 **Cancelling is not wrapped.** A call cancelled through your own `signal` rejects with the
@@ -127,10 +128,11 @@ decision, not a server failure.
 
 ## What doesn't throw
 
-Apart from that reason, a call throws only the seven errors above. Two outcomes don't throw:
+Apart from that reason, and a `TypeError` for an invalid `timeoutMs` in the per-request
+options, a call throws only the seven errors above. Two outcomes don't throw:
 
-- `healthcheck()` returns `false` for a failing status: a server that is down is the answer you
-  asked for.
+- `healthcheck()` returns `false` for a failing status: a server that reports itself unhealthy
+  is the answer you asked for. A server that can't be reached still rejects.
 - `error: 4` from `forcesave` is returned on the result: nothing to save is an outcome, not a
   failure.
 

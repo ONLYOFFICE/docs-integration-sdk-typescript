@@ -24,13 +24,15 @@ new JwtError(
 ): JwtError;
 ```
 
+Creates the error, for a signer or verifier of your own that refuses a token the same way.
+
 #### Parameters
 
-| Parameter  | Type                                              |
-| ---------- | ------------------------------------------------- |
-| `kind`     | [`JwtErrorKind`](../type-aliases/JwtErrorKind.md) |
-| `message`  | `string`                                          |
-| `options?` | `ErrorOptions`                                    |
+| Parameter  | Type                                              | Description                                           |
+| ---------- | ------------------------------------------------- | ----------------------------------------------------- |
+| `kind`     | [`JwtErrorKind`](../type-aliases/JwtErrorKind.md) | Which check refused the token.                        |
+| `message`  | `string`                                          | What was wrong, for a log.                            |
+| `options?` | `ErrorOptions`                                    | The `cause`, such as the error the check failed with. |
 
 #### Returns
 

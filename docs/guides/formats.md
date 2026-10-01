@@ -30,7 +30,8 @@ config.langs; // ["ar", "az", …, "zh-TW"]
 > default one. See [Client options](client.md#authorizationheader-and-authorizationprefix).
 
 This endpoint describes the server, not a document, so it takes no token and has no error codes.
-Only a status outside 2xx makes it fail, with a `DocumentServerHttpError`.
+It fails only on a status outside 2xx, with a `DocumentServerHttpError`, or on a body that is
+not a JSON object, with a `DocumentServerParseError`.
 
 ## Formats
 
@@ -48,9 +49,9 @@ docx?.mime; // ["application/vnd.openxmlformats-officedocument.wordprocessingml.
 
 | Field     | What it is                                                                                                                 |
 | --------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `type`    | the editor the format opens in: the `documentType` of the editor config                                                    |
+| `type`    | the editor the format opens in: the [`documentType`][config-documenttype] of the editor config                             |
 | `actions` | what that editor may do: `edit`, `fill`, `comment`, `review`, `auto-convert` (a legacy format converted on open) and so on |
-| `convert` | the extensions you can pass as `outputtype` to convert this format                                                         |
+| `convert` | the extensions you can pass as `outputtype` to convert this format, as in the [conversion tables][conversion-tables]       |
 | `mime`    | the MIME types the format is served under                                                                                  |
 
 > [!NOTE]
@@ -75,8 +76,9 @@ formats.getConversions("xlsx"); // ["csv", "ods", "pdf", …]
 formats.getFormatsByMime("application/pdf"); // [{ name: "pdf", … }]
 ```
 
-Extensions are matched case-insensitively, with or without the dot. A file name is read up to
-its last dot. So `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the same lookup.
+Extensions are matched case-insensitively, with or without the dot. Of a file name, only what
+follows the last dot counts. So `"docx"`, `".DOCX"` and `"/files/Q3 Report.docx"` are the
+same lookup.
 
 | Method                       | Returns                                                                   |
 | ---------------------------- | ------------------------------------------------------------------------- |
@@ -115,3 +117,6 @@ Details:
 **Caching.** The list depends on the document server version and license. An instance holds one
 answer of `/meta/formats`; to see a format the server has learned since, fetch the list again.
 The class sends no requests, so it works just as well with a list cached in your application.
+
+[config-documenttype]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype
+[conversion-tables]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/conversion-tables/

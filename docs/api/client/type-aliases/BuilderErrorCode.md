@@ -17,3 +17,7 @@ Why a build failed:
 
 A code the service doesn't document stays a plain number, so keep a `default` branch in a
 `switch` over it.
+
+## See
+
+[Document Builder API error codes](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#possible-error-codes-and-their-description)

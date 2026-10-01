@@ -4,6 +4,10 @@
 
 PDF output settings.
 
+## See
+
+[pdf](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#pdf)
+
 ## Properties
 
 | Property                           | Type      | Description                                          |

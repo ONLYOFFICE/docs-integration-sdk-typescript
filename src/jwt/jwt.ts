@@ -39,7 +39,11 @@ const decoder = new TextDecoder();
 
 type HmacKey = Awaited<ReturnType<typeof crypto.subtle.importKey>>;
 
-/** The HMAC algorithms the document server signs with. Use the one it is configured with. */
+/**
+ * The HMAC algorithms the document server signs with. Use the one it is configured with.
+ *
+ * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
+ */
 export type JwtAlgorithm = "HS256" | "HS384" | "HS512";
 
 /** Settings of a {@link DocumentServerJwt}, applied to every token it signs or verifies. */
@@ -97,6 +101,8 @@ export type JwtHeaders = Headers | Readonly<Record<string, string | readonly str
 /**
  * Options of one {@link DocumentServerJwt.verifyHeader} call. Set the header and the prefix to
  * the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
+ *
+ * @see [Token settings](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token)
  */
 export interface VerifyHeaderOptions extends VerifyOptions {
   /** The header the token is read from. Default: `"Authorization"`. */
@@ -337,6 +343,7 @@ function withClaims(
  * ```
  *
  * @see [JWT](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/jwt.md)
+ * @see [Signature](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/)
  */
 export class DocumentServerJwt {
   /**
@@ -412,6 +419,7 @@ export class DocumentServerJwt {
    * @returns The token, in the compact serialization.
    * @throws {TypeError} when `payload` is not a plain object, such as an array, a `Map` or an
    * instance of a class, or when `expiresInSec` is invalid.
+   * @see [Token in the body](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/)
    */
   async sign(payload: object, options?: SignOptions): Promise<string> {
     const expiresInSec =
@@ -441,6 +449,7 @@ export class DocumentServerJwt {
    * @param options The lifetime and the `operation` claim of this token.
    * @returns The token, to pass as the header argument of a client method.
    * @throws {TypeError} whenever {@link DocumentServerJwt.sign} would.
+   * @see [Token in the header](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/)
    */
   async signHeader(payload: object, options?: SignOptions): Promise<string> {
     assertPlainObject(payload);
@@ -552,6 +561,7 @@ export class DocumentServerJwt {
    * of a user.
    * @throws {@link JwtError} of kind `"malformed"` when the token has no `payload` object, and
    * any error {@link DocumentServerJwt.verify} throws.
+   * @see [Outgoing requests](https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests)
    */
   async verifyHeader<T = Record<string, unknown>>(
     headers: JwtHeaders,

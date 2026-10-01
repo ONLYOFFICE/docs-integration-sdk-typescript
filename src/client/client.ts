@@ -235,7 +235,9 @@ async function readArray(response: Response, attempt: Attempt): Promise<unknown[
  * - {@link DocumentServerNetworkError} when the server can't be reached or the connection
  *   breaks;
  * - {@link DocumentServerTimeoutError} when `timeoutMs` passes first;
- * - the reason of your `signal`, unchanged, when you cancel the call.
+ * - the reason of your `signal`, unchanged, when you cancel the call;
+ * - a `TypeError` when `timeoutMs` in the call options is not a whole number from 1 to
+ *   2147483647.
  *
  * For the untouched `Response`, use {@link DocumentServerClient.raw}.
  *
@@ -283,7 +285,9 @@ export class DocumentServerClient {
    *
    * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    * @returns `true` when the server answers `true`. `false` for any other body, and for a
-   * status outside the 2xx range: a server that is down is an answer, not a failure.
+   * status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
+   * failure. A server that can't be reached still rejects.
+   * @see [Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)
    */
   async healthcheck(options?: RequestOptions): Promise<boolean> {
     const response = await this.raw.healthcheck(options);
@@ -358,6 +362,7 @@ export class DocumentServerClient {
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range.
    * @throws {@link DocumentServerParseError} when the body is not a JSON object.
    * @see [Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+   * @see [Conversion API](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/)
    */
   async convert(
     request: ConvertRequest,
@@ -395,7 +400,8 @@ export class DocumentServerClient {
    * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
    * @returns `{ endConvert: true, file }`, with the converted file as an unread `Response`, or
    * `{ endConvert: false, percent }` while an `async` conversion runs. Repeat the same request,
-   * which uploads the document again, until `endConvert` is `true`.
+   * which uploads the document again, until `endConvert` is `true`. A 2xx that is not
+   * `application/json` is taken as the converted file.
    * @throws {@link ConversionError} when the body has an `error` code other than `0`.
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range, `404`
    * included for a document server without this endpoint.
@@ -462,6 +468,7 @@ export class DocumentServerClient {
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range.
    * @throws {@link DocumentServerParseError} when the body is not a JSON object.
    * @see [Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+   * @see [Command service](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/)
    */
   async command(
     request: CommandRequest,
@@ -500,6 +507,7 @@ export class DocumentServerClient {
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range.
    * @throws {@link DocumentServerParseError} when the body is not a JSON object.
    * @see [Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+   * @see [Document Builder API](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/)
    */
   async docbuilder(
     request: BuilderRequest,
@@ -570,7 +578,9 @@ export class DocumentServerClient {
    * const { path, query } = splitFileUrl(result.fileUrl, "https://docs.example.com");
    * const file = await client.getFile(path, query);
    *
-   * await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+   * if (file.body !== null) {
+   *   await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+   * }
    * ```
    *
    * @param path The path of the file, relative to `baseUrl`.

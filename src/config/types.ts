@@ -20,19 +20,33 @@ import type { Config, DocumentType, FileType } from "@onlyoffice/doceditor-types
 
 export type { Config, DocumentType, FileType };
 
-/** The `document` section of a config. */
+/**
+ * The `document` section of a config.
+ *
+ * @see [document](https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/)
+ */
 export type ConfigDocument = NonNullable<Config["document"]>;
 
-/** The `document.permissions` section of a config. */
+/**
+ * The `document.permissions` section of a config.
+ *
+ * @see [permissions](https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/permissions/)
+ */
 export type ConfigPermissions = NonNullable<ConfigDocument["permissions"]>;
 
-/** The `editorConfig` section of a config. */
+/**
+ * The `editorConfig` section of a config.
+ *
+ * @see [editorConfig](https://api.onlyoffice.com/docs/docs-api/usage-api/config/editor/)
+ */
 export type ConfigEditor = NonNullable<Config["editorConfig"]>;
 
 /**
  * A config without `events`: what is serialized and signed. Events are functions, so they
  * don't survive `JSON.stringify` and can't be signed. Add them in the browser, where the editor
  * is created.
+ *
+ * @see [events](https://api.onlyoffice.com/docs/docs-api/usage-api/config/events/)
  */
 export type SignableConfig = Omit<Config, "events">;
 
@@ -56,7 +70,9 @@ export type ConfigInputDocument = Omit<
   title: string;
   /** Absolute URL the document server downloads the file from. */
   url: string;
+  /** What the user may do with the file. `edit` is required. */
   permissions: ConfigInputPermissions;
+  /** Derived from `title`, so it can't be given. */
   fileType?: never;
 };
 
@@ -69,9 +85,13 @@ export type ConfigInputDocument = Omit<
  * browser.
  */
 export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "token"> & {
+  /** The file, as your storage knows it, and the permissions on it. */
   document: ConfigInputDocument;
+  /** Derived from the format of the file, so it can't be given. */
   documentType?: never;
+  /** Written by {@link DocumentServerConfig.sign}, so it can't be given. */
   token?: never;
+  /** Functions, added in the browser where the editor is created, so they can't be given. */
   events?: never;
 };
 
@@ -80,6 +100,8 @@ export type ConfigInput = Omit<SignableConfig, "document" | "documentType" | "to
  * and `documentType` always set.
  */
 export interface StrictConfig extends SignableConfig {
+  /** The file, with `fileType` derived from `title`. */
   document: ConfigDocument;
+  /** The editor the file opens in, derived from its format, such as `"word"`. */
   documentType: DocumentType;
 }

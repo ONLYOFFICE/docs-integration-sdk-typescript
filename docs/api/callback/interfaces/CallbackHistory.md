@@ -4,6 +4,10 @@
 
 The changes of the saved document, in the shape the editor's `refreshHistory` takes.
 
+## See
+
+[refreshHistory](https://api.onlyoffice.com/docs/docs-api/usage-api/methods/#refreshhistory)
+
 ## Properties
 
 | Property                                            | Type                              | Description                                        |

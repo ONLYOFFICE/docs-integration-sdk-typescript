@@ -4,6 +4,10 @@
 
 Settings for an image output format: BMP, GIF, JPG or PNG.
 
+## See
+
+[thumbnail](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#thumbnail)
+
 ## Properties
 
 | Property                               | Type              | Description                                                                                                                                            |

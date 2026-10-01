@@ -25,7 +25,11 @@ interface Command {
   token?: string;
 }
 
-/** Removes a document the editors left behind. */
+/**
+ * Removes a document the editors left behind.
+ *
+ * @see [deleteforgotten](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/deleteforgotten/)
+ */
 export interface DeleteForgottenCommand extends Command {
   /** The command. */
   c: "deleteForgotten";
@@ -33,7 +37,11 @@ export interface DeleteForgottenCommand extends Command {
   key: string;
 }
 
-/** Disconnects users from co-editing, leaving them with view access. */
+/**
+ * Disconnects users from co-editing, leaving them with view access.
+ *
+ * @see [drop](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/drop/)
+ */
 export interface DropCommand extends Command {
   /** The command. */
   c: "drop";
@@ -43,7 +51,11 @@ export interface DropCommand extends Command {
   users?: string[];
 }
 
-/** Saves the document being edited without closing it. */
+/**
+ * Saves the document being edited without closing it.
+ *
+ * @see [forcesave](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/forcesave/)
+ */
 export interface ForcesaveCommand extends Command {
   /** The command. */
   c: "forcesave";
@@ -53,7 +65,11 @@ export interface ForcesaveCommand extends Command {
   userdata?: string;
 }
 
-/** Asks for the URL a forgotten document can be downloaded from. */
+/**
+ * Asks for the URL a forgotten document can be downloaded from.
+ *
+ * @see [getforgotten](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgotten/)
+ */
 export interface GetForgottenCommand extends Command {
   /** The command. */
   c: "getForgotten";
@@ -61,13 +77,21 @@ export interface GetForgottenCommand extends Command {
   key: string;
 }
 
-/** Lists the documents the editors left behind. */
+/**
+ * Lists the documents the editors left behind.
+ *
+ * @see [getforgottenlist](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgottenlist/)
+ */
 export interface GetForgottenListCommand extends Command {
   /** The command. */
   c: "getForgottenList";
 }
 
-/** Asks who has the document open. */
+/**
+ * Asks who has the document open.
+ *
+ * @see [info](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/info/)
+ */
 export interface InfoCommand extends Command {
   /** The command. */
   c: "info";
@@ -77,7 +101,11 @@ export interface InfoCommand extends Command {
   userdata?: string;
 }
 
-/** Asks for the license and for the quota spent against it. */
+/**
+ * Asks for the license and for the quota spent against it.
+ *
+ * @see [license](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/license/)
+ */
 export interface LicenseCommand extends Command {
   /** The command. */
   c: "license";
@@ -89,7 +117,11 @@ export interface DocumentMeta {
   title: string;
 }
 
-/** Renames the document in every editor that has it open. */
+/**
+ * Renames the document in every editor that has it open.
+ *
+ * @see [meta](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/meta/)
+ */
 export interface MetaCommand extends Command {
   /** The command. */
   c: "meta";
@@ -99,7 +131,11 @@ export interface MetaCommand extends Command {
   meta: DocumentMeta;
 }
 
-/** Asks for the version of the document server. */
+/**
+ * Asks for the version of the document server.
+ *
+ * @see [version](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/version/)
+ */
 export interface VersionCommand extends Command {
   /** The command. */
   c: "version";

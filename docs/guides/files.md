@@ -13,8 +13,12 @@ const file = await client.getFile("/cache/files/data/conv_key/output.pdf/output.
 const bytes = new Uint8Array(await file.arrayBuffer());
 ```
 
-Like every other method, it takes a path and a query instead of a URL, and sends them to the
-configured `baseUrl`.
+It takes a path and a query, not a URL, and sends them to the configured `baseUrl`.
+
+- [Split the URL first](#split-the-url-first)
+- [Tokens](#tokens)
+- [Streaming](#streaming)
+- [Timeout](#timeout)
 
 ## Split the URL first
 
@@ -76,5 +80,6 @@ error page from a reverse proxy is never written to disk as the file.
 
 `timeoutMs` only limits the wait for the response. It stops once the response arrives, so
 reading the body doesn't race the deadline. The beginning of an error body, read for the
-`DocumentServerHttpError`, gets a `timeoutMs` of its own. To cancel a download in progress, pass a `signal`.
+`DocumentServerHttpError`, gets a `timeoutMs` of its own. To cancel a download in progress,
+pass a `signal`.
 See [`timeoutMs`](client.md#timeoutms).

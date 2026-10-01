@@ -16,7 +16,11 @@
  *
  */
 
-/** Values the builder script reads back through its `Argument` global. */
+/**
+ * Values the builder script reads back through its `Argument` global.
+ *
+ * @see [argument](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#argument)
+ */
 export type BuilderArgument = Record<string, unknown>;
 
 /** Fields every request to the builder service carries. */
@@ -77,12 +81,16 @@ export type BuildFileRequest = Omit<BuildRequest, "key" | "url">;
  *
  * A code the service doesn't document stays a plain number, so keep a `default` branch in a
  * `switch` over it.
+ *
+ * @see [Document Builder API error codes](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#possible-error-codes-and-their-description)
  */
 export type BuilderErrorCode = -1 | -2 | -3 | -4 | -6 | -8 | (number & {});
 
 /**
  * The body of a response from `/docbuilder` and `/docbuilder/from-file`: the state of the
  * build, or an `error` code and nothing else. The client throws on the code.
+ *
+ * @see [Response parameters](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#response-parameters)
  */
 export interface BuilderResponse {
   /** Whether the build has finished. `urls` arrives along with it. */

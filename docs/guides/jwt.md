@@ -31,8 +31,8 @@ await jwt.sign(payload, { expiresInSec: 3600 }); // in an hour
 await jwt.sign(payload, { expiresInSec: null }); // never
 ```
 
-`algorithm` is `"HS256"` (default), `"HS384"` or `"HS512"`. Use the one your document server is
-configured with.
+`algorithm` is `"HS256"` (default), `"HS384"` or `"HS512"`. Use the one set in the
+[`token` settings][server-token] of your document server.
 
 ## Body token and header token
 
@@ -40,10 +40,10 @@ The conversion, command and builder services accept a token in one of two places
 different payloads. Both are described in the [signature documentation][signature], which
 recommends the body:
 
-| Where  | Signed over                  | Method                    |
-| ------ | ---------------------------- | ------------------------- |
-| body   | the request body             | `jwt.sign(request)`       |
-| header | the body as `{ payload: … }` | `jwt.signHeader(request)` |
+| Where                     | Signed over                  | Method                    |
+| ------------------------- | ---------------------------- | ------------------------- |
+| [body][token-in-body]     | the request body             | `jwt.sign(request)`       |
+| [header][token-in-header] | the body as `{ payload: … }` | `jwt.signHeader(request)` |
 
 ```ts
 // In the body, as a field of the request.
@@ -114,7 +114,8 @@ try {
 | `"premature"` | `nbf` is in the future             |
 | `"missing"`   | the header carries no token        |
 
-The exact conditions are in the [`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
+The exact conditions are in the
+[`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
 
 How the check works:
 
@@ -137,7 +138,8 @@ await jwt.verify(token, { clockToleranceSec: 0 });
 
 ## Verify a token from a header
 
-The document server signs its own requests, such as a file download or a callback, in a header:
+The document server signs its own requests, such as a file download or a callback,
+[in a header][token-in-header-outgoing]:
 `Authorization: Bearer <token>` by default. The claims wrap the request data in `payload`.
 `verifyHeader()` reads the token from the headers, checks it like `verify()` and returns that
 `payload`:
@@ -146,9 +148,9 @@ The document server signs its own requests, such as a file download or a callbac
 const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
 ```
 
-It takes fetch `Headers` or a plain Node headers object, and matches header names in any case.
-If the server sets its own `token.outbox.header` or `token.outbox.prefix`, pass the same values.
-An empty prefix reads a bare token:
+It takes fetch `Headers` or a plain Node headers object, and matches header names and the prefix
+in any case. If the server sets its own `token.outbox.header` or `token.outbox.prefix` in its
+[`token` settings][server-token], pass the same values. An empty prefix reads a bare token:
 
 ```ts
 await jwt.verifyHeader(headers, { authorizationHeader: "X-Docs-Token", authorizationPrefix: "" });
@@ -174,8 +176,8 @@ try {
 ## Several secrets
 
 The secret belongs to the signer, so the key is imported once and reused for every token. If
-the document server uses separate secrets for what it receives, what it sends and the editor
-session, create a signer for each:
+the document server uses [separate secrets][signature-secrets] for what it receives, what it
+sends and the editor session, create a signer for each:
 
 ```ts
 const inbox = new DocumentServerJwt({ secret: inboxSecret });
@@ -187,3 +189,8 @@ await client.convert(request, await inbox.signHeader(request));
 A server with one secret everywhere, the common case, needs one signer.
 
 [signature]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/
+[signature-secrets]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/#configuration-parameters
+[token-in-body]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/
+[token-in-header]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/
+[token-in-header-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests
+[server-token]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token

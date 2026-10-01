@@ -30,7 +30,8 @@ export async function POST(request: Request): Promise<Response> {
 
 ## See
 
-[Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+- [Handling callbacks](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/callback.md)
+- [Callback handler](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/)
 
 ## Constructors
 
@@ -89,6 +90,8 @@ checks it like [DocumentServerCallback.parse](#parse).
 
 `Promise`\<`DocumentServerCallback`\>
 
+The callback, with the event it reports.
+
 #### Throws
 
 [CallbackError](CallbackError.md) whenever [DocumentServerCallback.parse](#parse) would.
@@ -122,6 +125,8 @@ Never rejects: every failure becomes the reply `fail`.
 
 `Promise`\<[`CallbackReply`](../interfaces/CallbackReply.md)\>
 
+The reply, to send back as the JSON body of the response.
+
 ---
 
 ### parse()
@@ -152,6 +157,8 @@ is ignored.
 #### Returns
 
 `Promise`\<`DocumentServerCallback`\>
+
+The callback, with the event it reports.
 
 #### Throws
 

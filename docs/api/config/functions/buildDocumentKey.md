@@ -43,4 +43,5 @@ string nor a finite number, such as `undefined` or `NaN`.
 
 ## See
 
-[Document keys](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md#document-keys)
+- [Document keys](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md#document-keys)
+- [document.key](https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key)

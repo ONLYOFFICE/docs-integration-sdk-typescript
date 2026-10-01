@@ -7,3 +7,7 @@ type CallbackActionType = 0 | 1 | 2 | (number & {});
 ```
 
 What a user did: `0` disconnected, `1` connected, `2` requested a save.
+
+## See
+
+[actions](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#actions)

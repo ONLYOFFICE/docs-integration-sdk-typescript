@@ -44,7 +44,11 @@ export type CallbackStatus = 1 | 2 | 3 | 4 | 6 | 7 | (number & {});
  */
 export type ForcesaveType = 0 | 1 | 2 | 3 | (number & {});
 
-/** What a user did: `0` disconnected, `1` connected, `2` requested a save. */
+/**
+ * What a user did: `0` disconnected, `1` connected, `2` requested a save.
+ *
+ * @see [actions](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#actions)
+ */
 export type CallbackActionType = 0 | 1 | 2 | (number & {});
 
 /** Something a user did to the document. */
@@ -55,7 +59,11 @@ export interface CallbackAction {
   userid: string;
 }
 
-/** The changes of the saved document, in the shape the editor's `refreshHistory` takes. */
+/**
+ * The changes of the saved document, in the shape the editor's `refreshHistory` takes.
+ *
+ * @see [refreshHistory](https://api.onlyoffice.com/docs/docs-api/usage-api/methods/#refreshhistory)
+ */
 export interface CallbackHistory {
   /** The changes, one entry for each. */
   changes: Record<string, unknown>[];
@@ -101,44 +109,59 @@ export interface CallbackBody {
 
 /** Status `1`: a user connected or disconnected. `actions` says which. */
 export interface CallbackEditing extends CallbackBody {
+  /** `"editing"`, the discriminant of {@link CallbackEvent}. */
   kind: "editing";
+  /** Always `1`. */
   status: 1;
 }
 
 /** Status `2`: the last editor closed and the document changed. Download `url` and store it. */
 export interface CallbackSave extends CallbackBody {
+  /** `"save"`, the discriminant of {@link CallbackEvent}. */
   kind: "save";
+  /** Always `2`. */
   status: 2;
+  /** Where the document is downloaded from. Always given. */
   url: string;
 }
 
 /** Status `3`: the document server failed to build the document. `url` may be missing. */
 export interface CallbackSaveError extends CallbackBody {
+  /** `"save-error"`, the discriminant of {@link CallbackEvent}. */
   kind: "save-error";
+  /** Always `3`. */
   status: 3;
 }
 
 /** Status `4`: the last editor closed and nothing changed. */
 export interface CallbackClosed extends CallbackBody {
+  /** `"closed"`, the discriminant of {@link CallbackEvent}. */
   kind: "closed";
+  /** Always `4`. */
   status: 4;
 }
 
 /** Status `6`: the document was saved while it is edited. Download `url` and store a version. */
 export interface CallbackForcesave extends CallbackBody {
+  /** `"forcesave"`, the discriminant of {@link CallbackEvent}. */
   kind: "forcesave";
+  /** Always `6`. */
   status: 6;
+  /** Where the document is downloaded from. Always given. */
   url: string;
 }
 
 /** Status `7`: the save on status `6` failed. */
 export interface CallbackForcesaveError extends CallbackBody {
+  /** `"forcesave-error"`, the discriminant of {@link CallbackEvent}. */
   kind: "forcesave-error";
+  /** Always `7`. */
   status: 7;
 }
 
 /** A status this SDK doesn't know yet. Read `status`. */
 export interface CallbackUnknown extends CallbackBody {
+  /** `"unknown"`, the discriminant of {@link CallbackEvent}. */
   kind: "unknown";
 }
 
@@ -155,7 +178,12 @@ export type CallbackEvent =
 /** The kind of an event, the discriminant of {@link CallbackEvent}. */
 export type CallbackEventKind = CallbackEvent["kind"];
 
-/** The reply to a callback: `0` handled, `1` not handled. */
+/**
+ * The reply to a callback: `0` handled, `1` not handled.
+ *
+ * @see [Response from the document storage service](https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#response-from-the-document-storage-service)
+ */
 export interface CallbackReply {
+  /** `0` when the callback was handled, `1` when it was not. */
   readonly error: 0 | 1;
 }

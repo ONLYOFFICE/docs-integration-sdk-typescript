@@ -20,12 +20,14 @@ the system error code under it, such as `ECONNREFUSED`, or else that error's mes
 new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 ```
 
+Creates the error for a request that got no answer or lost it on the way.
+
 #### Parameters
 
-| Parameter | Type      |
-| --------- | --------- |
-| `url`     | `string`  |
-| `cause`   | `unknown` |
+| Parameter | Type      | Description                                                 |
+| --------- | --------- | ----------------------------------------------------------- |
+| `url`     | `string`  | The URL of the request. The query is left out of the error. |
+| `cause`   | `unknown` | What `fetch` or the body stream rejected with.              |
 
 #### Returns
 
@@ -40,7 +42,7 @@ new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 | Property                                  | Modifier   | Type        | Description                                                                                                                                                                                                                                           |
 | ----------------------------------------- | ---------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-kind"></a> `kind`         | `readonly` | `"network"` | Which failure the error stands for.                                                                                                                                                                                                                   |
-| <a id="property-response"></a> `response` | `readonly` | `undefined` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-response"></a> `response` | `readonly` | `undefined` | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, even one that happens while the body is read.                                                                                        |
 | <a id="property-url"></a> `url`           | `readonly` | `string`    | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
@@ -51,7 +53,8 @@ new DocumentServerNetworkError(url, cause): DocumentServerNetworkError;
 static is(value): value is DocumentServerNetworkError;
 ```
 
-Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of the package.
+Returns whether `value` is a `DocumentServerNetworkError`, also one thrown by a second copy of
+the package, which `instanceof` misses.
 
 #### Parameters
 

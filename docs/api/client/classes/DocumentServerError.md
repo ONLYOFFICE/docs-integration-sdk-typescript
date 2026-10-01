@@ -54,14 +54,17 @@ new DocumentServerError(
 ): DocumentServerError;
 ```
 
+Creates the error. The client throws the subclasses; build one yourself only to fail the same
+way, for example in a `fetch` of your own.
+
 #### Parameters
 
-| Parameter  | Type                                                                    |
-| ---------- | ----------------------------------------------------------------------- |
-| `kind`     | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) |
-| `message`  | `string`                                                                |
-| `response` | `Response` \| `undefined`                                               |
-| `options?` | `ErrorOptions` & \{ `url?`: `string`; \}                                |
+| Parameter  | Type                                                                    | Description                                                              |
+| ---------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `kind`     | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | Which failure the error stands for.                                      |
+| `message`  | `string`                                                                | What went wrong, for a log.                                              |
+| `response` | `Response` \| `undefined`                                               | The response the error was read from, or `undefined` when there is none. |
+| `options?` | `ErrorOptions` & \{ `url?`: `string`; \}                                | The `cause`, and the `url` of the request when there is no response.     |
 
 #### Returns
 
@@ -78,7 +81,7 @@ Error.constructor;
 | Property                                  | Modifier   | Type                                                                    | Description                                                                                                                                                                                                                                           |
 | ----------------------------------------- | ---------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="property-kind"></a> `kind`         | `readonly` | [`DocumentServerErrorKind`](../type-aliases/DocumentServerErrorKind.md) | Which failure the error stands for.                                                                                                                                                                                                                   |
-| <a id="property-response"></a> `response` | `readonly` | `Response` \| `undefined`                                               | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, which can happen before any response.                                                                                                |
+| <a id="property-response"></a> `response` | `readonly` | `Response` \| `undefined`                                               | The response the error was read from, with its body already read. `undefined` for a network error and a timeout, even one that happens while the body is read.                                                                                        |
 | <a id="property-url"></a> `url`           | `readonly` | `string`                                                                | The URL of the request, without the query, since a download URL carries its signature there. Taken from the response when there is one, so it is where a redirect ended. Empty when unknown, such as for a `Response` your own `fetch` built by hand. |
 
 ## Methods
@@ -89,8 +92,8 @@ Error.constructor;
 static is(value): value is AnyDocumentServerError;
 ```
 
-Returns whether `value` is any of the client errors, also one thrown by a second copy of
-the package, which `instanceof` misses. Narrows to [AnyDocumentServerError](../type-aliases/AnyDocumentServerError.md).
+Returns whether `value` is any of the client errors, also one thrown by a second copy of the
+package, which `instanceof` misses. Narrows to [AnyDocumentServerError](../type-aliases/AnyDocumentServerError.md).
 
 #### Parameters
 

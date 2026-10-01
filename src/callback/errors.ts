@@ -41,6 +41,13 @@ export class CallbackError extends Error {
   /** Which check refused the callback. For `"signature"`, the verifier's error is the `cause`. */
   readonly kind: CallbackErrorKind;
 
+  /**
+   * Creates the error, for a check of your own that refuses a callback the same way.
+   *
+   * @param kind Which check refused the callback.
+   * @param message What was wrong, for a log.
+   * @param options The `cause`: for `"signature"`, the error of the verifier.
+   */
   constructor(kind: CallbackErrorKind, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "CallbackError";

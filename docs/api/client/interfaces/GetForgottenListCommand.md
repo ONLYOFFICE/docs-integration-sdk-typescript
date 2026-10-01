@@ -4,6 +4,10 @@
 
 Lists the documents the editors left behind.
 
+## See
+
+[getforgottenlist](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/getforgottenlist/)
+
 ## Extends
 
 - `Command`

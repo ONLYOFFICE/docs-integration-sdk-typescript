@@ -61,8 +61,8 @@ By default the document server keeps the connection open until the file is ready
 can take longer than `timeoutMs`, or than the timeout of the reverse proxy in front of the
 server.
 
-With `async: true` the call returns at once with `endConvert: false` and a `percent`. Repeat the
-same request, unchanged, until `endConvert` is `true`:
+With [`async: true`][conversion-async] the call returns at once with `endConvert: false` and a
+`percent`. Repeat the same request, unchanged, until `endConvert` is `true`:
 
 ```ts
 const request: ConvertRequest = { async: true, filetype: "docx", key, outputtype: "pdf", url };
@@ -90,9 +90,9 @@ await client.convert(request, await jwt.signHeader(request));
 
 ## Cluster routing
 
-In a document server cluster, the SDK adds a `shardkey` query parameter with the document key.
-It keeps all calls about one document on the same node. It is a query parameter, so it isn't
-part of either signed payload. It is always sent; versions before Docs 8.1 ignore it.
+In a document server cluster, the SDK adds a [`shardkey`][shard-key] query parameter with the
+document key. It keeps all calls about one document on the same node. It is a query parameter, so it
+isn't part of either signed payload. It is always sent; versions before Docs 8.1 ignore it.
 
 ## Upload the file in the request
 
@@ -152,3 +152,5 @@ await client.convertFromFile(request, file, await jwt.signHeader(request, signOp
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 [conversion-request]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/
 [conversion-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/error-codes/
+[conversion-async]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#async
+[shard-key]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests

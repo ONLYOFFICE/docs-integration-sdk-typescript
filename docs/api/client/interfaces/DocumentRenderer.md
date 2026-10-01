@@ -4,6 +4,10 @@
 
 How a PDF, XPS or OXPS source document is read.
 
+## See
+
+[documentRenderer](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#documentRenderer)
+
 ## Properties
 
 | Property                                                 | Type                                                    | Description                                  |

@@ -67,6 +67,7 @@ function checkPart(part: unknown, index: number): string {
  * @throws {TypeError} when no part is given, every part is empty, or a part is neither a
  * string nor a finite number, such as `undefined` or `NaN`.
  * @see [Document keys](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/editor.md#document-keys)
+ * @see [document.key](https://api.onlyoffice.com/docs/docs-api/usage-api/config/document/#key)
  */
 export async function buildDocumentKey(...parts: readonly (string | number)[]): Promise<string> {
   if (parts.length === 0) {

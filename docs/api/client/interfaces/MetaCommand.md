@@ -4,6 +4,10 @@
 
 Renames the document in every editor that has it open.
 
+## See
+
+[meta](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/meta/)
+
 ## Extends
 
 - `Command`

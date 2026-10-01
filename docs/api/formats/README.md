@@ -5,6 +5,10 @@
 The formats a document server knows, looked up by extension. Imported from
 `@onlyoffice/docs-integration-sdk/formats`.
 
+## See
+
+[Server configuration and formats](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/formats.md)
+
 ## Classes
 
 | Class                                                     | Description                                                                                                                                                  |

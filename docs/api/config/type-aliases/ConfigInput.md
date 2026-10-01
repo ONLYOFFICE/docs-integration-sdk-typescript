@@ -20,9 +20,9 @@ browser.
 
 ## Type Declaration
 
-| Name            | Type                                            |
-| --------------- | ----------------------------------------------- |
-| `document`      | [`ConfigInputDocument`](ConfigInputDocument.md) |
-| `documentType?` | `never`                                         |
-| `events?`       | `never`                                         |
-| `token?`        | `never`                                         |
+| Name            | Type                                            | Description                                                                                            |
+| --------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `document`      | [`ConfigInputDocument`](ConfigInputDocument.md) | The file, as your storage knows it, and the permissions on it.                                         |
+| `documentType?` | `never`                                         | Derived from the format of the file, so it can't be given.                                             |
+| `events?`       | `never`                                         | Functions, added in the browser where the editor is created, so they can't be given.                   |
+| `token?`        | `never`                                         | Written by [DocumentServerConfig.sign](../classes/DocumentServerConfig.md#sign), so it can't be given. |

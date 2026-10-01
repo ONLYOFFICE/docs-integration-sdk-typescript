@@ -4,7 +4,6 @@
 - [Options](#options)
 - [Per-request options](#per-request-options)
 - [The raw client](#the-raw-client)
-- [Modules](#modules)
 
 ## Create a client
 
@@ -19,6 +18,8 @@ const client = new DocumentServerClient({
 
 const healthy = await client.healthcheck();
 ```
+
+`healthcheck()` calls the [health check][health-check] of the document server.
 
 Every method parses the answer into the type its endpoint promises. It rejects when the document
 server reports a failure, in the status or, for the conversion, command and builder services, in
@@ -69,21 +70,22 @@ new DocumentServerClient({ baseUrl: "htp://docs.example.com" });
 aborts a connection that never opens (about 10 s) or a response that is silent for 5 minutes. A
 hung server would hold the call almost forever, hence the 30 s default.
 
-**What it covers.** The deadline covers the whole exchange, including reading the body. That
-fits endpoints with a small JSON answer. It doesn't fit `getFile()`, whose body can be of any
-size: a slow download would fail halfway. So for `getFile()` and `convertFromFile()`, which answers
-with the converted file, the deadline stops once the response arrives, and the body can take as long as it needs. What the typed client reads itself
-still has a deadline: the beginning of an error body, and a JSON answer of `convertFromFile()`,
-get a `timeoutMs` of their own once the response arrives. A `signal` of your own stays active
-the whole time, and is the way to cancel a download. A download that stalls mid-body is not cut
-short by the SDK: on Node undici ends it after 5 minutes of silence; elsewhere only a `signal`
-does.
+**What it covers.** The deadline covers the whole exchange, including reading the body. That fits
+endpoints with a small JSON answer. It doesn't fit `getFile()`, whose body can be of any size: a
+slow download would fail halfway. So for `getFile()` and `convertFromFile()`, which answers with the
+converted file, the deadline stops once the response arrives, and the body can take as long as it
+needs. What the typed client reads itself still has a deadline: the beginning of an error body, and
+a JSON answer of `convertFromFile()`, get a `timeoutMs` of their own once the response arrives. A
+`signal` of your own stays active the whole time, and is the way to cancel a download. A download
+that stalls mid-body is not cut short by the SDK: on Node undici ends it after 5 minutes of silence;
+elsewhere only a `signal` does.
 
 **Errors.** A request that runs out of time rejects with a `DocumentServerTimeoutError`, with the
 deadline as `timeoutMs` and the abort `DOMException` as `cause`. An unreachable server rejects
 with a `DocumentServerNetworkError` whose `cause` is the `TypeError: fetch failed`; its own
-`cause` is, on Node, an `AggregateError` with a `code` such as `"ECONNREFUSED"`, which the message
-repeats. See [Errors](errors.md#network-failures-and-timeouts).
+`cause` is, on Node, a system error with a `code` such as `"ECONNREFUSED"`, which the message
+repeats, or an `AggregateError` of them when several addresses were tried. See
+[Errors](errors.md#network-failures-and-timeouts).
 
 **Validation.** The value must be a whole number of milliseconds from `1` to `2147483647`, the
 largest delay a timer accepts:
@@ -98,7 +100,8 @@ the constructor refuses it.
 
 ### authorizationHeader and authorizationPrefix
 
-They match the `token.outbox.header` and `token.outbox.prefix` settings of the document server.
+They match the `token.inbox.header` and `token.inbox.prefix` [settings][server-token] of the
+document server.
 [`getConfig()`](formats.md#server-configuration) returns them as `authorization`. They are used
 only when a method gets a header token.
 
@@ -190,28 +193,9 @@ stream. They differ only on a failing status: the typed one rejects, the raw one
 response.
 
 The typed `convertFromFile()` also gives the converted file unread, as `result.file`, but reads
-a JSON answer: it returns the progress of an `async` conversion, and rejects with a
-`ConversionError` on an `error` code. The raw one returns every answer as it came.
+a JSON answer: it returns the progress of an `async` conversion, rejects with a
+`ConversionError` on an `error` code, and with a `DocumentServerParseError` on any other JSON.
+A 2xx that is not JSON is taken as the file. The raw one returns every answer as it came.
 
-## Modules
-
-The package root exports everything. Each module is also available on its own subpath:
-
-| Subpath                                     | Exports                                                                      |
-| ------------------------------------------- | ---------------------------------------------------------------------------- |
-| `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports             |
-| `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, their requests and errors |
-| `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types  |
-| `@onlyoffice/docs-integration-sdk/formats`  | `DocumentServerFormats`, `Format`                                            |
-| `@onlyoffice/docs-integration-sdk/jwt`      | `DocumentServerJwt`, `JwtError`                                              |
-
-```ts
-import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk/jwt";
-```
-
-Modules don't import each other. Where one works with another, it declares an interface: the
-config signs with any `ConfigSigner` and looks formats up in any `FormatLookup`.
-`DocumentServerJwt` and `DocumentServerFormats` implement them, and so can your own classes.
-
-A class is the same whichever path you import it from. A `JwtError` thrown by a signer from
-`/jwt` passes `instanceof` against the `JwtError` of the root, in ESM and in CJS.
+[server-token]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token
+[health-check]: https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check

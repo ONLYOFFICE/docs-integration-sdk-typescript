@@ -42,6 +42,13 @@ export class JwtError extends Error {
   /** Which check refused the token. */
   readonly kind: JwtErrorKind;
 
+  /**
+   * Creates the error, for a signer or verifier of your own that refuses a token the same way.
+   *
+   * @param kind Which check refused the token.
+   * @param message What was wrong, for a log.
+   * @param options The `cause`, such as the error the check failed with.
+   */
   constructor(kind: JwtErrorKind, message: string, options?: ErrorOptions) {
     super(message, options);
     this.name = "JwtError";

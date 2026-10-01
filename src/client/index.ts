@@ -18,9 +18,16 @@
  */
 
 /**
- * The HTTP client of the document server: conversion, commands, the document builder and
- * what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/client`.
+ * The HTTP client of the document server: conversion, commands, the document builder,
+ * downloading files, the health check and what the server says of itself. Imported from
+ * `@onlyoffice/docs-integration-sdk/client`.
  *
+ * @see [Client options](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md)
+ * @see [Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+ * @see [Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+ * @see [Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+ * @see [Downloading files](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/files.md)
+ * @see [Errors](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/errors.md)
  * @module client
  */
 

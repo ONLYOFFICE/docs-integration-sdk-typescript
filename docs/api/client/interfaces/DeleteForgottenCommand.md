@@ -4,6 +4,10 @@
 
 Removes a document the editors left behind.
 
+## See
+
+[deleteforgotten](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/deleteforgotten/)
+
 ## Extends
 
 - `Command`

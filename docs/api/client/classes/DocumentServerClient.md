@@ -11,7 +11,8 @@ Besides the errors each method lists, every method rejects with:
 - [DocumentServerNetworkError](DocumentServerNetworkError.md) when the server can't be reached or the connection
   breaks;
 - [DocumentServerTimeoutError](DocumentServerTimeoutError.md) when `timeoutMs` passes first;
-- the reason of your `signal`, unchanged, when you cancel the call.
+- the reason of your `signal`, unchanged, when you cancel the call;
+- a `TypeError` when `timeoutMs` in the call options is not a whole number from 1 to 2147483647.
 
 For the untouched `Response`, use [DocumentServerClient.raw](#property-raw).
 
@@ -122,7 +123,8 @@ const { users } = await client.command({ c: "info", key: "Khirz6zTPdfd7" });
 
 #### See
 
-[Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+- [Commands](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/commands.md)
+- [Command service](https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/)
 
 ---
 
@@ -181,7 +183,8 @@ result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
 
 #### See
 
-[Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+- [Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+- [Conversion API](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/)
 
 ---
 
@@ -221,7 +224,8 @@ A token, in the header or in `request.token`, must carry `operation: "converter"
 
 `{ endConvert: true, file }`, with the converted file as an unread `Response`, or
 `{ endConvert: false, percent }` while an `async` conversion runs. Repeat the same request,
-which uploads the document again, until `endConvert` is `true`.
+which uploads the document again, until `endConvert` is `true`. A 2xx that is not
+`application/json` is taken as the converted file.
 
 #### Throws
 
@@ -291,7 +295,8 @@ const { urls } = await client.docbuilder({ url: "https://example.com/contract.js
 
 #### See
 
-[Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+- [Document builder](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/document-builder.md)
+- [Document Builder API](https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/)
 
 ---
 
@@ -416,7 +421,9 @@ The response, with the body unread, so a large file can be streamed.
 const { path, query } = splitFileUrl(result.fileUrl, "https://docs.example.com");
 const file = await client.getFile(path, query);
 
-await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+if (file.body !== null) {
+  await pipeline(Readable.fromWeb(file.body), createWriteStream("output.pdf"));
+}
 ```
 
 #### Throws
@@ -479,4 +486,9 @@ Calls `/healthcheck`.
 `Promise`\<`boolean`\>
 
 `true` when the server answers `true`. `false` for any other body, and for a
-status outside the 2xx range: a server that is down is an answer, not a failure.
+status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
+failure. A server that can't be reached still rejects.
+
+#### See
+
+[Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)
