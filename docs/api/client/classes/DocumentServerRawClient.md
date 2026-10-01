@@ -22,7 +22,8 @@ except for [DocumentServerRawClient.getFile](#getfile) and
 
 ## See
 
-[The raw client](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md#the-raw-client)
+- [The raw client](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md#the-raw-client)
+- [Shard key](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests)
 
 ## Constructors
 

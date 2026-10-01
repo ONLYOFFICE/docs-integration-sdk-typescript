@@ -76,7 +76,7 @@ await client.command({ ...request, token: await jwt.sign(request) });
 await client.command(request, await jwt.signHeader(request));
 ```
 
-The `shardkey` query parameter is added for commands with a `key`. It is left out for
+The [`shardkey`][shard-key] query parameter is added for commands with a `key`. It is left out for
 `getForgottenList`, `license` and `version`, which are about the server, not a document.
 
 [command-service]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/
@@ -92,3 +92,4 @@ The `shardkey` query parameter is added for commands with a `key`. It is left ou
 [cmd-version]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/version/
 [command-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/command-service/#possible-error-codes-and-their-description
 [callback-forcesavetype]: https://api.onlyoffice.com/docs/docs-api/usage-api/callback-handler/#forcesavetype
+[shard-key]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests

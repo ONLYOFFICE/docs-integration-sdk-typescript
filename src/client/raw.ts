@@ -160,6 +160,7 @@ function buildDeadline(timeoutMs: number, options?: RequestOptions): Deadline {
  * {@link DocumentServerRawClient.convertFromFile}, where it stops once the response arrives.
  *
  * @see [The raw client](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/client.md#the-raw-client)
+ * @see [Shard key](https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests)
  */
 export class DocumentServerRawClient {
   /** The settings in effect: validated, with defaults, and frozen. */

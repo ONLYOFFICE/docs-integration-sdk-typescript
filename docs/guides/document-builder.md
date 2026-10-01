@@ -66,8 +66,8 @@ result.urls; // { "output.docx": "…" }
 `BuilderRequest` is a union of the two requests: starting a build needs `url`, collecting the
 result needs `key`. Neither can be sent empty.
 
-The `shardkey` query parameter carries the build key, so every poll reaches the node running the
-build. The first request has no key yet and is sent without it.
+The [`shardkey`][shard-key] query parameter carries the build key, so every poll reaches the node
+running the build. The first request has no key yet and is sent without it.
 
 ## Signing
 
@@ -126,3 +126,4 @@ await client.docbuilderFromFile(request, file, await jwt.signHeader(request, sig
 [builder-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#possible-error-codes-and-their-description
 [builder-argument]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#argument
 [builder-async]: https://api.onlyoffice.com/docs/docs-api/additional-api/document-builder-api/#asynchronous-request
+[shard-key]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/shard-key/#adding-shard-key-to-api-requests
