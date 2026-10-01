@@ -19,13 +19,21 @@
 /** Red, green and blue components, each 0–255. */
 export type RgbColor = readonly [number, number, number];
 
-/** Column separator for CSV input: none, tab, semicolon, colon, comma or space. */
+/**
+ * Column separator for CSV input: none, tab, semicolon, colon, comma or space.
+ *
+ * @see [delimiter](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#delimiter)
+ */
 export type CsvDelimiter = 0 | 1 | 2 | 3 | 4 | 5;
 
 /** How a PDF, XPS or OXPS page is split into text blocks while it is read. */
 export type TextAssociation = "blockChar" | "blockLine" | "plainLine" | "plainParagraph";
 
-/** Layout of a form printed to PDF or to an image. */
+/**
+ * Layout of a form printed to PDF or to an image.
+ *
+ * @see [documentLayout](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#documentLayout)
+ */
 export interface DocumentLayout {
   /** Draw the placeholders of the form fields. */
   drawPlaceHolders?: boolean;
@@ -35,13 +43,21 @@ export interface DocumentLayout {
   isPrint?: boolean;
 }
 
-/** How a PDF, XPS or OXPS source document is read. */
+/**
+ * How a PDF, XPS or OXPS source document is read.
+ *
+ * @see [documentRenderer](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#documentRenderer)
+ */
 export interface DocumentRenderer {
   /** Text splitting mode. Default: `"plainLine"`. */
   textAssociation?: TextAssociation;
 }
 
-/** PDF output settings. */
+/**
+ * PDF output settings.
+ *
+ * @see [pdf](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#pdf)
+ */
 export interface PdfOptions {
   /** Produce a fillable PDF form rather than a plain PDF. */
   form?: boolean;
@@ -71,6 +87,8 @@ export interface PageMargins {
  * Layout used when a spreadsheet is converted to PDF or to an image.
  *
  * At most 1500 pages are produced in a single conversion.
+ *
+ * @see [spreadsheetLayout](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#spreadsheetLayout)
  */
 export interface SpreadsheetLayout {
   /** Height of the converted area, in pages. `0` leaves it unbounded. Default: `0`. */
@@ -93,7 +111,11 @@ export interface SpreadsheetLayout {
   scale?: number;
 }
 
-/** Settings for an image output format: BMP, GIF, JPG or PNG. */
+/**
+ * Settings for an image output format: BMP, GIF, JPG or PNG.
+ *
+ * @see [thumbnail](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#thumbnail)
+ */
 export interface Thumbnail {
   /**
    * How the page is fitted into the frame: `0` stretches it, `1` keeps the aspect
@@ -140,7 +162,11 @@ export interface WatermarkParagraph {
   runs?: WatermarkRun[];
 }
 
-/** Watermark stamped onto a PDF or image output. */
+/**
+ * Watermark stamped onto a PDF or image output.
+ *
+ * @see [watermark](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#watermark)
+ */
 export interface Watermark {
   /** Vertical alignment: `0` bottom, `1` center, `4` top. */
   align?: 0 | 1 | 4;
@@ -272,6 +298,8 @@ export type ConversionErrorCode = -1 | -2 | -3 | -4 | -5 | -6 | -7 | -8 | -9 | -
 /**
  * The body of a response from `/converter`: the progress of the conversion, or an `error`
  * code and nothing else. {@link DocumentServerClient.convert} throws on the code.
+ *
+ * @see [Conversion API response](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/response/)
  */
 export interface ConvertResponse {
   /** Whether the conversion has finished. `fileUrl` comes with it. */

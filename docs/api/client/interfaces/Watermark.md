@@ -4,6 +4,10 @@
 
 Watermark stamped onto a PDF or image output.
 
+## See
+
+[watermark](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#watermark)
+
 ## Properties
 
 | Property                                           | Type                                                  | Description                                                         |

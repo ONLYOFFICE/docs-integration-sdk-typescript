@@ -5,6 +5,10 @@
 The body of a response from `/converter`: the progress of the conversion, or an `error`
 code and nothing else. [DocumentServerClient.convert](../classes/DocumentServerClient.md#convert) throws on the code.
 
+## See
+
+[Conversion API response](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/response/)
+
 ## Properties
 
 | Property                                       | Type                                                            | Description                                                                                                |

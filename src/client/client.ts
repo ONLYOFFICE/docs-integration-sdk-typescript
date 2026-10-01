@@ -361,6 +361,7 @@ export class DocumentServerClient {
    * @throws {@link DocumentServerHttpError} when the status is outside the 2xx range.
    * @throws {@link DocumentServerParseError} when the body is not a JSON object.
    * @see [Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+   * @see [Conversion API](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/)
    */
   async convert(
     request: ConvertRequest,

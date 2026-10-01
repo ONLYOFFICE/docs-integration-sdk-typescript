@@ -61,8 +61,8 @@ By default the document server keeps the connection open until the file is ready
 can take longer than `timeoutMs`, or than the timeout of the reverse proxy in front of the
 server.
 
-With `async: true` the call returns at once with `endConvert: false` and a `percent`. Repeat the
-same request, unchanged, until `endConvert` is `true`:
+With [`async: true`][conversion-async] the call returns at once with `endConvert: false` and a
+`percent`. Repeat the same request, unchanged, until `endConvert` is `true`:
 
 ```ts
 const request: ConvertRequest = { async: true, filetype: "docx", key, outputtype: "pdf", url };
@@ -152,3 +152,4 @@ await client.convertFromFile(request, file, await jwt.signHeader(request, signOp
 [conversion-api]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/
 [conversion-request]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/
 [conversion-errors]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/error-codes/
+[conversion-async]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#async

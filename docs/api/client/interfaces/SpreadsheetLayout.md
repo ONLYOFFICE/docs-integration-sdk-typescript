@@ -6,6 +6,10 @@ Layout used when a spreadsheet is converted to PDF or to an image.
 
 At most 1500 pages are produced in a single conversion.
 
+## See
+
+[spreadsheetLayout](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/request/#spreadsheetLayout)
+
 ## Properties
 
 | Property                                                 | Type                            | Description                                                                    |

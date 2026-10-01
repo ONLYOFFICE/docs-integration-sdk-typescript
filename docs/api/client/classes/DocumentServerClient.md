@@ -182,7 +182,8 @@ result.fileUrl; // https://docs.example.com/cache/files/…/output.pdf
 
 #### See
 
-[Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+- [Converting documents](https://github.com/ONLYOFFICE/docs-integration-sdk-typescript/blob/master/docs/guides/conversion.md)
+- [Conversion API](https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/)
 
 ---
 
