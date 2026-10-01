@@ -279,3 +279,7 @@ Gets `/healthcheck`, whose body is `true` when the server is up.
 #### Returns
 
 `Promise`\<`Response`\>
+
+#### See
+
+[Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)

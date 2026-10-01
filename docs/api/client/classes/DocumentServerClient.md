@@ -488,3 +488,7 @@ Calls `/healthcheck`.
 `true` when the server answers `true`. `false` for any other body, and for a
 status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
 failure. A server that can't be reached still rejects.
+
+#### See
+
+[Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)

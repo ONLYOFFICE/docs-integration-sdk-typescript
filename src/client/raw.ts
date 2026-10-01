@@ -227,6 +227,7 @@ export class DocumentServerRawClient {
    * Gets `/healthcheck`, whose body is `true` when the server is up.
    *
    * @param options Overrides for this call: a `signal`, a `timeoutMs` and `headers`.
+   * @see [Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)
    */
   async healthcheck(options?: RequestOptions): Promise<Response> {
     return await this.#request("/healthcheck", { method: "GET" }, options);

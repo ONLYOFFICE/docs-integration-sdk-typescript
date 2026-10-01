@@ -19,6 +19,8 @@ const client = new DocumentServerClient({
 const healthy = await client.healthcheck();
 ```
 
+`healthcheck()` calls the [health check][health-check] of the document server.
+
 Every method parses the answer into the type its endpoint promises. It rejects when the document
 server reports a failure, in the status or, for the conversion, command and builder services, in
 a `200 OK` body. See [Errors](errors.md).
@@ -196,3 +198,4 @@ a JSON answer: it returns the progress of an `async` conversion, rejects with a
 A 2xx that is not JSON is taken as the file. The raw one returns every answer as it came.
 
 [server-token]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token
+[health-check]: https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check

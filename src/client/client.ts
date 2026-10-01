@@ -287,6 +287,7 @@ export class DocumentServerClient {
    * @returns `true` when the server answers `true`. `false` for any other body, and for a
    * status outside the 2xx range: a server that reports itself unhealthy is an answer, not a
    * failure. A server that can't be reached still rejects.
+   * @see [Health check](https://api.onlyoffice.com/docs/docs-api/get-started/installation/self-hosted/#health-check)
    */
   async healthcheck(options?: RequestOptions): Promise<boolean> {
     const response = await this.raw.healthcheck(options);
