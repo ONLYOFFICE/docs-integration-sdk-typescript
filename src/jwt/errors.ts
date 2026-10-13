@@ -26,10 +26,11 @@ const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.jwt-error");
  * - `"signature"`: the signature doesn't match the secret;
  * - `"expired"`: `exp` has passed;
  * - `"premature"`: `nbf` has not come yet;
+ * - `"operation"`: the `operation` claim names another request than the expected one;
  * - `"missing"`: the request header carries no token.
  */
 export type JwtErrorKind =
-  "algorithm" | "expired" | "malformed" | "missing" | "premature" | "signature";
+  "algorithm" | "expired" | "malformed" | "missing" | "operation" | "premature" | "signature";
 
 /**
  * Thrown by {@link DocumentServerJwt.verify} and {@link DocumentServerJwt.verifyHeader} when a

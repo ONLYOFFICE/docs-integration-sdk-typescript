@@ -181,11 +181,12 @@ Handlers:
 | `"body"`      | The body is not a callback, for example not JSON or without a `key`. |
 | `"token"`     | A verifier is set and the callback carries no token.                 |
 | `"signature"` | The verifier rejected the token. Its error is the `cause`.           |
+| `"operation"` | The token is for another request, such as a file download.           |
 
 The exact conditions are in the
 [`parse()` reference](../api/callback/classes/DocumentServerCallback.md#parse).
 
-A fourth kind, `"unhandled"`, never comes from `parse()` or `fromRequest()`. It is what
+A fifth kind, `"unhandled"`, never comes from `parse()` or `fromRequest()`. It is what
 `handle()` passes to `onError` for a `6` without a `forcesave` handler.
 
 Such a request did not come from the document server, or not in a shape it sends. Answer it with

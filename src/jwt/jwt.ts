@@ -79,13 +79,20 @@ export interface JwtOptions {
 }
 
 /**
- * The endpoint a token is for, written to the `operation` claim:
+ * The request a token is for, the `operation` claim.
+ *
+ * Requests to the document server:
  *
  * - `"converter"`: `/converter` and `/converter/from-file`;
  * - `"command"`: `/command`;
  * - `"docbuilder"`: `/docbuilder` and `/docbuilder/from-file`.
+ *
+ * Requests the document server sends:
+ *
+ * - `"download"`: a file download;
+ * - `"callback"`: a callback to `callbackUrl`.
  */
-export type JwtOperation = "converter" | "command" | "docbuilder";
+export type JwtOperation = "callback" | "command" | "converter" | "docbuilder" | "download";
 
 /** Options of one {@link DocumentServerJwt.sign} call, over the signer options. */
 export interface SignOptions {
@@ -107,6 +114,11 @@ export interface SignOptions {
 export interface VerifyOptions {
   /** The leeway for this token, instead of the configured one. Validated the same way. */
   clockToleranceSec?: number;
+  /**
+   * The request the token must be for. A token whose `operation` claim is another value is
+   * refused; a token without the claim, as older document servers send, is accepted.
+   */
+  operation?: JwtOperation;
 }
 
 /**
@@ -470,11 +482,12 @@ export class DocumentServerJwt {
    * 2. The signature must match the secret.
    * 3. `exp` and `nbf`, when present, must be numbers, and the current time must be within
    *    them, give or take `clockToleranceSec`. `iat` is not checked.
+   * 4. When `options.operation` is given, the `operation` claim, when present, must equal it.
    *
    * The payload is parsed only after the signature matches.
    *
    * @param token The token, in the compact serialization.
-   * @param options The leeway for this token.
+   * @param options The leeway and the expected `operation` of this token.
    * @returns The claims, typed as `T`. The type is not checked.
    * @throws {@link JwtError} of kind:
    *
@@ -484,7 +497,8 @@ export class DocumentServerJwt {
    * - `"algorithm"` when the header names another algorithm;
    * - `"signature"` when the signature doesn't match;
    * - `"expired"` when `exp` has passed;
-   * - `"premature"` when `nbf` has not come yet.
+   * - `"premature"` when `nbf` has not come yet;
+   * - `"operation"` when the `operation` claim is not `options.operation`.
    * @throws {TypeError} when `clockToleranceSec` is invalid.
    */
   async verify<T = Record<string, unknown>>(token: string, options?: VerifyOptions): Promise<T> {
@@ -541,6 +555,19 @@ export class DocumentServerJwt {
       );
     }
 
+    const operation = claims["operation"];
+
+    if (
+      options?.operation !== undefined &&
+      operation !== undefined &&
+      operation !== options.operation
+    ) {
+      throw new JwtError(
+        "operation",
+        `the token is for ${JSON.stringify(operation)}, expected ${options.operation}`,
+      );
+    }
+
     return claims as T;
   }
 
@@ -574,15 +601,17 @@ export class DocumentServerJwt {
    *
    * The token is read by {@link DocumentServerJwt.readHeader}. The document server sends
    * `Authorization: Bearer <token>` by default, and its claims wrap the request data in
-   * `payload`.
+   * `payload`, with `operation` next to it.
    *
    * @example
    * ```ts
-   * const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
+   * const { url } = await jwt.verifyHeader<{ url: string }>(request.headers, {
+   *   operation: "download",
+   * });
    * ```
    *
    * @param headers The headers of the request.
-   * @param options The leeway.
+   * @param options The leeway and the expected `operation`.
    * @returns The `payload` claim, typed as `T`. The type is not checked.
    * @throws {@link JwtError} of kind `"missing"` when the header is missing, has another
    * prefix or holds only the prefix. Use it to tell a request of the document server from one

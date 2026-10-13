@@ -82,6 +82,18 @@ for a conversion can't be replayed as a command.
 The document server looks for the claim at the top level of the token only, not inside
 `payload`.
 
+The document server signs its own requests with `operation` too: `"download"` for a file
+download and `"callback"` for a callback. Pass the one you expect to `verify()` or
+`verifyHeader()`, so a token taken from a download can't be replayed as a callback:
+
+```ts
+await jwt.verifyHeader(request.headers, { operation: "download" });
+```
+
+A token whose `operation` is another value is refused with kind `"operation"`. A token without
+the claim, as older document servers send, is accepted. [`DocumentServerCallback`](callback.md)
+expects `"callback"` on its own.
+
 ## Verify a token
 
 `verify()` returns what the token carries, or rejects with a `JwtError` if the token can't be
@@ -112,6 +124,7 @@ try {
 | `"signature"` | the signature doesn't match        |
 | `"expired"`   | `exp` is in the past               |
 | `"premature"` | `nbf` is in the future             |
+| `"operation"` | `operation` names another request  |
 | `"missing"`   | the header carries no token        |
 
 The exact conditions are in the
@@ -142,10 +155,13 @@ The document server signs its own requests, such as a file download or a callbac
 [in a header][token-in-header-outgoing]:
 `Authorization: Bearer <token>` by default. The claims wrap the request data in `payload`.
 `verifyHeader()` reads the token from the headers, checks it like `verify()` and returns that
-`payload`:
+`payload`. Pass `operation: "download"` for a download, as described in
+[The operation claim](#the-operation-claim):
 
 ```ts
-const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
+const { url } = await jwt.verifyHeader<{ url: string }>(request.headers, {
+  operation: "download",
+});
 ```
 
 It takes fetch `Headers` or a plain Node headers object, and matches header names and the prefix
@@ -177,7 +193,7 @@ as a download:
 
 ```ts
 try {
-  await jwt.verifyHeader(request.headers);
+  await jwt.verifyHeader(request.headers, { operation: "download" });
 } catch (error) {
   if (!JwtError.is(error) || error.kind !== "missing") throw error;
   // no token: the request did not come from the document server

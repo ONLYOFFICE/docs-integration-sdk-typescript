@@ -24,10 +24,11 @@ const BRAND = Symbol.for("@onlyoffice/docs-integration-sdk.callback-error");
  * - `"body"`: the body is not a callback the document server sends;
  * - `"token"`: a verifier is set and the callback carries no token;
  * - `"signature"`: the verifier rejected the token;
+ * - `"operation"`: the token is for another request than a callback;
  * - `"unhandled"`: a `forcesave` event has no handler. Only passed to `onError` of
  *   {@link DocumentServerCallback.handle}, never thrown.
  */
-export type CallbackErrorKind = "body" | "signature" | "token" | "unhandled";
+export type CallbackErrorKind = "body" | "operation" | "signature" | "token" | "unhandled";
 
 /**
  * Thrown by {@link DocumentServerCallback.parse}, {@link DocumentServerCallback.fromRequest}

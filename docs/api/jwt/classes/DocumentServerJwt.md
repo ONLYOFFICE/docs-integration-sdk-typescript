@@ -187,6 +187,7 @@ The checks, in order:
 2. The signature must match the secret.
 3. `exp` and `nbf`, when present, must be numbers, and the current time must be within
    them, give or take `clockToleranceSec`. `iat` is not checked.
+4. When `options.operation` is given, the `operation` claim, when present, must equal it.
 
 The payload is parsed only after the signature matches.
 
@@ -198,10 +199,10 @@ The payload is parsed only after the signature matches.
 
 #### Parameters
 
-| Parameter  | Type                                              | Description                              |
-| ---------- | ------------------------------------------------- | ---------------------------------------- |
-| `token`    | `string`                                          | The token, in the compact serialization. |
-| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) | The leeway for this token.               |
+| Parameter  | Type                                              | Description                                            |
+| ---------- | ------------------------------------------------- | ------------------------------------------------------ |
+| `token`    | `string`                                          | The token, in the compact serialization.               |
+| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) | The leeway and the expected `operation` of this token. |
 
 #### Returns
 
@@ -219,7 +220,8 @@ The claims, typed as `T`. The type is not checked.
 - `"algorithm"` when the header names another algorithm;
 - `"signature"` when the signature doesn't match;
 - `"expired"` when `exp` has passed;
-- `"premature"` when `nbf` has not come yet.
+- `"premature"` when `nbf` has not come yet;
+- `"operation"` when the `operation` claim is not `options.operation`.
 
 #### Throws
 
@@ -238,7 +240,7 @@ as a file download, verifies it and returns its `payload` claim.
 
 The token is read by [DocumentServerJwt.readHeader](#readheader). The document server sends
 `Authorization: Bearer <token>` by default, and its claims wrap the request data in
-`payload`.
+`payload`, with `operation` next to it.
 
 #### Type Parameters
 
@@ -248,10 +250,10 @@ The token is read by [DocumentServerJwt.readHeader](#readheader). The document s
 
 #### Parameters
 
-| Parameter  | Type                                              | Description                 |
-| ---------- | ------------------------------------------------- | --------------------------- |
-| `headers`  | [`JwtHeaders`](../type-aliases/JwtHeaders.md)     | The headers of the request. |
-| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) | The leeway.                 |
+| Parameter  | Type                                              | Description                              |
+| ---------- | ------------------------------------------------- | ---------------------------------------- |
+| `headers`  | [`JwtHeaders`](../type-aliases/JwtHeaders.md)     | The headers of the request.              |
+| `options?` | [`VerifyOptions`](../interfaces/VerifyOptions.md) | The leeway and the expected `operation`. |
 
 #### Returns
 
@@ -262,7 +264,9 @@ The `payload` claim, typed as `T`. The type is not checked.
 #### Example
 
 ```ts
-const { url } = await jwt.verifyHeader<{ url: string }>(request.headers);
+const { url } = await jwt.verifyHeader<{ url: string }>(request.headers, {
+  operation: "download",
+});
 ```
 
 #### Throws

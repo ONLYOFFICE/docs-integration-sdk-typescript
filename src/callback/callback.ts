@@ -41,6 +41,8 @@ const KINDS: Readonly<Record<number, CallbackEvent["kind"]>> = {
 
 const WITH_URL: ReadonlySet<CallbackEvent["kind"]> = new Set(["forcesave", "save"]);
 
+const OPERATION = "callback";
+
 const OK: CallbackReply = Object.freeze({ error: 0 });
 const FAIL: CallbackReply = Object.freeze({ error: 1 });
 
@@ -149,13 +151,24 @@ function parseBody(body: unknown): unknown {
 }
 
 async function verify(verifier: CallbackVerifier, token: string): Promise<unknown> {
+  let claims: unknown;
+
   try {
-    return await verifier.verify(token);
+    claims = await verifier.verify(token);
   } catch (error) {
     throw new CallbackError("signature", "the token of the callback was refused", {
       cause: error,
     });
   }
+
+  if (isRecord(claims) && claims["operation"] !== undefined && claims["operation"] !== OPERATION) {
+    throw new CallbackError(
+      "operation",
+      `the token of the callback is for ${JSON.stringify(claims["operation"])}, expected ${OPERATION}`,
+    );
+  }
+
+  return claims;
 }
 
 async function trustedBody(input: CallbackInput, options: CallbackOptions): Promise<unknown> {
@@ -280,7 +293,9 @@ export class DocumentServerCallback {
    *    `{ payload: … }`.
    *
    * Once the token is checked, the callback is what the token carries, and the unsigned body
-   * is ignored.
+   * is ignored. A token with an `operation` claim must be for `"callback"`, so a token the
+   * document server signed for another request, such as a file download, is refused; a token
+   * without the claim, as older document servers send, is accepted.
    *
    * @param input The body and the headers of the request.
    * @param options The verifier.
@@ -292,7 +307,8 @@ export class DocumentServerCallback {
    *   {@link DocumentServerCallback | constructor};
    * - `"token"` when `verifier` is set and there is no token: no string `token` in the body,
    *   and `readHeader()` of the verifier finds none;
-   * - `"signature"` when the verifier rejects the token. Its error is the `cause`.
+   * - `"signature"` when the verifier rejects the token. Its error is the `cause`;
+   * - `"operation"` when the `operation` claim of the token is not `"callback"`.
    */
   static async parse(
     input: CallbackInput,

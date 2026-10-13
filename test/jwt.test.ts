@@ -594,6 +594,50 @@ describe("verify", () => {
     );
   });
 
+  it("takes a token for the operation it expects", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document" }, { operation: "callback" });
+
+    await expect(jwt.verify(token, { operation: "callback" })).resolves.toMatchObject({
+      operation: "callback",
+    });
+  });
+
+  it("takes a token without an operation, as older document servers sign", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document" });
+
+    await expect(jwt.verify(token, { operation: "callback" })).resolves.toMatchObject({
+      key: "document",
+    });
+  });
+
+  it("refuses a token for another operation", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document" }, { operation: "download" });
+
+    await expect(jwt.verify(token, { operation: "callback" })).rejects.toMatchObject({
+      kind: "operation",
+      message: expect.stringMatching(/"download", expected callback/) as unknown,
+    });
+  });
+
+  it("refuses an operation that is not a string", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document", operation: 1 });
+
+    await expect(jwt.verify(token, { operation: "callback" })).rejects.toMatchObject({
+      kind: "operation",
+    });
+  });
+
+  it("leaves the operation unchecked when none is expected", async () => {
+    const jwt = new DocumentServerJwt({ secret: "secret" });
+    const token = await jwt.sign({ key: "document" }, { operation: "download" });
+
+    await expect(jwt.verify(token)).resolves.toMatchObject({ operation: "download" });
+  });
+
   it("imports the key once across signing and checking", async () => {
     const importKey = vi.spyOn(crypto.subtle, "importKey");
     const jwt = new DocumentServerJwt({ secret: "secret" });
@@ -700,6 +744,30 @@ describe("verifyHeader", () => {
     const headers = { authorization: `Bearer ${await other.sign({ payload })}` };
 
     await expect(jwt.verifyHeader(headers)).rejects.toMatchObject({ kind: "signature" });
+  });
+
+  it("checks the operation beside the payload", async () => {
+    const download = {
+      authorization: `Bearer ${await jwt.signHeader(payload, { operation: "download" })}`,
+    };
+    const callback = {
+      authorization: `Bearer ${await jwt.signHeader(payload, { operation: "callback" })}`,
+    };
+
+    await expect(jwt.verifyHeader(download, { operation: "download" })).resolves.toEqual(payload);
+    await expect(jwt.verifyHeader(callback, { operation: "download" })).rejects.toMatchObject({
+      kind: "operation",
+    });
+  });
+
+  it("does not look for the operation inside the payload", async () => {
+    const headers = {
+      authorization: `Bearer ${await jwt.signHeader({ ...payload, operation: "callback" })}`,
+    };
+
+    await expect(jwt.verifyHeader(headers, { operation: "download" })).resolves.toMatchObject(
+      payload,
+    );
   });
 
   it("applies the tolerance it is given", async () => {

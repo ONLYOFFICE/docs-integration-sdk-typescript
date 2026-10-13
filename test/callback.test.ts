@@ -150,6 +150,12 @@ describe("DocumentServerCallback.parse, the token in the body", () => {
     expect(event).toMatchObject({ ...save, kind: "save" });
   });
 
+  it("takes a token signed for a callback", async () => {
+    const token = await jwt.sign(save, { operation: "callback" });
+
+    await expect(parse({ body: { ...save, token } })).resolves.toMatchObject({ kind: "save" });
+  });
+
   it("trusts the token rather than the body it came in", async () => {
     const forged = { ...save, url: "https://attacker.example.com/file.docx" };
     const event = await parse({ body: { ...forged, token: await jwt.sign(save) } });
@@ -200,6 +206,13 @@ describe("DocumentServerCallback.parse, the token in the header", () => {
   it("takes the payload the token carries", async () => {
     const token = await jwt.sign({ payload: save });
     const event = await parse({ body: save, headers: { Authorization: `Bearer ${token}` } });
+
+    expect(event).toMatchObject({ ...save, kind: "save" });
+  });
+
+  it("takes a token signed for a callback, the operation beside the payload", async () => {
+    const token = await jwt.signHeader(save, { operation: "callback" });
+    const event = await parse({ body: save, headers: { authorization: `Bearer ${token}` } });
 
     expect(event).toMatchObject({ ...save, kind: "save" });
   });
@@ -309,6 +322,22 @@ describe("DocumentServerCallback.parse, refusals", () => {
     const error = await refusal(parse({ body: save, headers: { authorization: "Bearer " } }));
 
     expect(error.kind).toBe("token");
+  });
+
+  it("refuses a token in the body signed for another operation", async () => {
+    const token = await jwt.sign(save, { operation: "download" });
+    const error = await refusal(parse({ body: { ...save, token } }));
+
+    expect(error.kind).toBe("operation");
+  });
+
+  it("refuses a token in the header signed for another operation", async () => {
+    const token = await jwt.signHeader(save, { operation: "download" });
+    const error = await refusal(
+      parse({ body: save, headers: { authorization: `Bearer ${token}` } }),
+    );
+
+    expect(error.kind).toBe("operation");
   });
 
   it("refuses a token signed with another secret, with the refusal as its cause", async () => {

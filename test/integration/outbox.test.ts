@@ -68,6 +68,25 @@ describe("the token the document server downloads with", () => {
     await expect(jwt.verifyHeader(requestFor("/hello.js").headers)).resolves.toEqual({ url });
   });
 
+  it("is for a download, the operation beside the payload", async () => {
+    const url = host.url("/hello.txt");
+    const convert = { filetype: "txt", key: uniqueKey(), outputtype: "pdf", url };
+
+    await client.convert(convert, await jwt.signHeader(convert));
+
+    const { headers } = requestFor("/hello.txt");
+    const token = jwt.readHeader(headers) ?? "";
+
+    await expect(jwt.verify(token)).resolves.toMatchObject({
+      operation: "download",
+      payload: { url },
+    });
+    await expect(jwt.verifyHeader(headers, { operation: "download" })).resolves.toEqual({ url });
+    await expect(jwt.verifyHeader(headers, { operation: "callback" })).rejects.toMatchObject({
+      kind: "operation",
+    });
+  });
+
   it("is refused by a signer of another secret", async () => {
     const url = host.url("/hello.txt");
     const convert = { filetype: "txt", key: uniqueKey(), outputtype: "pdf", url };

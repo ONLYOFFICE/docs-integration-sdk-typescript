@@ -3,11 +3,18 @@
 # Type Alias: JwtOperation
 
 ```ts
-type JwtOperation = "converter" | "command" | "docbuilder";
+type JwtOperation = "callback" | "command" | "converter" | "docbuilder" | "download";
 ```
 
-The endpoint a token is for, written to the `operation` claim:
+The request a token is for, the `operation` claim.
+
+Requests to the document server:
 
 - `"converter"`: `/converter` and `/converter/from-file`;
 - `"command"`: `/command`;
 - `"docbuilder"`: `/docbuilder` and `/docbuilder/from-file`.
+
+Requests the document server sends:
+
+- `"download"`: a file download;
+- `"callback"`: a callback to `callbackUrl`.

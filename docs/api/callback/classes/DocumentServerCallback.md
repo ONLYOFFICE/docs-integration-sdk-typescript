@@ -145,7 +145,9 @@ Where the token is looked for:
    `{ payload: … }`.
 
 Once the token is checked, the callback is what the token carries, and the unsigned body
-is ignored.
+is ignored. A token with an `operation` claim must be for `"callback"`, so a token the
+document server signed for another request, such as a file download, is refused; a token
+without the claim, as older document servers send, is accepted.
 
 #### Parameters
 
@@ -169,4 +171,5 @@ The callback, with the event it reports.
   constructor;
 - `"token"` when `verifier` is set and there is no token: no string `token` in the body,
   and `readHeader()` of the verifier finds none;
-- `"signature"` when the verifier rejects the token. Its error is the `cause`.
+- `"signature"` when the verifier rejects the token. Its error is the `cause`;
+- `"operation"` when the `operation` claim of the token is not `"callback"`.

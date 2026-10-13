@@ -31,4 +31,4 @@ Signing and checking the tokens the document server exchanges. Imported from
 | [JwtAlgorithm](type-aliases/JwtAlgorithm.md) | The HMAC algorithms the document server signs with. Use the one it is configured with.                                                                             |
 | [JwtErrorKind](type-aliases/JwtErrorKind.md) | Why a token was refused, the discriminant of [JwtError](classes/JwtError.md):                                                                                      |
 | [JwtHeaders](type-aliases/JwtHeaders.md)     | The headers of a request: fetch `Headers` or a plain Node headers object. Names are matched in any case; of a header given several times, the first value is read. |
-| [JwtOperation](type-aliases/JwtOperation.md) | The endpoint a token is for, written to the `operation` claim:                                                                                                     |
+| [JwtOperation](type-aliases/JwtOperation.md) | The request a token is for, the `operation` claim.                                                                                                                 |
