@@ -1,6 +1,6 @@
 services:
   documentserver:
-    image: onlyoffice/4testing-documentserver-de:10.0.0.114
+    image: onlyoffice/documentserver:10.0.0.1
     environment:
       JWT_ENABLED: "true"
       JWT_SECRET: integration-secret
