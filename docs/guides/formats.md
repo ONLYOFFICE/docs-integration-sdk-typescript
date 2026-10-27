@@ -116,7 +116,9 @@ Details:
 
 **Caching.** The list depends on the document server version and license. An instance holds one
 answer of `/meta/formats`; to see a format the server has learned since, fetch the list again.
-The class sends no requests, so it works just as well with a list cached in your application.
+The class sends no requests, so it works just as well with a list cached in your application. To
+keep the list and the server configuration in memory, see
+[Caching the server configuration](cache.md).
 
 [config-documenttype]: https://api.onlyoffice.com/docs/docs-api/usage-api/config/#documenttype
 [conversion-tables]: https://api.onlyoffice.com/docs/docs-api/additional-api/conversion-api/conversion-tables/

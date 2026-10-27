@@ -4,6 +4,7 @@
 
 | Module                         | Description                                                                                                                                                                                                          |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [cache](cache/README.md)       | Keeps the configuration and the formats of a document server in memory. Imported from `@onlyoffice/docs-integration-sdk/cache`.                                                                                      |
 | [callback](callback/README.md) | What the document server posts to the callback URL, checked against its token and told apart by what it reports. Imported from `@onlyoffice/docs-integration-sdk/callback`.                                          |
 | [client](client/README.md)     | The HTTP client of the document server: conversion, commands, the document builder, downloading files, the health check and what the server says of itself. Imported from `@onlyoffice/docs-integration-sdk/client`. |
 | [config](config/README.md)     | The config an editor is opened with, validated and signed, and the document key it needs. Imported from `@onlyoffice/docs-integration-sdk/config`.                                                                   |

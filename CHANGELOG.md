@@ -26,5 +26,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   operation claim, and checks the tokens the document server sends back.
 - `DocumentServerCallback`, which checks and parses what the document server posts to the
   callback url, dispatches it to a handler for each status and builds the answer.
-- A subpath for each module: `/client`, `/config`, `/formats`, `/jwt` and `/callback`.
+- `DocumentServerMetaCache`, which keeps one answer of the document server, such as
+  `/meta/config` or `/meta/formats`, in memory: the call to `get()` that finds the data stale
+  waits for a reload while the others get the old data, a failed load is retried after a pause,
+  and a load that runs too long is aborted through the signal passed to `getData`.
+- A subpath for each module: `/cache`, `/client`, `/config`, `/formats`, `/jwt` and `/callback`.
 - ESM and CJS builds with type definitions, and a markdown API reference in `docs/api/`.
