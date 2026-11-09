@@ -29,7 +29,7 @@ Node 20/22/24, and the integration tests.
 ## Architecture
 
 Each folder under `src/` with an `index.ts` is a **module** and a package subpath
-(`@onlyoffice/docs-integration-sdk/<module>`): `client`, `config`, `formats`, `jwt`,
+(`@onlyoffice/docs-integration-sdk/<module>`): `cache`, `client`, `config`, `formats`, `jwt`,
 `callback`. The folder list is the single source of truth: tsup builds `src/*/index.ts`,
 `package.json` exports `./*` onto `dist/*`, typedoc documents the same entries. `src/index.ts`
 re-exports every module; adding a module means creating its folder and adding a line there

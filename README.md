@@ -23,6 +23,7 @@ The package root exports everything. Each module is also available on its own su
 
 | Subpath                                     | Exports                                                                                      |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `@onlyoffice/docs-integration-sdk/cache`    | `DocumentServerMetaCache`, `MetaCacheOptions`                                                |
 | `@onlyoffice/docs-integration-sdk/callback` | `DocumentServerCallback`, `CallbackError`, the events it reports                             |
 | `@onlyoffice/docs-integration-sdk/client`   | `DocumentServerClient`, `DocumentServerRawClient`, `splitFileUrl`, their requests and errors |
 | `@onlyoffice/docs-integration-sdk/config`   | `DocumentServerConfig`, `ConfigError`, `buildDocumentKey`, the config types                  |
@@ -153,6 +154,7 @@ if it threw. See
 | [Document builder](docs/guides/document-builder.md)        | `docbuilder()`, `docbuilderFromFile()`                      |
 | [Downloading files](docs/guides/files.md)                  | `getFile()`, `splitFileUrl()`                               |
 | [Server configuration and formats](docs/guides/formats.md) | `getConfig()`, `getFormats()`, `DocumentServerFormats`      |
+| [Caching the server configuration](docs/guides/cache.md)   | `DocumentServerMetaCache`: reading, failures, options       |
 | [Errors](docs/guides/errors.md)                            | the error classes and how to tell them apart                |
 
 The [API reference](docs/api/README.md) lists every export, generated from the source.
