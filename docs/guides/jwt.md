@@ -1,0 +1,227 @@
+# JWT
+
+`DocumentServerJwt` signs the tokens the document server expects and checks the tokens it sends.
+It has no dependencies: HMAC comes from WebCrypto, which every supported runtime provides.
+
+- [Sign a token](#sign-a-token)
+- [Body token and header token](#body-token-and-header-token)
+- [The operation claim](#the-operation-claim)
+- [Verify a token](#verify-a-token)
+- [Verify a token from a header](#verify-a-token-from-a-header)
+- [Several secrets](#several-secrets)
+
+## Sign a token
+
+```ts
+import { DocumentServerJwt } from "@onlyoffice/docs-integration-sdk";
+
+const jwt = new DocumentServerJwt({ secret });
+const token = await jwt.sign({ key: "Khirz6zTPdfd7", url: "https://example.com/contract.docx" });
+```
+
+`sign()` adds `iat` and `exp` unless the payload already has them. The default lifetime is five
+minutes. Change it with `expiresInSec`, on the signer or on one call. `null` leaves `exp` out, so
+the token never expires:
+
+```ts
+const jwt = new DocumentServerJwt({ secret, expiresInSec: 60 });
+
+await jwt.sign(payload); // expires in a minute
+await jwt.sign(payload, { expiresInSec: 3600 }); // in an hour
+await jwt.sign(payload, { expiresInSec: null }); // never
+```
+
+`algorithm` is `"HS256"` (default), `"HS384"` or `"HS512"`. Use the one set in the
+[`token` settings][server-token] of your document server.
+
+## Body token and header token
+
+The conversion, command and builder services accept a token in one of two places, signed over
+different payloads. Both are described in the [signature documentation][signature], which
+recommends the body:
+
+| Where                     | Signed over                  | Method                    |
+| ------------------------- | ---------------------------- | ------------------------- |
+| [body][token-in-body]     | the request body             | `jwt.sign(request)`       |
+| [header][token-in-header] | the body as `{ payload: … }` | `jwt.signHeader(request)` |
+
+```ts
+// In the body, as a field of the request.
+await client.convert({ ...request, token: await jwt.sign(request) });
+
+// In a header, as the second argument.
+await client.convert(request, await jwt.signHeader(request));
+```
+
+`signHeader()` wraps the body as `{ payload: … }` and puts `iat`, `exp` and `operation` next to
+it. So `jwt.signHeader(request)` is the same as `jwt.sign({ payload: request })`.
+
+You can send both tokens, as long as each is signed over its own payload. The same token in both
+places fails with error `-8`. Without the header argument, no authorization header is sent,
+which is what a server without a secret expects.
+
+## The operation claim
+
+`operation` names the endpoint a token is for: `"converter"`, `"command"` or `"docbuilder"`. It
+is written as a top-level claim and overrides an `operation` field of the payload:
+
+```ts
+await jwt.sign(request, { operation: "converter" });
+await jwt.signHeader(request, { operation: "converter" });
+```
+
+The document server refuses a token whose `operation` names another endpoint, so a token signed
+for a conversion can't be replayed as a command.
+
+| Endpoint                                | `operation`              |
+| --------------------------------------- | ------------------------ |
+| `/converter`, `/command`, `/docbuilder` | optional                 |
+| `/converter/from-file`                  | required, `"converter"`  |
+| `/docbuilder/from-file`                 | required, `"docbuilder"` |
+
+The document server looks for the claim at the top level of the token only, not inside
+`payload`.
+
+The document server signs its own requests with `operation` too: `"download"` for a file
+download and `"callback"` for a callback. Pass the one you expect to `verify()` or
+`verifyHeader()`, so a token taken from a download can't be replayed as a callback:
+
+```ts
+await jwt.verifyHeader(request.headers, { operation: "download" });
+```
+
+A token whose `operation` is another value is refused with kind `"operation"`. A token without
+the claim, as older document servers send, is accepted. [`DocumentServerCallback`](callback.md)
+expects `"callback"` on its own.
+
+## Verify a token
+
+`verify()` returns what the token carries, or rejects with a `JwtError` if the token can't be
+trusted:
+
+```ts
+import { type CallbackBody, JwtError } from "@onlyoffice/docs-integration-sdk";
+
+try {
+  const claims = await jwt.verify<CallbackBody>(token);
+} catch (error) {
+  if (JwtError.is(error)) {
+    // 403: error.kind says which check refused it
+  }
+}
+```
+
+> [!TIP]
+> A `callbackUrl` handler must check the token: without it, anyone who knows the URL can post to
+> it. [`DocumentServerCallback`](callback.md) does this check for you.
+
+`kind` is one of:
+
+| `kind`        | Meaning                            |
+| ------------- | ---------------------------------- |
+| `"malformed"` | not a valid JWT                    |
+| `"algorithm"` | the header names another algorithm |
+| `"signature"` | the signature doesn't match        |
+| `"expired"`   | `exp` is in the past               |
+| `"premature"` | `nbf` is in the future             |
+| `"operation"` | `operation` names another request  |
+| `"missing"`   | the header carries no token        |
+
+The exact conditions are in the
+[`verify()` reference](../api/jwt/classes/DocumentServerJwt.md#verify).
+
+How the check works:
+
+- The algorithm is the one the signer is configured with. A token that names another algorithm
+  is refused before anything is computed, so `alg: "none"` never passes.
+- `exp` and `nbf` are checked when present and must be numbers. `iat` is ignored.
+- The payload is parsed only after the signature matches.
+
+`clockToleranceSec` allows for a document server whose clock differs from yours, in seconds. It
+defaults to `3` and can be set on the signer or on one call:
+
+```ts
+const jwt = new DocumentServerJwt({ secret, clockToleranceSec: 30 });
+
+await jwt.verify(token, { clockToleranceSec: 0 });
+```
+
+`JwtError` and the [client errors](errors.md) are separate: `JwtError.is()` and
+`DocumentServerError.is()` never both return `true` for the same value.
+
+## Verify a token from a header
+
+The document server signs its own requests, such as a file download or a callback,
+[in a header][token-in-header-outgoing]:
+`Authorization: Bearer <token>` by default. The claims wrap the request data in `payload`.
+`verifyHeader()` reads the token from the headers, checks it like `verify()` and returns that
+`payload`. Pass `operation: "download"` for a download, as described in
+[The operation claim](#the-operation-claim):
+
+```ts
+const { url } = await jwt.verifyHeader<{ url: string }>(request.headers, {
+  operation: "download",
+});
+```
+
+It takes fetch `Headers` or a plain Node headers object, and matches header names and the prefix
+in any case. If the server sets its own `token.outbox.header` or `token.outbox.prefix` in its
+[`token` settings][server-token], set the same values on the signer. An empty prefix reads a
+bare token:
+
+```ts
+const jwt = new DocumentServerJwt({
+  secret,
+  authorizationHeader: "X-Docs-Token",
+  authorizationPrefix: "",
+});
+
+await jwt.verifyHeader(headers);
+```
+
+The signer reads the header the same way when it checks a [callback](callback.md), so the
+values are set in one place. `readHeader()` only reads: it returns the token, unchecked, or
+`undefined` when there is none.
+
+Errors:
+
+- no header, another prefix, or the prefix alone → `"missing"`;
+- a token without a `payload` object → `"malformed"`.
+
+Use `"missing"` to handle a request that may come from the document server or from a user, such
+as a download:
+
+```ts
+try {
+  await jwt.verifyHeader(request.headers, { operation: "download" });
+} catch (error) {
+  if (!JwtError.is(error) || error.kind !== "missing") throw error;
+  // no token: the request did not come from the document server
+}
+```
+
+## Several secrets
+
+The secret belongs to the signer, so the key is imported once and reused for every token. If
+the document server uses [separate secrets][signature-secrets] for what it receives, what it
+sends and the editor session, create a signer for each:
+
+```ts
+const inbox = new DocumentServerJwt({ secret: inboxSecret });
+const outbox = new DocumentServerJwt({ secret: outboxSecret });
+
+await client.convert(request, await inbox.signHeader(request));
+```
+
+The header a signer reads tokens from belongs to it as well: set the `token.outbox` values on
+the signer that checks what the server sends. The header the client sends tokens in is a
+[client option](client.md#authorizationheader-and-authorizationprefix), the `token.inbox` side.
+
+A server with one secret everywhere, the common case, needs one signer.
+
+[signature]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/
+[signature-secrets]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/#configuration-parameters
+[token-in-body]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-body/
+[token-in-header]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/
+[token-in-header-outgoing]: https://api.onlyoffice.com/docs/docs-api/additional-api/signature/request/token-in-header/#outgoing-requests
+[server-token]: https://api.onlyoffice.com/docs/docs-api/get-started/configuration/server-config/#token

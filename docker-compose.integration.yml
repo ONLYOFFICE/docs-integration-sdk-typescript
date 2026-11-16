@@ -1,0 +1,15 @@
+services:
+  documentserver:
+    image: onlyoffice/documentserver:10.0.0.1
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: integration-secret
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+    ports:
+      - "8080:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+  fixtures:
+    image: nginx:alpine
+    volumes:
+      - ./test/integration/fixtures:/usr/share/nginx/html:ro
